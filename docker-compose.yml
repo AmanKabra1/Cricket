@@ -80,6 +80,7 @@ services:
       SYNC_DATABASE_URL: mysql+pymysql://${MYSQL_USER:-localscore}:${MYSQL_PASSWORD:-localscore}@db:3306/${MYSQL_DATABASE:-localscore}
       REDIS_URL: redis://redis:6379/0
       S3_ENDPOINT_URL: http://minio:9000
+      AI_SERVICE_URL: http://ai-service:8100
     ports:
       - "8000:8000"
     depends_on:
@@ -90,6 +91,21 @@ services:
     volumes:
       - ./backend:/app
     command: uvicorn app.main:socket_app --host 0.0.0.0 --port 8000 --reload
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: localscore-ai
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      MODEL_DIR: models
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./ai-service:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload
 
 volumes:
   db_data:

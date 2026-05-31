@@ -29,11 +29,14 @@ next begins. **Phase 1 is complete** (this commit).
 - ✅ Tailwind design system + Bootstrap grid, dark/light themes, mobile-first, cricket-green/navy/white.
 - ✅ Production Dockerfile (nginx) + build verified (tsc + vite build clean).
 
-## Phase 4 — AI service (Python microservice)
-- FastAPI service with feature pipeline over historical `balls`/stats.
-- Win-probability + projected score (XGBoost/LightGBM) once data accumulates; heuristic fallback until then.
-- Best-player performance index; player insights (strengths/weaknesses/form).
-- LLM commentary + match summaries (LangChain + OpenAI), cached in Redis.
+## ✅ Phase 4 — AI service (Python microservice) (DONE)
+- ✅ Standalone FastAPI service (`ai-service/`, port 8100) wired into docker-compose; backend proxies to it with graceful degradation.
+- ✅ Feature pipeline (`app/features.py`) turning live-score state into model features.
+- ✅ Win-probability + projected score: transparent cricket **heuristic** now, with a two-tier loader that swaps in a trained **XGBoost/LightGBM** model (`train/train_win_probability.py`) the moment `models/win_probability.joblib` exists — no API change.
+- ✅ Best-player performance index; player insights (form + strengths/weaknesses).
+- ✅ LLM commentary + match summaries (LangChain + OpenAI) — **optional**, deterministic template fallback when no `OPENAI_API_KEY`.
+- ✅ Tests: 7 heuristic-path tests green; app boots and all endpoints verified over HTTP.
+- Remaining for later: export real historical data for training; nightly retrain + model versioning; cache AI results in Redis.
 
 ## Phase 5 — Mobile app (React Native)
 - Shared API contract with web; spectator-first, plus a lightweight scoring mode for admins.
