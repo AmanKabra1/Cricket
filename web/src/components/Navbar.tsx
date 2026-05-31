@@ -38,6 +38,11 @@ export default function Navbar() {
           <NavLink to="/tournaments" className={({ isActive }) => navItem(isActive)}>
             Tournaments
           </NavLink>
+          {user && user.role !== "PUBLIC" && (
+            <NavLink to="/admin" className={({ isActive }) => navItem(isActive)}>
+              Manage
+            </NavLink>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">

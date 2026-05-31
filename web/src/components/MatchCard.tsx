@@ -53,9 +53,9 @@ export default function MatchCard({ match, teams }: { match: Match; teams: Map<n
         <span className="rounded-full bg-slate-500/10 px-2 py-0.5 text-xs muted">{match.overs_limit} ov</span>
       </div>
 
-      <TeamRow name={teamName(teams, match.team_a_id)} score={scoreFor(match.team_a_id)} overs={oversFor(match.team_a_id)} />
+      <TeamRow name={teamName(teams, match.team_a_id)} logo={teams.get(match.team_a_id)?.logo_url ?? null} score={scoreFor(match.team_a_id)} overs={oversFor(match.team_a_id)} />
       <div className="my-1 ml-9 text-xs font-semibold muted">vs</div>
-      <TeamRow name={teamName(teams, match.team_b_id)} score={scoreFor(match.team_b_id)} overs={oversFor(match.team_b_id)} />
+      <TeamRow name={teamName(teams, match.team_b_id)} logo={teams.get(match.team_b_id)?.logo_url ?? null} score={scoreFor(match.team_b_id)} overs={oversFor(match.team_b_id)} />
 
       <div
         className="mt-3 flex items-center justify-between border-t pt-3 text-xs muted"
@@ -68,12 +68,16 @@ export default function MatchCard({ match, teams }: { match: Match; teams: Map<n
   );
 }
 
-function TeamRow({ name, score, overs }: { name: string; score: string | null; overs: string | null }) {
+function TeamRow({ name, logo, score, overs }: { name: string; logo: string | null; score: string | null; overs: string | null }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pitch-400 to-pitch-600 text-xs font-bold text-white">
-        {name.slice(0, 2).toUpperCase()}
-      </span>
+      {logo ? (
+        <img src={logo} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+      ) : (
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pitch-400 to-pitch-600 text-xs font-bold text-white">
+          {name.slice(0, 2).toUpperCase()}
+        </span>
+      )}
       <span className="flex-1 truncate font-semibold">{name}</span>
       {score && (
         <span className="text-right">

@@ -59,6 +59,17 @@ export const usePrediction = (id: number) =>
 export const useTeams = () =>
   useQuery({ queryKey: ["teams"], queryFn: () => get<Team[]>("/teams") });
 
+export interface Venue {
+  id: number;
+  name: string;
+  city: string;
+  address: string | null;
+  capacity: number | null;
+}
+
+export const useVenues = () =>
+  useQuery({ queryKey: ["venues"], queryFn: () => get<Venue[]>("/venues") });
+
 export const useTeam = (id: number) =>
   useQuery({ queryKey: ["team", id], queryFn: () => get<TeamDetail>(`/teams/${id}`) });
 

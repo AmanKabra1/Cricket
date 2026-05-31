@@ -9,6 +9,7 @@ import Tournaments from "@/pages/Tournaments";
 import TournamentDetail from "@/pages/TournamentDetail";
 import Login from "@/pages/Login";
 import Scoring from "@/pages/Scoring";
+import Admin from "@/pages/Admin";
 import NotFound from "@/pages/NotFound";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { loadCurrentUser } from "@/store/authSlice";
@@ -38,6 +39,14 @@ export default function App() {
         <Route path="/tournaments" element={<Tournaments />} />
         <Route path="/tournaments/:id" element={<TournamentDetail />} />
         <Route path="/login" element={<Login />} />
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <Admin />
+            </RequireAdmin>
+          }
+        />
         <Route
           path="/admin/matches/:id/score"
           element={
