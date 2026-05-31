@@ -1,0 +1,96 @@
+# LocalScore — local development stack.
+# Production swaps `db` -> TiDB Cloud, `minio` -> AWS S3.
+services:
+  db:
+    image: mysql:8.0
+    container_name: localscore-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-localscore}
+      MYSQL_USER: ${MYSQL_USER:-localscore}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-localscore}
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: localscore-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: localscore-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: create the media bucket and make it publicly readable.
+  minio-init:
+    image: minio/mc:latest
+    container_name: localscore-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${S3_ACCESS_KEY:-minioadmin} ${S3_SECRET_KEY:-minioadmin};
+      mc mb --ignore-existing local/${S3_BUCKET:-localscore-media};
+      mc anonymous set download local/${S3_BUCKET:-localscore-media};
+      echo 'MinIO bucket ready'; exit 0;
+      "
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: localscore-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Override host names so containers talk over the compose network
+      DATABASE_URL: mysql+aiomysql://${MYSQL_USER:-localscore}:${MYSQL_PASSWORD:-localscore}@db:3306/${MYSQL_DATABASE:-localscore}
+      SYNC_DATABASE_URL: mysql+pymysql://${MYSQL_USER:-localscore}:${MYSQL_PASSWORD:-localscore}@db:3306/${MYSQL_DATABASE:-localscore}
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:socket_app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  db_data:
+  minio_data:

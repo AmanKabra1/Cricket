@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# Env / secrets
+.env
+.env.local
+*.local.env
+
+# Node
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Data / artifacts
+*.sqlite3
+*.db
+/data/
+ai-service/models/*.pkl
+ai-service/models/*.joblib
+
+# Docker volumes (if mounted locally)
+docker/volumes/
