@@ -38,9 +38,12 @@ next begins. **Phase 1 is complete** (this commit).
 - ✅ Tests: 7 heuristic-path tests green; app boots and all endpoints verified over HTTP.
 - Remaining for later: export real historical data for training; nightly retrain + model versioning; cache AI results in Redis.
 
-## Phase 5 — Mobile app (React Native)
-- Shared API contract with web; spectator-first, plus a lightweight scoring mode for admins.
-- Android + iOS builds.
+## ✅ Phase 5 — Mobile app (React Native / Expo) (DONE)
+- ✅ Expo SDK 52 + React Native 0.76 + TypeScript, Expo Router file-based navigation (Android + iOS + web targets).
+- ✅ Shared API contract with web: typed React Query hooks, axios client with AsyncStorage JWT + refresh, socket.io-client for live push.
+- ✅ Spectator-first screens: dashboard (live/upcoming/recent), teams + squad, tournaments, and a Match Centre (Live / Scorecard / Commentary) with realtime socket updates.
+- ✅ Light/dark theme, cricket-green/navy palette; `tsc --noEmit` clean (940 deps installed).
+- Remaining for later: admin lightweight scoring mode (API client plumbing already in place); EAS build/submit for store releases.
 
 ## Phase 6 — DevOps & production
 - Multi-stage Docker images; GitHub Actions build/push/deploy.
