@@ -1,4 +1,5 @@
-/* Bootstrap utilities/grid sit under Tailwind; Tailwind owns the design system. */
+/* Fonts first, then Bootstrap grid; Tailwind owns the design system. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
 @import "bootstrap/dist/css/bootstrap-grid.min.css";
 
 @tailwind base;

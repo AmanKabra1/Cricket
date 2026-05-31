@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { useMatch, useLiveScore, useTeam, usePostBall, useUndoBall, type BallPayload } from "@/api/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { teamName, useTeamMap } from "@/hooks/useTeamMap";
+import { useLiveSocket } from "@/hooks/useLiveSocket";
 import Spinner, { ErrorState } from "@/components/Spinner";
 import type { Player } from "@/types";
 
@@ -45,6 +46,7 @@ export default function Scoring() {
   const { data: live } = useLiveScore(matchId);
   const postBall = usePostBall(matchId);
   const undoBall = useUndoBall(matchId);
+  useLiveSocket(matchId); // keep the displayed score live across devices too
 
   const openInnings = live?.innings.find((i) => !i.is_closed) ?? null;
   const battingTeamId = openInnings?.batting_team_id ?? null;
@@ -88,10 +90,29 @@ export default function Scoring() {
       ...partial,
     };
     try {
-      await postBall.mutateAsync(payload);
+      const res = await postBall.mutateAsync(payload);
       setMsg(null);
+      applyStrikeRotation(payload, res.over_completed);
     } catch (e: unknown) {
       setMsg((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Failed to record ball");
+    }
+  }
+
+  // Auto strike rotation: batsmen cross on odd runs, and ends swap at over's end.
+  // Both → no net change (a single off the last ball keeps the same striker).
+  function applyStrikeRotation(payload: BallPayload, overCompleted: boolean) {
+    if (payload.is_wicket) {
+      setStriker(""); // incoming batter must be chosen by the scorer
+      return;
+    }
+    const ex = payload.extra_type ?? "NONE";
+    let ran = 0;
+    if (ex === "NONE" || ex === "NO_BALL") ran = payload.runs_batsman ?? 0;
+    else if (ex === "BYE" || ex === "LEG_BYE") ran = payload.extra_runs ?? 0;
+    const oddRun = ran % 2 === 1;
+    if (oddRun !== overCompleted) {
+      setStriker(nonStriker);
+      setNonStriker(striker);
     }
   }
 
@@ -140,10 +161,20 @@ export default function Scoring() {
         <>
           {/* Player selectors */}
           <div className="card-surface mb-5 grid gap-3 p-4 sm:grid-cols-3">
-            <PlayerSelect label="Striker" players={battingPlayers} value={striker} onChange={setStriker} />
+            <PlayerSelect label="🏏 Striker (on strike)" players={battingPlayers} value={striker} onChange={setStriker} />
             <PlayerSelect label="Non-striker" players={battingPlayers} value={nonStriker} onChange={setNonStriker} />
             <PlayerSelect label="Bowler" players={bowlingPlayers} value={bowler} onChange={setBowler} />
           </div>
+
+          {striker && (
+            <p className="mb-3 text-sm muted">
+              On strike:{" "}
+              <span className="font-semibold text-pitch-600">
+                {battingPlayers.find((p) => p.id === Number(striker))?.name ?? "—"}
+              </span>{" "}
+              · strike rotates automatically on odd runs and at over's end.
+            </p>
+          )}
 
           {msg && <p className="mb-3 text-sm text-red-500">{msg}</p>}
 
@@ -154,8 +185,7 @@ export default function Scoring() {
               {[0, 1, 2, 3, 4, 6].map((r) => (
                 <button
                   key={r}
-                  className="rounded-lg border py-3 text-lg font-bold transition hover:bg-pitch-500 hover:text-white disabled:opacity-50"
-                  style={{ borderColor: "var(--border)" }}
+                  className={`rounded-xl py-4 text-xl font-extrabold text-white shadow-sm transition active:scale-95 disabled:opacity-50 ${runBtnColor(r)}`}
                   disabled={postBall.isPending}
                   onClick={() => send({ runs_batsman: r })}
                 >
@@ -210,6 +240,13 @@ export default function Scoring() {
       )}
     </div>
   );
+}
+
+function runBtnColor(r: number): string {
+  if (r === 4) return "bg-pitch-500 hover:bg-pitch-600";
+  if (r === 6) return "bg-indigo-500 hover:bg-indigo-600";
+  if (r === 0) return "bg-slate-400 hover:bg-slate-500";
+  return "bg-slate-600 hover:bg-slate-700";
 }
 
 function ExtraBtn({ label, onClick, disabled }: { label: string; onClick: () => void; disabled: boolean }) {

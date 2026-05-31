@@ -4,6 +4,15 @@ import MatchCard from "@/components/MatchCard";
 import Spinner, { ErrorState, EmptyState } from "@/components/Spinner";
 import type { Match } from "@/types";
 
+function Stat({ n, label }: { n: number; label: string }) {
+  return (
+    <div>
+      <div className="text-2xl font-extrabold leading-none">{n}</div>
+      <div className="text-xs uppercase tracking-wide text-white/70">{label}</div>
+    </div>
+  );
+}
+
 function Section({ title, matches, teams }: { title: string; matches: Match[]; teams: ReturnType<typeof useTeamMap> }) {
   if (!matches.length) return null;
   return (
@@ -29,12 +38,18 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="mb-8 rounded-2xl bg-gradient-to-br from-pitch-600 to-navy-800 p-8 text-white shadow-card">
-        <h1 className="text-3xl font-extrabold">Local cricket, live.</h1>
+      <div className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-pitch-600 via-pitch-700 to-navy-800 p-8 text-white shadow-card">
+        <div className="pointer-events-none absolute -right-8 -top-10 text-[120px] opacity-10">🏏</div>
+        <h1 className="text-3xl font-extrabold sm:text-4xl">Local cricket, live.</h1>
         <p className="mt-2 max-w-xl text-white/80">
           Ball-by-ball scores, full scorecards, commentary and AI insights for your local
           tournaments and grounds.
         </p>
+        <div className="mt-5 flex gap-6">
+          <Stat n={data.live.length} label="Live now" />
+          <Stat n={data.upcoming.length} label="Upcoming" />
+          <Stat n={data.recent.length} label="Completed" />
+        </div>
       </div>
 
       {empty ? (

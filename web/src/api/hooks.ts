@@ -99,13 +99,22 @@ export interface BallPayload {
   commentary?: string | null;
 }
 
+interface BallResult {
+  ball_id: number;
+  innings_closed: boolean;
+  over_completed: boolean;
+  live_score: LiveScore;
+}
+
 export const usePostBall = (matchId: number) => {
   const qc = useQueryClient();
-  return useMutation({
+  return useMutation<BallResult, Error, BallPayload>({
     mutationFn: (body: BallPayload) =>
       api.post(`/matches/${matchId}/scoring/ball`, body).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["live", matchId] });
+    onSuccess: (data) => {
+      // Push the fresh score straight into the cache → instant UI update,
+      // no refetch round-trip. Spectators also get it over the socket.
+      if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       qc.invalidateQueries({ queryKey: ["scorecard", matchId] });
       qc.invalidateQueries({ queryKey: ["commentary", matchId] });
     },
@@ -114,10 +123,10 @@ export const usePostBall = (matchId: number) => {
 
 export const useUndoBall = (matchId: number) => {
   const qc = useQueryClient();
-  return useMutation({
+  return useMutation<{ undone: boolean; live_score: LiveScore }, Error, void>({
     mutationFn: () => api.post(`/matches/${matchId}/scoring/undo`).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["live", matchId] });
+    onSuccess: (data) => {
+      if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       qc.invalidateQueries({ queryKey: ["scorecard", matchId] });
     },
   });
