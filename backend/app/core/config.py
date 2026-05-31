@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # Rate limiting (per IP, per endpoint, per minute) — applies to auth + writes
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_PER_MINUTE: int = 120
+
     # Object storage
     S3_ENDPOINT_URL: str = "http://localhost:9000"
     S3_PUBLIC_URL: str = "http://localhost:9000"

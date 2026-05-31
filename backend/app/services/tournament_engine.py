@@ -1,0 +1,134 @@
+"""Tournament engine: fixture generation and standings (points table + NRR).
+
+Standings are recomputed from all completed tournament matches rather than
+incrementally adjusted — this keeps the table correct even after a result is
+edited or a ball is undone, at negligible cost for local-tournament sizes.
+
+Points: win = 2, tie / no-result = 1, loss = 0 (standard local-league scoring).
+Net run rate = (runs scored / overs faced) − (runs conceded / overs bowled),
+where a side bowled out counts the full over quota (per NRR convention).
+"""
+from __future__ import annotations
+
+from itertools import combinations
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.enums import MatchStatus, TournamentFormat
+from app.models.match import Match
+from app.models.tournament import Tournament, TournamentTeam
+
+WIN_POINTS = 2
+DRAW_POINTS = 1
+
+
+async def generate_fixtures(db: AsyncSession, tournament: Tournament) -> list[Match]:
+    """Create SCHEDULED matches for the tournament's participating teams."""
+    team_ids = [s.team_id for s in tournament.standings]
+    if len(team_ids) < 2:
+        raise ValueError("Tournament needs at least two teams to generate fixtures")
+
+    existing = await db.scalar(
+        select(Match.id).where(Match.tournament_id == tournament.id).limit(1)
+    )
+    if existing:
+        raise ValueError("Fixtures already generated for this tournament")
+
+    pairings: list[tuple[int, int]] = []
+    fmt = tournament.format
+    if fmt in (TournamentFormat.LEAGUE, TournamentFormat.ROUND_ROBIN, TournamentFormat.GROUP_STAGE):
+        # Single round-robin: every team plays every other once.
+        pairings = list(combinations(team_ids, 2))
+    elif fmt == TournamentFormat.KNOCKOUT:
+        # First-round bracket; later rounds are created as results come in.
+        pairings = [
+            (team_ids[i], team_ids[i + 1]) for i in range(0, len(team_ids) - 1, 2)
+        ]
+
+    created: list[Match] = []
+    for a, b in pairings:
+        match = Match(
+            tournament_id=tournament.id,
+            team_a_id=a,
+            team_b_id=b,
+            overs_limit=20,
+            status=MatchStatus.SCHEDULED,
+        )
+        db.add(match)
+        created.append(match)
+    await db.flush()
+    return created
+
+
+def _innings_runs_overs(inn, overs_limit: int) -> tuple[int, float]:
+    """Runs scored and overs faced for NRR (all-out → full quota)."""
+    overs = overs_limit if inn.total_wickets >= 10 else inn.legal_balls / 6
+    return inn.total_runs, overs or 0.0
+
+
+async def recompute_standings(db: AsyncSession, tournament_id: int) -> None:
+    rows = (
+        await db.scalars(
+            select(TournamentTeam).where(TournamentTeam.tournament_id == tournament_id)
+        )
+    ).all()
+    by_team = {r.team_id: r for r in rows}
+    # Reset, and track cumulative for/against for NRR.
+    agg = {tid: {"rf": 0.0, "of": 0.0, "ra": 0.0, "oa": 0.0} for tid in by_team}
+    for r in rows:
+        r.played = r.won = r.lost = r.tied = r.no_result = r.points = 0
+        r.net_run_rate = 0.0
+
+    matches = (
+        await db.scalars(
+            select(Match).where(
+                Match.tournament_id == tournament_id,
+                Match.status == MatchStatus.COMPLETED,
+            )
+        )
+    ).all()
+
+    for m in matches:
+        if m.team_a_id not in by_team or m.team_b_id not in by_team:
+            continue
+        by_team[m.team_a_id].played += 1
+        by_team[m.team_b_id].played += 1
+
+        # NRR accumulation from the two innings.
+        for inn in m.innings:
+            runs, overs = _innings_runs_overs(inn, m.overs_limit)
+            batting, bowling = inn.batting_team_id, inn.bowling_team_id
+            if batting in agg:
+                agg[batting]["rf"] += runs
+                agg[batting]["of"] += overs
+            if bowling in agg:
+                agg[bowling]["ra"] += runs
+                agg[bowling]["oa"] += overs
+
+        # Result → points.
+        if m.winner_team_id and m.winner_team_id in by_team:
+            loser = m.team_b_id if m.winner_team_id == m.team_a_id else m.team_a_id
+            by_team[m.winner_team_id].won += 1
+            by_team[m.winner_team_id].points += WIN_POINTS
+            if loser in by_team:
+                by_team[loser].lost += 1
+        else:
+            # No winner recorded → treat as tie/no-result, a point each.
+            for tid in (m.team_a_id, m.team_b_id):
+                by_team[tid].tied += 1
+                by_team[tid].points += DRAW_POINTS
+
+    for tid, r in by_team.items():
+        a = agg[tid]
+        for_rate = a["rf"] / a["of"] if a["of"] else 0.0
+        against_rate = a["ra"] / a["oa"] if a["oa"] else 0.0
+        r.net_run_rate = round(for_rate - against_rate, 3)
+
+    await db.flush()
+
+
+async def apply_match_result(db: AsyncSession, match: Match) -> None:
+    """Hook called when a match is completed; refreshes its tournament table."""
+    if match.tournament_id:
+        await recompute_standings(db, match.tournament_id)

@@ -8,6 +8,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.deps import CurrentUser, DbSession, authorize_match_admin, require_admin
+from app.core.cache import DASHBOARD_KEY, cache, live_key, scorecard_key
 from app.models.enums import MatchStatus
 from app.realtime.socket import emit_commentary, emit_match_status, emit_score_update
 from app.schemas.match import BallEvent, MatchResultUpdate
@@ -68,6 +69,9 @@ async def post_ball(
     await db.refresh(match)
 
     live = await scoreboard.build_live_score(db, match)
+    # Refresh the live cache with the new state; drop derived/aggregate caches.
+    await cache.set_json(live_key(match_id), live, ttl=5)
+    await cache.invalidate(scorecard_key(match_id), DASHBOARD_KEY)
     # Fan out to spectators.
     await emit_score_update(match_id, live)
     await emit_commentary(
@@ -107,6 +111,8 @@ async def undo_ball(
     await db.commit()
     await db.refresh(match)
     live = await scoreboard.build_live_score(db, match)
+    await cache.set_json(live_key(match_id), live, ttl=5)
+    await cache.invalidate(scorecard_key(match_id), DASHBOARD_KEY)
     await emit_score_update(match_id, live)
     return {"undone": True, "live_score": live}
 
@@ -122,7 +128,14 @@ async def set_result(
     match.winner_team_id = payload.winner_team_id
     match.result_text = payload.result_text
     match.status = MatchStatus.COMPLETED
+
+    # Roll the result into tournament standings (points table + NRR) if applicable.
+    from app.services.tournament_engine import apply_match_result
+
+    await apply_match_result(db, match)
+
     await db.commit()
+    await cache.invalidate(live_key(match_id), scorecard_key(match_id), DASHBOARD_KEY)
     await emit_match_status(
         match_id,
         {"match_id": match_id, "status": match.status.value, "result": payload.result_text},

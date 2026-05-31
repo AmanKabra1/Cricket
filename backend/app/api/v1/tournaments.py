@@ -11,8 +11,11 @@ from app.api.deps import (
     require_super_admin,
 )
 from app.models.enums import TournamentStatus
+from app.models.match import Match
 from app.models.tournament import Tournament, TournamentTeam
 from app.schemas.catalog import StandingRow, TournamentCreate, TournamentOut
+from app.schemas.match import MatchOut
+from app.services.tournament_engine import generate_fixtures
 
 from app.models.user import User
 
@@ -63,6 +66,38 @@ async def approve_tournament(
     await db.commit()
     await db.refresh(tournament)
     return tournament
+
+
+@router.post("/{tournament_id}/fixtures", response_model=list[MatchOut], status_code=201)
+async def create_fixtures(
+    tournament_id: int,
+    db: DbSession,
+    user: User = Depends(require_admin),
+) -> list[Match]:
+    tournament = await db.get(Tournament, tournament_id)
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    try:
+        matches = await generate_fixtures(db, tournament)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    await db.commit()
+    for m in matches:
+        await db.refresh(m)
+    return matches
+
+
+@router.get("/{tournament_id}/matches", response_model=list[MatchOut])
+async def tournament_matches(tournament_id: int, db: DbSession) -> list[Match]:
+    return list(
+        (
+            await db.scalars(
+                select(Match)
+                .where(Match.tournament_id == tournament_id)
+                .order_by(Match.scheduled_at.asc().nullslast(), Match.id.asc())
+            )
+        ).all()
+    )
 
 
 @router.get("/{tournament_id}/standings", response_model=list[StandingRow])

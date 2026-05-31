@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.ratelimit import RateLimitMiddleware
 from app.realtime.socket import sio
 
 logging.basicConfig(level=logging.INFO if not settings.DEBUG else logging.DEBUG)
@@ -25,6 +26,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS or ["*"],
