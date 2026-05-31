@@ -10,7 +10,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine, pool
 
 from app.core.config import settings
 from app.core.database import Base
@@ -41,9 +41,11 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    cfg = config.get_section(config.config_ini_section, {})
-    cfg["sqlalchemy.url"] = db_url
-    connectable = engine_from_config(cfg, prefix="sqlalchemy.", poolclass=pool.NullPool)
+    # TLS for managed MySQL (TiDB Cloud); pymysql accepts an ssl dict with a CA.
+    connect_args: dict = {}
+    if settings.DB_SSL and not db_url.startswith("sqlite"):
+        connect_args["ssl"] = {"ca": settings.DB_SSL_CA}
+    connectable = create_engine(db_url, poolclass=pool.NullPool, connect_args=connect_args)
     with connectable.connect() as connection:
         context.configure(
             connection=connection,

@@ -6,9 +6,10 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# System deps for mysqlclient/bcrypt builds kept minimal (using pure/precompiled wheels)
+# System deps + CA certs (TLS to TiDB Cloud / external services)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential default-libmysqlclient-dev pkg-config \
+    build-essential default-libmysqlclient-dev pkg-config ca-certificates \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

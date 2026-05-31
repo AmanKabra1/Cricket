@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "mysql+aiomysql://localscore:localscore@localhost:3306/localscore"
     SYNC_DATABASE_URL: str = "mysql+pymysql://localscore:localscore@localhost:3306/localscore"
     DB_ECHO: bool = False
+    # Enable TLS to the database (required by TiDB Cloud Serverless). Uses the
+    # system CA bundle — no fragile ssl params in the connection URL.
+    DB_SSL: bool = False
+    DB_SSL_CA: str = "/etc/ssl/certs/ca-certificates.crt"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

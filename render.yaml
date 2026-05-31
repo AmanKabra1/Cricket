@@ -12,7 +12,7 @@ services:
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free # V1 on free tier (sleeps after ~15min idle); bump to "starter" for always-on
     healthCheckPath: /health
     autoDeploy: true
     # Render injects $PORT; run migrations then boot the ASGI app (REST + WS).
@@ -31,6 +31,9 @@ services:
         sync: false # mysql+aiomysql://user:pass@host:4000/localscore?ssl_mode=VERIFY_IDENTITY
       - key: SYNC_DATABASE_URL
         sync: false # mysql+pymysql://user:pass@host:4000/localscore
+      - key: DB_SSL
+        value: "true" # TiDB Cloud requires TLS
+
       - key: REDIS_URL
         fromService:
           type: redis
@@ -58,7 +61,7 @@ services:
     runtime: docker
     rootDir: ai-service
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free # V1 on free tier (sleeps after ~15min idle); bump to "starter" for always-on
     healthCheckPath: /health
     autoDeploy: true
     dockerCommand: sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
@@ -71,6 +74,6 @@ services:
   # ---------------- Redis (cache + Socket.IO pub/sub) ----------------
   - type: redis
     name: localscore-redis
-    plan: starter
+    plan: free # V1 on free tier (sleeps after ~15min idle); bump to "starter" for always-on
     maxmemoryPolicy: allkeys-lru
     ipAllowList: [] # internal only — reachable by the services above
