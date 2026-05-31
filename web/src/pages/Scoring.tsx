@@ -1,0 +1,262 @@
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import { api } from "@/lib/api";
+import { useMatch, useLiveScore, useTeam, usePostBall, useUndoBall, type BallPayload } from "@/api/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { teamName, useTeamMap } from "@/hooks/useTeamMap";
+import Spinner, { ErrorState } from "@/components/Spinner";
+import type { Player } from "@/types";
+
+const WICKET_TYPES = ["BOWLED", "CAUGHT", "LBW", "RUN_OUT", "STUMPED", "HIT_WICKET"];
+
+function PlayerSelect({
+  label,
+  players,
+  value,
+  onChange,
+}: {
+  label: string;
+  players: Player[];
+  value: number | "";
+  onChange: (v: number) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-semibold muted">{label}</span>
+      <select className="input" value={value} onChange={(e) => onChange(Number(e.target.value))}>
+        <option value="">Select…</option>
+        {players.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+export default function Scoring() {
+  const { id } = useParams();
+  const matchId = Number(id);
+  const qc = useQueryClient();
+  const teams = useTeamMap();
+
+  const { data: match, isLoading, isError } = useMatch(matchId);
+  const { data: live } = useLiveScore(matchId);
+  const postBall = usePostBall(matchId);
+  const undoBall = useUndoBall(matchId);
+
+  const openInnings = live?.innings.find((i) => !i.is_closed) ?? null;
+  const battingTeamId = openInnings?.batting_team_id ?? null;
+  const bowlingTeamId = openInnings?.bowling_team_id ?? null;
+
+  const { data: teamA } = useTeam(match?.team_a_id ?? 0);
+  const { data: teamB } = useTeam(match?.team_b_id ?? 0);
+
+  const battingPlayers = useMemo<Player[]>(() => {
+    if (!battingTeamId) return [];
+    return (teamA?.id === battingTeamId ? teamA?.players : teamB?.players) ?? [];
+  }, [battingTeamId, teamA, teamB]);
+  const bowlingPlayers = useMemo<Player[]>(() => {
+    if (!bowlingTeamId) return [];
+    return (teamA?.id === bowlingTeamId ? teamA?.players : teamB?.players) ?? [];
+  }, [bowlingTeamId, teamA, teamB]);
+
+  const [striker, setStriker] = useState<number | "">("");
+  const [nonStriker, setNonStriker] = useState<number | "">("");
+  const [bowler, setBowler] = useState<number | "">("");
+  const [wicketType, setWicketType] = useState(WICKET_TYPES[0]);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => setMsg(null), [striker, bowler]);
+
+  if (isLoading) return <Spinner />;
+  if (isError || !match) return <ErrorState />;
+
+  const ready = striker && nonStriker && bowler && striker !== nonStriker;
+
+  async function send(partial: Partial<BallPayload>) {
+    if (!ready) {
+      setMsg("Pick striker, non-striker and bowler first (striker ≠ non-striker).");
+      return;
+    }
+    const payload: BallPayload = {
+      striker_id: Number(striker),
+      non_striker_id: Number(nonStriker),
+      bowler_id: Number(bowler),
+      runs_batsman: 0,
+      ...partial,
+    };
+    try {
+      await postBall.mutateAsync(payload);
+      setMsg(null);
+    } catch (e: unknown) {
+      setMsg((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Failed to record ball");
+    }
+  }
+
+  async function startInnings(batId: number, bowlId: number) {
+    try {
+      await api.post(`/matches/${matchId}/innings`, {
+        batting_team_id: batId,
+        bowling_team_id: bowlId,
+      });
+      qc.invalidateQueries({ queryKey: ["live", matchId] });
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+    } catch (e: unknown) {
+      setMsg((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Could not start innings");
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <h1 className="mb-1 text-2xl font-bold">Scoring console</h1>
+      <p className="mb-5 muted">
+        {teamName(teams, match.team_a_id)} vs {teamName(teams, match.team_b_id)} · {match.overs_limit} overs
+      </p>
+
+      {/* Current score */}
+      {openInnings ? (
+        <div className="card-surface mb-5 p-5 text-center">
+          <div className="text-sm muted">{teamName(teams, openInnings.batting_team_id)}</div>
+          <div className="text-4xl font-extrabold">
+            {openInnings.runs}/{openInnings.wickets}
+            <span className="ml-2 text-lg font-medium muted">({openInnings.overs})</span>
+          </div>
+          {openInnings.target != null && (
+            <div className="mt-1 text-sm muted">Target {openInnings.target} · RRR {openInnings.required_run_rate?.toFixed(2)}</div>
+          )}
+        </div>
+      ) : (
+        <StartPanel
+          match={match}
+          teams={teams}
+          existingInnings={live?.innings.length ?? 0}
+          onStart={startInnings}
+        />
+      )}
+
+      {openInnings && (
+        <>
+          {/* Player selectors */}
+          <div className="card-surface mb-5 grid gap-3 p-4 sm:grid-cols-3">
+            <PlayerSelect label="Striker" players={battingPlayers} value={striker} onChange={setStriker} />
+            <PlayerSelect label="Non-striker" players={battingPlayers} value={nonStriker} onChange={setNonStriker} />
+            <PlayerSelect label="Bowler" players={bowlingPlayers} value={bowler} onChange={setBowler} />
+          </div>
+
+          {msg && <p className="mb-3 text-sm text-red-500">{msg}</p>}
+
+          {/* Run buttons */}
+          <div className="card-surface mb-4 p-4">
+            <div className="mb-2 text-xs font-semibold muted">RUNS</div>
+            <div className="grid grid-cols-6 gap-2">
+              {[0, 1, 2, 3, 4, 6].map((r) => (
+                <button
+                  key={r}
+                  className="rounded-lg border py-3 text-lg font-bold transition hover:bg-pitch-500 hover:text-white disabled:opacity-50"
+                  style={{ borderColor: "var(--border)" }}
+                  disabled={postBall.isPending}
+                  onClick={() => send({ runs_batsman: r })}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Extras */}
+          <div className="card-surface mb-4 p-4">
+            <div className="mb-2 text-xs font-semibold muted">EXTRAS</div>
+            <div className="grid grid-cols-4 gap-2">
+              <ExtraBtn label="Wide" onClick={() => send({ extra_type: "WIDE", extra_runs: 0 })} disabled={postBall.isPending} />
+              <ExtraBtn label="No ball" onClick={() => send({ extra_type: "NO_BALL", extra_runs: 0 })} disabled={postBall.isPending} />
+              <ExtraBtn label="Bye" onClick={() => send({ extra_type: "BYE", extra_runs: 1 })} disabled={postBall.isPending} />
+              <ExtraBtn label="Leg bye" onClick={() => send({ extra_type: "LEG_BYE", extra_runs: 1 })} disabled={postBall.isPending} />
+            </div>
+          </div>
+
+          {/* Wicket */}
+          <div className="card-surface mb-4 p-4">
+            <div className="mb-2 text-xs font-semibold muted">WICKET</div>
+            <div className="flex gap-2">
+              <select className="input" value={wicketType} onChange={(e) => setWicketType(e.target.value)}>
+                {WICKET_TYPES.map((w) => (
+                  <option key={w} value={w}>
+                    {w.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="rounded-lg bg-red-500 px-4 py-2 font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
+                disabled={postBall.isPending}
+                onClick={() =>
+                  send({ is_wicket: true, wicket_type: wicketType, dismissed_player_id: Number(striker) })
+                }
+              >
+                OUT
+              </button>
+            </div>
+          </div>
+
+          <button
+            className="btn-ghost w-full"
+            disabled={undoBall.isPending}
+            onClick={() => undoBall.mutate()}
+          >
+            ↶ Undo last ball
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ExtraBtn({ label, onClick, disabled }: { label: string; onClick: () => void; disabled: boolean }) {
+  return (
+    <button
+      className="rounded-lg border py-3 text-sm font-semibold transition hover:bg-amber-500 hover:text-white disabled:opacity-50"
+      style={{ borderColor: "var(--border)" }}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+}
+
+function StartPanel({
+  match,
+  teams,
+  existingInnings,
+  onStart,
+}: {
+  match: import("@/types").Match;
+  teams: Map<number, import("@/types").Team>;
+  existingInnings: number;
+  onStart: (batId: number, bowlId: number) => void;
+}) {
+  const [batId, setBatId] = useState(match.team_a_id);
+  const bowlId = batId === match.team_a_id ? match.team_b_id : match.team_a_id;
+
+  if (existingInnings >= 2) {
+    return <div className="card-surface mb-5 p-5 text-center muted">Both innings are complete.</div>;
+  }
+
+  return (
+    <div className="card-surface mb-5 p-5">
+      <h2 className="mb-3 font-bold">Start {existingInnings === 0 ? "first" : "second"} innings</h2>
+      <label className="mb-3 block">
+        <span className="mb-1 block text-xs font-semibold muted">Batting team</span>
+        <select className="input" value={batId} onChange={(e) => setBatId(Number(e.target.value))}>
+          <option value={match.team_a_id}>{teamName(teams, match.team_a_id)}</option>
+          <option value={match.team_b_id}>{teamName(teams, match.team_b_id)}</option>
+        </select>
+      </label>
+      <p className="mb-3 text-sm muted">Bowling: {teamName(teams, bowlId)}</p>
+      <button className="btn-primary w-full" onClick={() => onStart(batId, bowlId)}>
+        Start innings
+      </button>
+    </div>
+  );
+}

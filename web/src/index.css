@@ -1,0 +1,66 @@
+/* Bootstrap utilities/grid sit under Tailwind; Tailwind owns the design system. */
+@import "bootstrap/dist/css/bootstrap-grid.min.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+  }
+  .dark {
+    --bg: #0b1220;
+    --surface: #0f172a;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #1e293b;
+  }
+  html, body, #root { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: theme("fontFamily.sans");
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .card-surface {
+    @apply rounded-xl border shadow-card;
+    background: var(--surface);
+    border-color: var(--border);
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-pitch-500 px-4 py-2 font-semibold text-white transition hover:bg-pitch-600 disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-1.5 font-medium transition hover:bg-pitch-50 dark:hover:bg-navy-700;
+    border-color: var(--border);
+  }
+  .badge-live {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-red-500;
+  }
+  .input {
+    @apply w-full rounded-lg border bg-transparent px-3 py-2 outline-none focus:ring-2 focus:ring-pitch-500;
+    border-color: var(--border);
+  }
+  .muted { color: var(--muted); }
+}
+
+/* Live pulse dot */
+.pulse-dot {
+  width: 8px; height: 8px; border-radius: 9999px; background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}

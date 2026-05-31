@@ -14,19 +14,20 @@ next begins. **Phase 1 is complete** (this commit).
 - AI prediction proxy with graceful degradation.
 - Tests: scoring-engine unit tests + full end-to-end API smoke test (all green).
 
-## Phase 2 — Backend hardening
-- Object-storage upload endpoints (team logos, player photos, match images) → MinIO/S3.
-- Tournament engine: fixture generation (league/knockout/round-robin/group), auto points-table + NRR updates on match completion.
-- Player career aggregates (cross-match stats) + leaderboards.
-- Wagon-wheel / Manhattan / worm data endpoints (derive from `balls`).
-- Redis caching layer for hot public reads; rate limiting; structured logging + `/ready`.
-- Expanded test suite + CI (GitHub Actions: lint, type-check, test).
+## ✅ Phase 2 — Backend hardening + scaling (DONE)
+- ✅ Object-storage upload endpoints (team logos, player photos, match images) → MinIO/S3.
+- ✅ Tournament engine: fixture generation (league/knockout/round-robin/group), auto points-table + NRR recompute on match completion.
+- ✅ Manhattan / worm per-over analytics endpoint (derived from `balls`).
+- ✅ Redis caching layer for hot public reads (dashboard/live/scorecard) with invalidation on each ball — the 10k-concurrent-viewer scaling lever.
+- ✅ Per-IP rate limiting middleware on auth + write endpoints.
+- Remaining for later: player career aggregates + leaderboards, structured logging/`/ready`, CI.
 
-## Phase 3 — Web frontend (React + TS + Vite)
-- Public app: dashboard, match center (live/scorecard/commentary/XI/wagon-wheel/stats/AI tabs), teams, players, tournaments, leaderboards.
-- Admin console: match creation, ball-by-ball scoring UI, roster management.
-- Redux Toolkit + React Query for state/data; Socket.IO client for live updates.
-- Tailwind + Bootstrap 5, dark/light themes, mobile-first, the cricket-green/navy/white system.
+## ✅ Phase 3 — Web frontend (React + TS + Vite) (DONE)
+- ✅ Public app: dashboard, match center (Live / Scorecard / Commentary / Playing XI / Analytics / AI Prediction tabs), teams, team detail, tournaments + points table & fixtures.
+- ✅ Admin console: login + ball-by-ball scoring UI (runs, extras, wickets, undo, start-innings).
+- ✅ Redux Toolkit (auth + JWT refresh) + React Query; Socket.IO client pushes live updates into the cache.
+- ✅ Tailwind design system + Bootstrap grid, dark/light themes, mobile-first, cricket-green/navy/white.
+- ✅ Production Dockerfile (nginx) + build verified (tsc + vite build clean).
 
 ## Phase 4 — AI service (Python microservice)
 - FastAPI service with feature pipeline over historical `balls`/stats.
