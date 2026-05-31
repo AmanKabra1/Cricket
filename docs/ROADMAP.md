@@ -45,10 +45,13 @@ next begins. **Phase 1 is complete** (this commit).
 - ✅ Light/dark theme, cricket-green/navy palette; `tsc --noEmit` clean (940 deps installed).
 - Remaining for later: admin lightweight scoring mode (API client plumbing already in place); EAS build/submit for store releases.
 
-## Phase 6 — DevOps & production
-- Multi-stage Docker images; GitHub Actions build/push/deploy.
-- Deploy: web → Vercel, backend + AI → Railway/Render, DB → TiDB Cloud, media → S3 + CloudFront.
-- Autoscaling, observability (Prometheus/Grafana, Sentry), load testing to the 10k-concurrent target.
+## ✅ Phase 6 — DevOps & production (DONE)
+- ✅ GitHub Actions CI (`.github/workflows/ci.yml`): backend (ruff + pytest + migration), ai-service (ruff + pytest), web (build), mobile (typecheck) — four parallel jobs on every PR/push.
+- ✅ Render Blueprint (`render.yaml`): backend + ai-service (Docker) + managed Redis; backend runs `alembic upgrade head` on deploy; secrets via dashboard.
+- ✅ Vercel config (`web/vercel.json`) for the web SPA; optional CD deploy-hook workflow (`deploy.yml`).
+- ✅ `.dockerignore` for lean images; multi-stage Docker builds (web nginx, backend, ai).
+- Deploy targets: web → Vercel, backend + AI → Render, DB → TiDB Cloud, media → S3 + CloudFront. See [DEPLOYMENT.md](DEPLOYMENT.md) for one-time setup.
+- Remaining for later: observability (Prometheus/Grafana, Sentry), autoscaling policies, load testing to the 10k-concurrent target.
 
 ## Multi-sport (post-cricket)
 - Implement additional `ScoringEngine` strategies (football, kabaddi, volleyball, basketball) behind the existing interface; teams/players/tournaments/venues already sport-agnostic.

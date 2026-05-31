@@ -32,7 +32,7 @@ Cricket/
 | AI           | FastAPI microservice — Pandas, scikit-learn, XGBoost, LightGBM, LangChain |
 | Web          | React, TypeScript, Vite, TailwindCSS + Bootstrap 5, Redux Toolkit, React Query, Socket.IO client |
 | Mobile       | React Native (shared API contract)                                |
-| DevOps       | Docker, Docker Compose, GitHub Actions; Vercel / Railway / TiDB Cloud |
+| DevOps       | Docker, Docker Compose, GitHub Actions; Vercel / Render / TiDB Cloud |
 
 ## Quick start (local)
 

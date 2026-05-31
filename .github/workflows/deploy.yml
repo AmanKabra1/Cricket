@@ -1,0 +1,37 @@
+name: Deploy
+
+# Render and Vercel both auto-deploy from the Git integration on push to main.
+# This workflow is an OPTIONAL belt-and-braces trigger that fires Render deploy
+# hooks only after CI succeeds. It no-ops gracefully if the hook secrets are
+# not configured, so it never blocks the pipeline.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  render:
+    name: Trigger Render deploys
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Deploy backend
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
+        run: |
+          if [ -n "$HOOK" ]; then
+            echo "Triggering backend deploy…"; curl -fsS -X POST "$HOOK"
+          else
+            echo "RENDER_DEPLOY_HOOK_BACKEND not set — relying on Render auto-deploy."
+          fi
+      - name: Deploy AI service
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_AI }}
+        run: |
+          if [ -n "$HOOK" ]; then
+            echo "Triggering AI service deploy…"; curl -fsS -X POST "$HOOK"
+          else
+            echo "RENDER_DEPLOY_HOOK_AI not set — relying on Render auto-deploy."
+          fi
