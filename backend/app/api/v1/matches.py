@@ -28,7 +28,8 @@ router = APIRouter(prefix="/matches", tags=["matches"])
 async def list_matches(
     db: DbSession, status_filter: MatchStatus | None = None
 ) -> list[Match]:
-    stmt = select(Match).order_by(Match.scheduled_at.desc().nullslast())
+    # NULLS LAST isn't valid MySQL/TiDB syntax — use IS NULL ordering (portable).
+    stmt = select(Match).order_by(Match.scheduled_at.is_(None), Match.scheduled_at.desc())
     if status_filter:
         stmt = stmt.where(Match.status == status_filter)
     return list((await db.scalars(stmt)).all())

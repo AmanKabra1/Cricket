@@ -94,7 +94,7 @@ async def tournament_matches(tournament_id: int, db: DbSession) -> list[Match]:
             await db.scalars(
                 select(Match)
                 .where(Match.tournament_id == tournament_id)
-                .order_by(Match.scheduled_at.asc().nullslast(), Match.id.asc())
+                .order_by(Match.scheduled_at.is_(None), Match.scheduled_at.asc(), Match.id.asc())
             )
         ).all()
     )
