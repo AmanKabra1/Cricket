@@ -20,10 +20,10 @@ function fmtDate(iso: string | null): string {
 
 export default function MatchCard({ match, teams }: { match: Match; teams: Map<number, Team> }) {
   const live = match.status === "LIVE";
-  const showScore = live || match.status === "INNINGS_BREAK";
+  // Show scores for any match that has been played — live, at the break, or
+  // finished (Cricbuzz-style: completed cards show both innings + the result).
+  const showScore = ["LIVE", "INNINGS_BREAK", "COMPLETED"].includes(match.status);
 
-  // Pull the live score for in-progress matches so the card shows runs, like a
-  // real scoreboard. Shares the ["live", id] cache key with the match centre.
   const { data: score } = useQuery({
     queryKey: ["live", match.id],
     queryFn: async () => (await api.get<LiveScore>(`/public/matches/${match.id}/live`)).data,
