@@ -35,18 +35,18 @@ SET @tb := LAST_INSERT_ID();
 
 -- ── 4) Players (6 per team) ──
 INSERT INTO localscore.players (team_id, name, age, batting_style, bowling_style, `role`, jersey_number) VALUES
-(@ta, 'Strikers Opener',     27, 'RIGHT_HAND', 'NONE',     'BATSMAN',       1),
-(@ta, 'Strikers No.3',       29, 'LEFT_HAND',  'NONE',     'BATSMAN',       3),
-(@ta, 'Strikers Allrounder', 25, 'RIGHT_HAND', 'MEDIUM',   'ALL_ROUNDER',   7),
-(@ta, 'Strikers Keeper',     24, 'RIGHT_HAND', 'NONE',     'WICKET_KEEPER', 8),
-(@ta, 'Strikers Pacer',      26, 'RIGHT_HAND', 'FAST',     'BOWLER',       11),
-(@ta, 'Strikers Spinner',    28, 'LEFT_HAND',  'OFF_SPIN', 'BOWLER',        9),
-(@tb, 'Stars Opener',        27, 'RIGHT_HAND', 'NONE',     'BATSMAN',       1),
-(@tb, 'Stars No.3',          30, 'RIGHT_HAND', 'NONE',     'BATSMAN',       3),
-(@tb, 'Stars Allrounder',    23, 'LEFT_HAND',  'MEDIUM',   'ALL_ROUNDER',   7),
-(@tb, 'Stars Keeper',        25, 'RIGHT_HAND', 'NONE',     'WICKET_KEEPER', 8),
-(@tb, 'Stars Pacer',         28, 'RIGHT_HAND', 'FAST',     'BOWLER',       11),
-(@tb, 'Stars Spinner',       29, 'RIGHT_HAND', 'LEG_SPIN', 'BOWLER',        9);
+(@ta, 'Strikers Opener',     27, 'RIGHT_HAND', 'None',     'BATSMAN',       1),
+(@ta, 'Strikers No.3',       29, 'LEFT_HAND',  'None',     'BATSMAN',       3),
+(@ta, 'Strikers Allrounder', 25, 'RIGHT_HAND', 'Right-arm medium',   'ALL_ROUNDER',   7),
+(@ta, 'Strikers Keeper',     24, 'RIGHT_HAND', 'None',     'WICKET_KEEPER', 8),
+(@ta, 'Strikers Pacer',      26, 'RIGHT_HAND', 'Right-arm fast',     'BOWLER',       11),
+(@ta, 'Strikers Spinner',    28, 'LEFT_HAND',  'Right-arm off-break', 'BOWLER',        9),
+(@tb, 'Stars Opener',        27, 'RIGHT_HAND', 'None',     'BATSMAN',       1),
+(@tb, 'Stars No.3',          30, 'RIGHT_HAND', 'None',     'BATSMAN',       3),
+(@tb, 'Stars Allrounder',    23, 'LEFT_HAND',  'Right-arm medium',   'ALL_ROUNDER',   7),
+(@tb, 'Stars Keeper',        25, 'RIGHT_HAND', 'None',     'WICKET_KEEPER', 8),
+(@tb, 'Stars Pacer',         28, 'RIGHT_HAND', 'Right-arm fast',     'BOWLER',       11),
+(@tb, 'Stars Spinner',       29, 'RIGHT_HAND', 'Right-arm leg-break', 'BOWLER',        9);
 
 -- ── 5) Captains (first player of each team) ──
 UPDATE localscore.teams SET captain_id = (SELECT MIN(id) FROM localscore.players WHERE team_id=@ta) WHERE id=@ta;

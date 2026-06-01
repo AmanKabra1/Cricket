@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 
 from app.models.enums import (
     BattingStyle,
-    BowlingStyle,
     PlayerRole,
     TournamentFormat,
     TournamentStatus,
@@ -32,7 +31,7 @@ class PlayerCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     age: int | None = Field(default=None, ge=5, le=80)
     batting_style: BattingStyle = BattingStyle.RIGHT_HAND
-    bowling_style: BowlingStyle = BowlingStyle.NONE
+    bowling_style: str = Field(default="None", max_length=40)
     role: PlayerRole = PlayerRole.BATSMAN
     jersey_number: int | None = Field(default=None, ge=0, le=999)
     photo_url: str | None = None
@@ -42,9 +41,9 @@ class PlayerUpdate(BaseModel):
     name: str | None = None
     age: int | None = Field(default=None, ge=5, le=80)
     batting_style: BattingStyle | None = None
-    bowling_style: BowlingStyle | None = None
+    bowling_style: str | None = Field(default=None, max_length=40)
     role: PlayerRole | None = None
-    jersey_number: int | None = None
+    jersey_number: int | None = Field(default=None, ge=0, le=999)
     photo_url: str | None = None
 
 
@@ -54,7 +53,7 @@ class PlayerOut(BaseModel):
     name: str
     age: int | None
     batting_style: BattingStyle
-    bowling_style: BowlingStyle
+    bowling_style: str
     role: PlayerRole
     jersey_number: int | None
     photo_url: str | None
@@ -75,6 +74,8 @@ class TeamUpdate(BaseModel):
     coach: str | None = None
     logo_url: str | None = None
     captain_id: int | None = None
+    vice_captain_id: int | None = None
+    wicket_keeper_id: int | None = None
 
 
 class TeamOut(BaseModel):
@@ -84,6 +85,8 @@ class TeamOut(BaseModel):
     coach: str | None
     logo_url: str | None
     captain_id: int | None
+    vice_captain_id: int | None = None
+    wicket_keeper_id: int | None = None
     model_config = {"from_attributes": True}
 
 

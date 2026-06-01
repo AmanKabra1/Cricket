@@ -1,7 +1,7 @@
 """Cricket teams."""
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -20,6 +20,10 @@ class Team(Base, TimestampMixin):
     captain_id: Mapped[int | None] = mapped_column(
         ForeignKey("players.id", ondelete="SET NULL"), nullable=True
     )
+    # Vice-captain and wicket-keeper — plain ids (no DB FK to avoid extra
+    # circular constraints; the app sets them to players on this team).
+    vice_captain_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    wicket_keeper_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

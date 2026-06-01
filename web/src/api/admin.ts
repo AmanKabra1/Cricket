@@ -55,8 +55,13 @@ export const useCreateTeam = () => {
 export const useUpdateTeam = (teamId: number) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: Partial<TeamInput> & { captain_id?: number }) =>
-      api.patch<Team>(`/teams/${teamId}`, body).then((r) => r.data),
+    mutationFn: (
+      body: Partial<TeamInput> & {
+        captain_id?: number;
+        vice_captain_id?: number;
+        wicket_keeper_id?: number;
+      },
+    ) => api.patch<Team>(`/teams/${teamId}`, body).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teams"] });
       qc.invalidateQueries({ queryKey: ["team", teamId] });

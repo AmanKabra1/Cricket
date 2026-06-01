@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { useTeams, useTeam } from "@/api/hooks";
 import {
   useAddPlayer,
@@ -13,7 +13,21 @@ import Spinner from "@/components/Spinner";
 
 const ROLES = ["BATSMAN", "BOWLER", "ALL_ROUNDER", "WICKET_KEEPER"];
 const BAT = ["RIGHT_HAND", "LEFT_HAND"];
-const BOWL = ["NONE", "FAST", "MEDIUM", "OFF_SPIN", "LEG_SPIN", "LEFT_ARM_SPIN", "LEFT_ARM_FAST"];
+// Standard cricket bowling types (pace + spin, both arms).
+const BOWLING_TYPES = [
+  "None",
+  "Right-arm fast",
+  "Right-arm fast-medium",
+  "Right-arm medium",
+  "Right-arm off-break",
+  "Right-arm leg-break",
+  "Left-arm fast",
+  "Left-arm fast-medium",
+  "Left-arm medium",
+  "Left-arm orthodox",
+  "Left-arm wrist-spin",
+];
+const bowls = (role?: string) => role === "BOWLER" || role === "ALL_ROUNDER";
 
 export default function ManageTeams() {
   const { data: teams } = useTeams();
@@ -114,37 +128,63 @@ function TeamEditor({ teamId }: { teamId: number }) {
   const update = useUpdateTeam(teamId);
   const deletePlayer = useDeletePlayer(teamId);
 
-  const [p, setP] = useState<PlayerInput>({ name: "", role: "BATSMAN", batting_style: "RIGHT_HAND", bowling_style: "NONE" });
+  const blank: PlayerInput = { name: "", role: "BATSMAN", batting_style: "RIGHT_HAND", bowling_style: "None" };
+  const [p, setP] = useState<PlayerInput>(blank);
   const [photo, setPhoto] = useState<string | undefined>();
 
   if (isLoading || !team) return <Spinner />;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    await addPlayer.mutateAsync({ ...p, photo_url: photo });
-    setP({ name: "", role: "BATSMAN", batting_style: "RIGHT_HAND", bowling_style: "NONE" });
+    // A non-bowler stores "None" as the bowling type.
+    const payload = { ...p, bowling_style: bowls(p.role) ? p.bowling_style : "None", photo_url: photo };
+    await addPlayer.mutateAsync(payload);
+    setP(blank);
     setPhoto(undefined);
   };
+
+  const Field = ({ label, children }: { label: string; children: ReactNode }) => (
+    <label className="block">
+      <span className="mb-1 block text-xs font-semibold muted">{label}</span>
+      {children}
+    </label>
+  );
 
   return (
     <div>
       <h2 className="mb-3 text-lg font-bold">{team.name} — squad ({team.players.length})</h2>
 
       <form onSubmit={submit} className="card-surface mb-4 space-y-3 p-4">
-        <input className="input" placeholder="Player name *" value={p.name}
-          onChange={(e) => setP({ ...p, name: e.target.value })} required />
+        <Field label="Player name *">
+          <input className="input" placeholder="e.g. Rohit Sharma" value={p.name}
+            onChange={(e) => setP({ ...p, name: e.target.value })} required />
+        </Field>
         <div className="grid grid-cols-2 gap-3">
-          <select className="input" value={p.role} onChange={(e) => setP({ ...p, role: e.target.value })}>
-            {ROLES.map((r) => <option key={r}>{r}</option>)}
-          </select>
-          <input className="input" type="number" placeholder="Jersey #"
-            onChange={(e) => setP({ ...p, jersey_number: Number(e.target.value) || undefined })} />
-          <select className="input" value={p.batting_style} onChange={(e) => setP({ ...p, batting_style: e.target.value })}>
-            {BAT.map((b) => <option key={b}>{b}</option>)}
-          </select>
-          <select className="input" value={p.bowling_style} onChange={(e) => setP({ ...p, bowling_style: e.target.value })}>
-            {BOWL.map((b) => <option key={b}>{b}</option>)}
-          </select>
+          <Field label="Role">
+            <select className="input" value={p.role} onChange={(e) => setP({ ...p, role: e.target.value })}>
+              {ROLES.map((r) => <option key={r} value={r}>{r.replace("_", " ")}</option>)}
+            </select>
+          </Field>
+          <Field label="Jersey number">
+            <input className="input" type="number" min={0} max={999} placeholder="e.g. 7"
+              value={p.jersey_number ?? ""}
+              onChange={(e) => {
+                const n = Math.max(0, Number(e.target.value));
+                setP({ ...p, jersey_number: e.target.value === "" ? undefined : n });
+              }} />
+          </Field>
+          <Field label="Batting style">
+            <select className="input" value={p.batting_style} onChange={(e) => setP({ ...p, batting_style: e.target.value })}>
+              {BAT.map((b) => <option key={b} value={b}>{b.replace("_", " ")}</option>)}
+            </select>
+          </Field>
+          {bowls(p.role) && (
+            <Field label="Bowling type">
+              <select className="input" value={p.bowling_style} onChange={(e) => setP({ ...p, bowling_style: e.target.value })}>
+                {BOWLING_TYPES.filter((b) => b !== "None").map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </Field>
+          )}
         </div>
         <ImageUpload category="player_photo" label="Photo" value={photo} onChange={setPhoto} />
         <button className="btn-primary w-full" disabled={addPlayer.isPending}>Add player</button>
@@ -160,13 +200,23 @@ function TeamEditor({ teamId }: { teamId: number }) {
             )}
             <span className="flex-1 font-medium">
               {pl.name}
-              {team.captain_id === pl.id && <span className="ml-2 rounded bg-pitch-100 px-1.5 text-xs font-bold text-pitch-700">C</span>}
+              {team.captain_id === pl.id && <Badge>C</Badge>}
+              {team.vice_captain_id === pl.id && <Badge>VC</Badge>}
+              {team.wicket_keeper_id === pl.id && <Badge>WK</Badge>}
+              <span className="ml-2 text-xs muted">
+                {pl.role.replace("_", " ")}
+                {bowls(pl.role) && pl.bowling_style !== "None" ? ` · ${pl.bowling_style}` : ""}
+              </span>
             </span>
-            <span className="text-xs muted">{pl.role.replace("_", " ")}</span>
+            {/* Show only the roles this player does NOT already hold. */}
             {team.captain_id !== pl.id && (
-              <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: pl.id })}>
-                Make captain
-              </button>
+              <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: pl.id })}>C</button>
+            )}
+            {team.vice_captain_id !== pl.id && (
+              <button className="btn-ghost text-xs" onClick={() => update.mutate({ vice_captain_id: pl.id })}>VC</button>
+            )}
+            {team.wicket_keeper_id !== pl.id && (
+              <button className="btn-ghost text-xs" onClick={() => update.mutate({ wicket_keeper_id: pl.id })}>WK</button>
             )}
             <button
               className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
@@ -187,5 +237,13 @@ function TeamEditor({ teamId }: { teamId: number }) {
         {!team.players.length && <p className="p-4 muted">No players yet.</p>}
       </div>
     </div>
+  );
+}
+
+function Badge({ children }: { children: ReactNode }) {
+  return (
+    <span className="ml-1 rounded bg-pitch-100 px-1.5 text-xs font-bold text-pitch-700 dark:bg-navy-700 dark:text-pitch-300">
+      {children}
+    </span>
   );
 }

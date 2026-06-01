@@ -13,7 +13,6 @@ from app.core.database import AsyncSessionLocal
 from app.core.security import hash_password
 from app.models.enums import (
     BattingStyle,
-    BowlingStyle,
     MatchStatus,
     PlayerRole,
     TossDecision,
@@ -27,11 +26,11 @@ from app.models.user import User
 from app.models.venue import Venue
 
 _ROLE_CYCLE = [
-    (PlayerRole.BATSMAN, BowlingStyle.NONE),
-    (PlayerRole.ALL_ROUNDER, BowlingStyle.MEDIUM),
-    (PlayerRole.BOWLER, BowlingStyle.FAST),
-    (PlayerRole.WICKET_KEEPER, BowlingStyle.NONE),
-    (PlayerRole.BOWLER, BowlingStyle.OFF_SPIN),
+    (PlayerRole.BATSMAN, "None"),
+    (PlayerRole.ALL_ROUNDER, "Right-arm medium"),
+    (PlayerRole.BOWLER, "Right-arm fast"),
+    (PlayerRole.WICKET_KEEPER, "None"),
+    (PlayerRole.BOWLER, "Right-arm off-break"),
 ]
 
 

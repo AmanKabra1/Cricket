@@ -24,6 +24,8 @@ export interface Team {
   coach: string | null;
   logo_url: string | null;
   captain_id: number | null;
+  vice_captain_id: number | null;
+  wicket_keeper_id: number | null;
 }
 
 export interface Player {

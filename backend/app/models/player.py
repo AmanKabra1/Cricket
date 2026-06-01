@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
-from app.models.enums import BattingStyle, BowlingStyle, PlayerRole
+from app.models.enums import BattingStyle, PlayerRole
 
 
 class Player(Base, TimestampMixin):
@@ -21,9 +21,9 @@ class Player(Base, TimestampMixin):
     batting_style: Mapped[BattingStyle] = mapped_column(
         Enum(BattingStyle), default=BattingStyle.RIGHT_HAND, nullable=False
     )
-    bowling_style: Mapped[BowlingStyle] = mapped_column(
-        Enum(BowlingStyle), default=BowlingStyle.NONE, nullable=False
-    )
+    # Free text so the UI can offer the full range of real bowling types
+    # (e.g. "Right-arm fast-medium", "Left-arm orthodox") without enum migrations.
+    bowling_style: Mapped[str] = mapped_column(String(40), default="None", nullable=False)
     role: Mapped[PlayerRole] = mapped_column(
         Enum(PlayerRole), default=PlayerRole.BATSMAN, nullable=False
     )
