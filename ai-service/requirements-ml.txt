@@ -1,0 +1,15 @@
+# Heavy ML + LLM deps — install ON TOP OF requirements.txt only when you train
+# models (train/train_win_probability.py) or enable LLM commentary/summaries:
+#   pip install -r requirements.txt -r requirements-ml.txt
+#
+# Not installed in the default (free-tier) deploy image: the service runs the
+# transparent heuristic predictors + template commentary without these.
+numpy==2.2.1
+pandas==2.2.3
+scikit-learn==1.6.1
+xgboost==2.1.3
+lightgbm==4.5.0
+joblib==1.4.2
+langchain==0.3.14
+langchain-openai==0.2.14
+openai==1.59.6

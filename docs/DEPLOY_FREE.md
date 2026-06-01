@@ -37,10 +37,9 @@ After this the code + the GitHub Actions CI appear in your account.
 
 ## Step 2 — Backend + AI: Render (free)
 1. render.com → **New → Blueprint** → connect your GitHub repo. Render reads
-   [`render.yaml`](../render.yaml) and proposes: `localscore-backend`,
-   `localscore-ai`, `localscore-redis` (all on `free`).
-   - *Optional:* delete the `localscore-redis` service in the blueprint UI — the
-     backend runs fine without it on a single free instance (in-memory cache).
+   [`render.yaml`](../render.yaml) and proposes **2 services**: `localscore-backend`
+   and `localscore-ai` (both `free`). No Redis — a single free instance runs
+   in-memory (Render allows only one free Key Value per account anyway).
 2. Set the backend's secret env vars (the `sync:false` ones) in the dashboard:
    - `DATABASE_URL`, `SYNC_DATABASE_URL` (from Step 1), `DB_SSL=true`
    - `BACKEND_CORS_ORIGINS` = leave blank for now (fill after Step 3)

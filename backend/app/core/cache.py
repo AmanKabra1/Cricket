@@ -50,14 +50,15 @@ class Cache:
     def __init__(self) -> None:
         self._redis: Any | None = None
         self._memory = _MemoryCache()
-        try:
-            import redis.asyncio as aioredis  # noqa: PLC0415
+        if settings.REDIS_URL:  # empty → single-instance, in-memory only
+            try:
+                import redis.asyncio as aioredis  # noqa: PLC0415
 
-            self._redis = aioredis.from_url(
-                settings.REDIS_URL, encoding="utf-8", decode_responses=True
-            )
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Redis unavailable, using in-memory cache: %s", exc)
+                self._redis = aioredis.from_url(
+                    settings.REDIS_URL, encoding="utf-8", decode_responses=True
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Redis unavailable, using in-memory cache: %s", exc)
 
     async def get_json(self, key: str) -> Any | None:
         try:

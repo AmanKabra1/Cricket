@@ -18,10 +18,11 @@ logger = logging.getLogger("localscore.socket")
 # Redis-backed client manager → horizontal scaling across backend pods.
 # Falls back gracefully if Redis is unavailable (single-process dev/test).
 _client_manager: socketio.AsyncManager | None = None
-try:  # pragma: no cover - depends on runtime env
-    _client_manager = socketio.AsyncRedisManager(settings.REDIS_URL)
-except Exception as exc:  # noqa: BLE001
-    logger.warning("Redis manager unavailable, using in-memory manager: %s", exc)
+if settings.REDIS_URL:  # empty → single-instance, in-memory fan-out (no Redis)
+    try:  # pragma: no cover - depends on runtime env
+        _client_manager = socketio.AsyncRedisManager(settings.REDIS_URL)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Redis manager unavailable, using in-memory manager: %s", exc)
 
 sio = socketio.AsyncServer(
     async_mode="asgi",

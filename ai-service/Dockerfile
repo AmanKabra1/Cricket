@@ -6,8 +6,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# Slim runtime: pure-Python deps only, so no compilers/libgomp needed.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential libgomp1 ca-certificates \
+    ca-certificates \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 

@@ -27,7 +27,10 @@ commentary uses templates. Set `OPENAI_API_KEY` to enable LLM text.
 | POST   | `/insights/player`            | Form + strengths/weaknesses |
 
 ## Train the win-probability model
+Training (and LLM features) need the heavy ML deps, which are **not** in the slim
+runtime image — install them first:
 ```bash
+pip install -r requirements.txt -r requirements-ml.txt
 python -m train.train_win_probability   # writes models/win_probability.joblib
 ```
 The service auto-detects the artifact and switches from heuristic to the trained

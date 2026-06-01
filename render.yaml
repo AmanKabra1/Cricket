@@ -34,11 +34,11 @@ services:
       - key: DB_SSL
         value: "true" # TiDB Cloud requires TLS
 
+      # No Redis on free tier (only 1 free Key Value allowed per account). A single
+      # instance runs fine with in-memory cache + Socket.IO. Add Redis when you
+      # scale to multiple instances (set REDIS_URL to a managed Redis URL).
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: localscore-redis
-          property: connectionString
+        value: ""
       - key: AI_SERVICE_URL
         sync: false # internal URL of the AI service, e.g. http://localscore-ai:10000
       # Object storage (AWS S3 in prod).
@@ -71,9 +71,5 @@ services:
       - key: MODEL_DIR
         value: models
 
-  # ---------------- Redis (cache + Socket.IO pub/sub) ----------------
-  - type: redis
-    name: localscore-redis
-    plan: free # V1 on free tier (sleeps after ~15min idle); bump to "starter" for always-on
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: [] # internal only — reachable by the services above
+# Redis intentionally omitted for the free tier (1-instance, in-memory). To add
+# it later: create a managed Redis and set REDIS_URL on localscore-backend.
