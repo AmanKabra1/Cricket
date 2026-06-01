@@ -1,6 +1,40 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Match, Player, Team, Tournament } from "@/types";
+import type { Match, Player, Team, Tournament, User } from "@/types";
+
+// ---------- Users / admins (super-admin only) ----------
+export const useUsers = () =>
+  useQuery({
+    queryKey: ["users"],
+    queryFn: async () => (await api.get<User[]>("/admin/users")).data,
+  });
+
+export const useCreateUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { email: string; password: string; full_name: string; role: string }) =>
+      api.post<User>("/admin/users", body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+};
+
+export const useSetUserRole = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: number; role: string }) =>
+      api.patch<User>(`/admin/users/${id}/role`, { role }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+};
+
+export const useSetUserActive = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
+      api.patch<User>(`/admin/users/${id}/active`, { is_active }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+};
 
 // ---------- Teams & players ----------
 export interface TeamInput {
