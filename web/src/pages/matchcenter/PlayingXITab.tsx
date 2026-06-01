@@ -1,6 +1,15 @@
+import type { ReactNode } from "react";
 import { useTeam } from "@/api/hooks";
 import Spinner from "@/components/Spinner";
 import type { Match } from "@/types";
+
+function RoleTag({ children }: { children: ReactNode }) {
+  return (
+    <span className="ml-1 rounded bg-pitch-100 px-1.5 text-xs font-bold text-pitch-700 dark:bg-navy-700 dark:text-pitch-300">
+      {children}
+    </span>
+  );
+}
 
 function Squad({ teamId }: { teamId: number }) {
   const { data, isLoading } = useTeam(teamId);
@@ -15,6 +24,9 @@ function Squad({ teamId }: { teamId: number }) {
             <span>
               <span className="mr-2 muted">{p.jersey_number ?? "–"}</span>
               {p.name}
+              {data.captain_id === p.id && <RoleTag>C</RoleTag>}
+              {data.vice_captain_id === p.id && <RoleTag>VC</RoleTag>}
+              {data.wicket_keeper_id === p.id && <RoleTag>WK</RoleTag>}
             </span>
             <span className="text-xs muted">{p.role.replace("_", " ")}</span>
           </li>

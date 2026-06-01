@@ -21,33 +21,46 @@ export default function AnalyticsTab({ matchId }: { matchId: number }) {
 
   return (
     <div className="space-y-8">
-      {data.innings.map((inn) => (
+      {data.innings.map((inn) => {
+        // Give charts room per over and let them scroll horizontally when an
+        // innings has many overs (so bars/labels don't get crushed on mobile).
+        const chartWidth = Math.max(320, inn.overs.length * 46);
+        return (
         <div key={inn.innings_number} className="card-surface p-5">
           <h3 className="mb-4 font-bold">{teamName(teams, inn.batting_team_id)} — over by over</h3>
 
           <div className="mb-2 text-sm muted">Manhattan (runs per over)</div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={inn.overs}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="over" stroke="var(--muted)" fontSize={12} />
-              <YAxis stroke="var(--muted)" fontSize={12} />
-              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)" }} />
-              <Bar dataKey="runs" fill="#16a34a" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div style={{ minWidth: chartWidth }}>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={inn.overs}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="over" stroke="var(--muted)" fontSize={12} />
+                  <YAxis stroke="var(--muted)" fontSize={12} width={28} />
+                  <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)" }} />
+                  <Bar dataKey="runs" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
           <div className="mb-2 mt-6 text-sm muted">Worm (cumulative runs)</div>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={inn.overs}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="over" stroke="var(--muted)" fontSize={12} />
-              <YAxis stroke="var(--muted)" fontSize={12} />
-              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)" }} />
-              <Line type="monotone" dataKey="cumulative" stroke="#039855" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div style={{ minWidth: chartWidth }}>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={inn.overs}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="over" stroke="var(--muted)" fontSize={12} />
+                  <YAxis stroke="var(--muted)" fontSize={12} width={28} />
+                  <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)" }} />
+                  <Line type="monotone" dataKey="cumulative" stroke="#039855" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

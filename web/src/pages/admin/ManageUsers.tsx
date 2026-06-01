@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useCreateUser, useDeleteUser, useSetUserActive, useSetUserRole, useUsers } from "@/api/admin";
+import { useCreateUser, useDeleteUser, useSetUserActive, useSetUserRole, useTestEmail, useUsers } from "@/api/admin";
 import { useAppSelector } from "@/store";
 import Spinner from "@/components/Spinner";
 import type { User } from "@/types";
@@ -51,7 +51,35 @@ function CreateAdminForm() {
       <button className="btn-primary w-full" disabled={create.isPending}>
         {create.isPending ? "Creating…" : "Create admin"}
       </button>
+      <TestEmailButton />
     </form>
+  );
+}
+
+function TestEmailButton() {
+  const test = useTestEmail();
+  const [result, setResult] = useState<string | null>(null);
+
+  const run = async () => {
+    setResult(null);
+    try {
+      const r = await test.mutateAsync();
+      setResult(r.detail);
+    } catch {
+      setResult("Couldn't reach the server to send a test email.");
+    }
+  };
+
+  return (
+    <div className="border-t pt-3" style={{ borderColor: "var(--border)" }}>
+      <p className="mb-2 text-xs muted">
+        New admins are emailed their login. If they aren't receiving it, send a test to yourself to check SMTP.
+      </p>
+      <button type="button" className="btn-ghost w-full text-sm" disabled={test.isPending} onClick={run}>
+        {test.isPending ? "Sending…" : "Send test email to me"}
+      </button>
+      {result && <p className="mt-2 text-sm muted">{result}</p>}
+    </div>
   );
 }
 

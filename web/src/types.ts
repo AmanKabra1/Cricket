@@ -58,6 +58,7 @@ export interface Match {
   toss_decision: "BAT" | "BOWL" | null;
   winner_team_id: number | null;
   result_text: string | null;
+  admin_ids: number[];
 }
 
 export interface InningsScore {

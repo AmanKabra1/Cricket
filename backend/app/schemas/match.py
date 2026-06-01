@@ -49,6 +49,7 @@ class MatchOut(BaseModel):
     toss_decision: TossDecision | None
     winner_team_id: int | None
     result_text: str | None
+    admin_ids: list[int] = []  # user ids allowed to score this match
     model_config = {"from_attributes": True}
 
 

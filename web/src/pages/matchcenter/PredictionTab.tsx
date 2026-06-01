@@ -16,16 +16,14 @@ export default function PredictionTab({ matchId }: { matchId: number }) {
       {!available ? (
         <p className="muted">
           {(data?.message as string) ??
-            "AI predictions will appear here. The model trains on accumulated match data; once enough balls are recorded, win probability and projected scores show up live."}
+            "AI predictions are coming soon — win probability and projected scores will show up live here."}
         </p>
       ) : (
         <pre className="overflow-x-auto rounded-lg bg-slate-500/5 p-4 text-sm">
           {JSON.stringify(data, null, 2)}
         </pre>
       )}
-      <p className="mt-4 text-xs muted">
-        Powered by the LocalScore AI service (XGBoost / LightGBM + LLM commentary). See roadmap Phase 4.
-      </p>
+      <p className="mt-4 text-xs muted">🚧 This feature is under development.</p>
     </div>
   );
 }

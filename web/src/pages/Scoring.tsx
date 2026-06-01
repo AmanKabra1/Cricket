@@ -5,6 +5,7 @@ import { useMatch, useLiveScore, useScorecard, useTeam, usePostBall, useUndoBall
 import { useQueryClient } from "@tanstack/react-query";
 import { teamName, useTeamMap } from "@/hooks/useTeamMap";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
+import { useAppSelector } from "@/store";
 import Spinner, { ErrorState } from "@/components/Spinner";
 import type { Player } from "@/types";
 
@@ -41,6 +42,7 @@ export default function Scoring() {
   const matchId = Number(id);
   const qc = useQueryClient();
   const teams = useTeamMap();
+  const user = useAppSelector((s) => s.auth.user);
 
   const { data: match, isLoading, isError } = useMatch(matchId);
   const { data: live } = useLiveScore(matchId);
@@ -117,6 +119,9 @@ export default function Scoring() {
 
   const ready = striker && nonStriker && bowler && striker !== nonStriker;
   const busy = postBall.isPending || undoBall.isPending; // lock the panel while saving
+  // Only assigned admins (or any super admin) may edit the score.
+  const canScore =
+    !!user && (user.role === "SUPER_ADMIN" || (match.admin_ids ?? []).includes(user.id));
 
   async function send(partial: Partial<BallPayload>) {
     if (!ready) {
@@ -233,17 +238,29 @@ export default function Scoring() {
               </div>
             </div>
           )}
-          <StartPanel
-            match={match}
-            teams={teams}
-            existingInnings={live?.innings.length ?? 0}
-            firstBattingTeamId={live?.innings[0]?.batting_team_id ?? null}
-            onStart={startInnings}
-          />
+          {canScore ? (
+            <StartPanel
+              match={match}
+              teams={teams}
+              existingInnings={live?.innings.length ?? 0}
+              firstBattingTeamId={live?.innings[0]?.batting_team_id ?? null}
+              onStart={startInnings}
+            />
+          ) : (
+            <div className="card-surface p-5 text-center text-red-500">
+              You're not assigned to score this match — view only.
+            </div>
+          )}
         </>
       )}
 
-      {openInnings && (
+      {openInnings && !canScore && (
+        <div className="card-surface p-5 text-center text-red-500">
+          You're not assigned to score this match — view only. Ask a super admin to assign you.
+        </div>
+      )}
+
+      {openInnings && canScore && (
         <div className="relative">
           {busy && (
             <div className="absolute inset-0 z-20 grid place-items-center rounded-xl bg-black/20 backdrop-blur-[1px]">

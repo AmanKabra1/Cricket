@@ -27,6 +27,17 @@ export const useSetUserRole = () => {
   });
 };
 
+export interface TestEmailResult {
+  configured: boolean;
+  sent: boolean;
+  detail: string;
+}
+
+export const useTestEmail = () =>
+  useMutation({
+    mutationFn: () => api.post<TestEmailResult>("/admin/test-email").then((r) => r.data),
+  });
+
 export const useSetUserActive = () => {
   const qc = useQueryClient();
   return useMutation({

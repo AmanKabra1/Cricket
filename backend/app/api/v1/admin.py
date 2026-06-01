@@ -13,7 +13,7 @@ from app.models.enums import UserRole
 from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.auth import UserOut
-from app.services.email import send_email, welcome_admin_body
+from app.services.email import email_enabled, send_email, welcome_admin_body
 from app.services.maintenance import delete_user_and_matches, run_maintenance
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -151,3 +151,20 @@ async def delete_user(
 async def maintenance_run(db: DbSession, _: User = Depends(require_super_admin)) -> dict:
     """Manually run housekeeping (purge old matches, expire stale admins, reminders)."""
     return await run_maintenance(db)
+
+
+@router.post("/test-email")
+async def test_email(current: User = Depends(require_super_admin)) -> dict:
+    """Send a test email to the signed-in super admin to verify SMTP config."""
+    if not email_enabled():
+        return {"configured": False, "sent": False, "detail": "SMTP not configured (set SMTP_HOST/SMTP_USER)."}
+    ok = await send_email(
+        current.email,
+        "LocalScore test email",
+        "This is a test email from LocalScore. If you received it, email is working.",
+    )
+    return {
+        "configured": True,
+        "sent": ok,
+        "detail": "Sent — check your inbox/spam." if ok else "Send failed — check SMTP key / verified sender.",
+    }

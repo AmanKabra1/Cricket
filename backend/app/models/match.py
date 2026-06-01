@@ -59,5 +59,10 @@ class Match(Base, TimestampMixin):
         lazy="selectin",
     )
     admins = relationship(
-        "User", secondary=match_admins, back_populates="managed_matches"
+        "User", secondary=match_admins, back_populates="managed_matches", lazy="selectin"
     )
+
+    @property
+    def admin_ids(self) -> list[int]:
+        """User ids assigned to score this match (for the API/UI gate)."""
+        return [a.id for a in self.admins]
