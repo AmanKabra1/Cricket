@@ -38,7 +38,8 @@ app.add_middleware(
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
 
-@app.get("/health", tags=["meta"])
+# GET + HEAD so uptime monitors (which often use HEAD) get 200, not 405.
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["meta"])
 async def health() -> dict:
     return {"status": "ok", "service": settings.PROJECT_NAME, "env": settings.ENVIRONMENT}
 
