@@ -68,7 +68,9 @@ export default function Scoring() {
   const [nonStriker, setNonStriker] = useState<number | "">("");
   const [bowler, setBowler] = useState<number | "">("");
   const [wicketType, setWicketType] = useState(WICKET_TYPES[0]);
+  const [runOutEnd, setRunOutEnd] = useState<"striker" | "non_striker">("striker");
   const [msg, setMsg] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => setMsg(null), [striker, bowler]);
 
@@ -92,28 +94,45 @@ export default function Scoring() {
     try {
       const res = await postBall.mutateAsync(payload);
       setMsg(null);
-      applyStrikeRotation(payload, res.over_completed);
+      applyPostBall(payload, res.over_completed);
     } catch (e: unknown) {
+      setInfo(null);
       setMsg((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Failed to record ball");
     }
   }
 
-  // Auto strike rotation: batsmen cross on odd runs, and ends swap at over's end.
-  // Both → no net change (a single off the last ball keeps the same striker).
-  function applyStrikeRotation(payload: BallPayload, overCompleted: boolean) {
-    if (payload.is_wicket) {
-      setStriker(""); // incoming batter must be chosen by the scorer
-      return;
-    }
+  // Apply real cricket rules to the on-field state after a delivery:
+  //  • batsmen cross on odd runs; ends swap at over's end (both → no net swap)
+  //  • a wicket empties only the dismissed batsman's slot (not-out batter stays)
+  //  • a completed over forces a new bowler (no consecutive overs)
+  function applyPostBall(payload: BallPayload, overCompleted: boolean) {
     const ex = payload.extra_type ?? "NONE";
     let ran = 0;
     if (ex === "NONE" || ex === "NO_BALL") ran = payload.runs_batsman ?? 0;
     else if (ex === "BYE" || ex === "LEG_BYE") ran = payload.extra_runs ?? 0;
-    const oddRun = ran % 2 === 1;
-    if (oddRun !== overCompleted) {
-      setStriker(nonStriker);
-      setNonStriker(striker);
+    const crossed = ran % 2 === 1;
+    const swap = crossed !== overCompleted;
+
+    let newStriker: number | "" = swap ? nonStriker : striker;
+    let newNonStriker: number | "" = swap ? striker : nonStriker;
+
+    const notes: string[] = [];
+    if (payload.is_wicket && payload.wicket_type !== "RETIRED_HURT") {
+      const out = payload.dismissed_player_id;
+      if (out === newStriker) newStriker = "";
+      else if (out === newNonStriker) newNonStriker = "";
+      else newStriker = ""; // fallback: striker out
+      notes.push("Wicket — choose the new batsman.");
     }
+
+    setStriker(newStriker);
+    setNonStriker(newNonStriker);
+
+    if (overCompleted) {
+      setBowler(""); // a bowler can't bowl two overs in a row
+      notes.push("Over complete — strike rotated, pick the new bowler.");
+    }
+    setInfo(notes.join(" ") || null);
   }
 
   async function startInnings(batId: number, bowlId: number) {
@@ -177,6 +196,7 @@ export default function Scoring() {
           )}
 
           {msg && <p className="mb-3 text-sm text-red-500">{msg}</p>}
+          {info && <p className="mb-3 text-sm font-medium text-pitch-600">{info}</p>}
 
           {/* Run buttons */}
           <div className="card-surface mb-4 p-4">
@@ -209,19 +229,33 @@ export default function Scoring() {
           {/* Wicket */}
           <div className="card-surface mb-4 p-4">
             <div className="mb-2 text-xs font-semibold muted">WICKET</div>
-            <div className="flex gap-2">
-              <select className="input" value={wicketType} onChange={(e) => setWicketType(e.target.value)}>
+            <div className="flex flex-wrap gap-2">
+              <select className="input flex-1" value={wicketType} onChange={(e) => setWicketType(e.target.value)}>
                 {WICKET_TYPES.map((w) => (
                   <option key={w} value={w}>
                     {w.replace("_", " ")}
                   </option>
                 ))}
               </select>
+              {/* Run-out can dismiss either batsman; everything else is the striker. */}
+              {wicketType === "RUN_OUT" && (
+                <select className="input flex-1" value={runOutEnd} onChange={(e) => setRunOutEnd(e.target.value as "striker" | "non_striker")}>
+                  <option value="striker">Striker out</option>
+                  <option value="non_striker">Non-striker out</option>
+                </select>
+              )}
               <button
                 className="rounded-lg bg-red-500 px-4 py-2 font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
                 disabled={postBall.isPending}
                 onClick={() =>
-                  send({ is_wicket: true, wicket_type: wicketType, dismissed_player_id: Number(striker) })
+                  send({
+                    is_wicket: true,
+                    wicket_type: wicketType,
+                    dismissed_player_id:
+                      wicketType === "RUN_OUT" && runOutEnd === "non_striker"
+                        ? Number(nonStriker)
+                        : Number(striker),
+                  })
                 }
               >
                 OUT
