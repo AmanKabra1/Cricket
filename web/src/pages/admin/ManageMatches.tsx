@@ -59,6 +59,7 @@ function CreateMatchForm() {
   const [venue, setVenue] = useState<number | "">("");
   const [tournament, setTournament] = useState<number | "">("");
   const [overs, setOvers] = useState(20);
+  const [when, setWhen] = useState("");
   const [adminIds, setAdminIds] = useState<number[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -75,11 +76,11 @@ function CreateMatchForm() {
       venue_id: venue === "" ? undefined : Number(venue),
       tournament_id: tournament === "" ? undefined : Number(tournament),
       overs_limit: overs,
+      scheduled_at: when ? new Date(when).toISOString() : undefined,
       admin_ids: adminIds,
     });
-    setMsg("✓ Match created — it's now on the dashboard. Only assigned admins (you" +
-      (adminIds.length ? " + selected" : "") + ") and super admins can score it.");
-    setA(""); setB(""); setAdminIds([]);
+    setMsg("✓ Match created (Upcoming). It goes LIVE automatically when you start scoring it — open it and tap “Score”.");
+    setA(""); setB(""); setWhen(""); setAdminIds([]);
   };
 
   return (
@@ -103,6 +104,10 @@ function CreateMatchForm() {
         <input className="input" type="number" min={1} max={100} value={overs}
           onChange={(e) => setOvers(Number(e.target.value))} placeholder="Overs" />
       </div>
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold muted">Date &amp; time (optional)</span>
+        <input className="input" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+      </label>
       <select className="input" value={tournament} onChange={(e) => setTournament(Number(e.target.value))}>
         <option value="">Tournament (optional)</option>
         {(tournaments ?? []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}

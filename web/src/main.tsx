@@ -9,7 +9,15 @@ import App from "./App";
 import "./index.css";
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 10_000, retry: 1 } },
+  defaultOptions: {
+    queries: {
+      staleTime: 10_000,
+      // Free-tier backend can cold-start (~30–60s); retry with backoff so the
+      // first load rides out the wake instead of showing an error.
+      retry: 4,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 15_000),
+    },
+  },
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

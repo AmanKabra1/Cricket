@@ -7,10 +7,14 @@ export default function Spinner({ label }: { label?: string }) {
   );
 }
 
-export function ErrorState({ message }: { message?: string }) {
+export function ErrorState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   return (
-    <div className="card-surface p-6 text-center text-red-500">
-      {message ?? "Something went wrong. Please try again."}
+    <div className="card-surface p-6 text-center">
+      <p className="text-red-500">{message ?? "Couldn't reach the server."}</p>
+      <p className="mt-1 text-sm muted">The free server may be waking up (first load can take ~30–60s).</p>
+      {onRetry && (
+        <button className="btn-primary mt-4" onClick={onRetry}>Retry</button>
+      )}
     </div>
   );
 }

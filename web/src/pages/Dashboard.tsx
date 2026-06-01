@@ -28,11 +28,12 @@ function Section({ title, matches, teams }: { title: string; matches: Match[]; t
 }
 
 export default function Dashboard() {
-  const { data, isLoading, isError } = useDashboard();
+  const { data, isLoading, isError, refetch, isFetching } = useDashboard();
   const teams = useTeamMap();
 
   if (isLoading) return <Spinner label="Loading matches…" />;
-  if (isError || !data) return <ErrorState />;
+  if (isError || !data)
+    return <ErrorState onRetry={() => refetch()} message={isFetching ? "Connecting…" : undefined} />;
 
   const empty = !data.live.length && !data.upcoming.length && !data.recent.length;
 
