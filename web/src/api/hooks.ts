@@ -26,22 +26,28 @@ export const useDashboard = () =>
 export const useMatch = (id: number) =>
   useQuery({ queryKey: ["match", id], queryFn: () => get<Match>(`/matches/${id}`) });
 
+// Live views poll as a fallback so scores update without a manual refresh even
+// if the WebSocket drops (e.g. free-tier / mobile networks). The socket still
+// gives instant updates; this just guarantees freshness.
 export const useLiveScore = (id: number) =>
   useQuery({
     queryKey: ["live", id],
     queryFn: () => get<LiveScore>(`/public/matches/${id}/live`),
+    refetchInterval: 8000,
   });
 
 export const useScorecard = (id: number) =>
   useQuery({
     queryKey: ["scorecard", id],
     queryFn: () => get<Scorecard>(`/public/matches/${id}/scorecard`),
+    refetchInterval: 10000,
   });
 
 export const useCommentary = (id: number) =>
   useQuery({
     queryKey: ["commentary", id],
     queryFn: () => get<CommentaryItem[]>(`/public/matches/${id}/commentary`),
+    refetchInterval: 10000,
   });
 
 export const useAnalytics = (id: number) =>

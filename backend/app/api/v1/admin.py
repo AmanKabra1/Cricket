@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 
@@ -73,6 +73,7 @@ async def list_users(
 async def create_user(
     payload: CreateUser,
     db: DbSession,
+    background: BackgroundTasks,
     _: User = Depends(require_super_admin),
 ) -> User:
     """Super admin creates an admin (or another super admin) directly."""
@@ -88,8 +89,10 @@ async def create_user(
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    # Email the new admin their login details + site link (best-effort).
-    await send_email(
+    # Send the welcome email AFTER responding (background) so creation is instant
+    # even if SMTP is slow/unreachable.
+    background.add_task(
+        send_email,
         user.email,
         "Your LocalScore admin account",
         welcome_admin_body(user.full_name, payload.email, payload.password, user.role.value),

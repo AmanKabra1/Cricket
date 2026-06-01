@@ -24,9 +24,9 @@ function InningsBlock({ inn, teams }: { inn: InningsCard; teams: Map<number, imp
       </div>
 
       <table className="w-full text-sm">
-        <thead className="text-left muted">
-          <tr style={{ borderBottom: "1px solid var(--border)" }}>
-            <th className="p-3">🏏 Batting</th>
+        <thead className="text-left">
+          <tr className="bg-pitch-500/15 text-pitch-700 dark:text-pitch-300">
+            <th className="p-3 font-bold">🏏 Batting</th>
             <th className="p-3 text-center">R</th>
             <th className="p-3 text-center">B</th>
             <th className="p-3 text-center">4s</th>
@@ -55,9 +55,9 @@ function InningsBlock({ inn, teams }: { inn: InningsCard; teams: Map<number, imp
       </table>
 
       <table className="w-full text-sm">
-        <thead className="text-left muted">
-          <tr style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-            <th className="p-3">🎯 Bowling</th>
+        <thead className="text-left">
+          <tr className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
+            <th className="p-3 font-bold">🎯 Bowling</th>
             <th className="p-3 text-center">O</th>
             <th className="p-3 text-center">R</th>
             <th className="p-3 text-center">W</th>

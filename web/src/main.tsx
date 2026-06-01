@@ -16,6 +16,10 @@ const queryClient = new QueryClient({
       // first load rides out the wake instead of showing an error.
       retry: 4,
       retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 15_000),
+      // Refresh when the tab/app regains focus or network reconnects — handy on
+      // mobile where you switch apps and come back.
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   },
 });
