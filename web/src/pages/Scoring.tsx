@@ -175,13 +175,31 @@ export default function Scoring() {
           </div>
         </div>
       ) : (
-        <StartPanel
-          match={match}
-          teams={teams}
-          existingInnings={live?.innings.length ?? 0}
-          firstBattingTeamId={live?.innings[0]?.batting_team_id ?? null}
-          onStart={startInnings}
-        />
+        <>
+          {live?.innings?.[0] && (
+            <div className="card-surface mb-4 p-4 text-center">
+              <div className="text-sm font-semibold text-amber-500">Innings break</div>
+              <div className="mt-1">
+                <span className="font-bold">{teamName(teams, live.innings[0].batting_team_id)}</span>{" "}
+                scored <b>{live.innings[0].runs}/{live.innings[0].wickets}</b> ({live.innings[0].overs})
+              </div>
+              <div className="mt-1 text-sm muted">
+                {teamName(
+                  teams,
+                  live.innings[0].batting_team_id === match.team_a_id ? match.team_b_id : match.team_a_id,
+                )}{" "}
+                need <b>{live.innings[0].runs + 1}</b> to win — start the 2nd innings below.
+              </div>
+            </div>
+          )}
+          <StartPanel
+            match={match}
+            teams={teams}
+            existingInnings={live?.innings.length ?? 0}
+            firstBattingTeamId={live?.innings[0]?.batting_team_id ?? null}
+            onStart={startInnings}
+          />
+        </>
       )}
 
       {openInnings && (
