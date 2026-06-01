@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMatches, useTeams, useVenues, useTournaments } from "@/api/hooks";
-import { useCreateMatch, useCreateVenue, useDeleteVenue } from "@/api/admin";
+import { useCreateMatch, useCreateVenue, useDeleteVenue, useUsers } from "@/api/admin";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
+import { useAppSelector } from "@/store";
 
 export default function ManageMatches() {
   return (
@@ -51,12 +52,14 @@ function CreateMatchForm() {
   const { data: venues } = useVenues();
   const { data: tournaments } = useTournaments();
   const create = useCreateMatch();
+  const isSuper = useAppSelector((s) => s.auth.user?.role === "SUPER_ADMIN");
 
   const [a, setA] = useState<number | "">("");
   const [b, setB] = useState<number | "">("");
   const [venue, setVenue] = useState<number | "">("");
   const [tournament, setTournament] = useState<number | "">("");
   const [overs, setOvers] = useState(20);
+  const [adminIds, setAdminIds] = useState<number[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
 
   const submit = async (e: FormEvent) => {
@@ -72,9 +75,11 @@ function CreateMatchForm() {
       venue_id: venue === "" ? undefined : Number(venue),
       tournament_id: tournament === "" ? undefined : Number(tournament),
       overs_limit: overs,
+      admin_ids: adminIds,
     });
-    setMsg("Match created. You're assigned as scorer.");
-    setA(""); setB("");
+    setMsg("✓ Match created — it's now on the dashboard. Only assigned admins (you" +
+      (adminIds.length ? " + selected" : "") + ") and super admins can score it.");
+    setA(""); setB(""); setAdminIds([]);
   };
 
   return (
@@ -102,9 +107,43 @@ function CreateMatchForm() {
         <option value="">Tournament (optional)</option>
         {(tournaments ?? []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
       </select>
+
+      {/* Super admins can grant scoring access to specific admins (optional). */}
+      {isSuper && <AdminPicker selected={adminIds} onChange={setAdminIds} />}
+
       {msg && <p className="text-sm text-pitch-600">{msg}</p>}
       <button className="btn-primary w-full" disabled={create.isPending}>Create match</button>
     </form>
+  );
+}
+
+function AdminPicker({ selected, onChange }: { selected: number[]; onChange: (ids: number[]) => void }) {
+  const { data: users } = useUsers();
+  const admins = (users ?? []).filter((u) => u.role !== "PUBLIC" && u.is_active);
+  const toggle = (id: number) =>
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  if (!admins.length) return null;
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-semibold muted">
+        Assign scorers (optional — you're always added; super admins can always score)
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {admins.map((u) => (
+          <button
+            type="button"
+            key={u.id}
+            onClick={() => toggle(u.id)}
+            className={`rounded-full border px-3 py-1 text-xs transition ${
+              selected.includes(u.id) ? "border-pitch-500 bg-pitch-500 text-white" : ""
+            }`}
+            style={{ borderColor: selected.includes(u.id) ? undefined : "var(--border)" }}
+          >
+            {u.full_name}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
