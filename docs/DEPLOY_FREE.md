@@ -76,6 +76,27 @@ After this the code + the GitHub Actions CI appear in your account.
 - API docs: `https://localscore-backend-XXXX.onrender.com/docs`
 - Pushes to `main` auto-deploy (Render + Vercel) and run CI.
 
+## Email (Brevo — free 300/day)
+Emails are off until you set SMTP creds. Brevo is recommended:
+1. Sign up at **brevo.com** → **SMTP & API → SMTP**. Note the **login** and click **Generate a new SMTP key**.
+2. **Senders & Domains** → add & verify a sender email (your "from" address).
+3. In **Render → `localscore-backend` → Environment** (host is pre-filled by the blueprint):
+   ```
+   SMTP_HOST=smtp-relay.brevo.com
+   SMTP_PORT=587
+   SMTP_USER=<your Brevo SMTP login>
+   SMTP_PASSWORD=<your Brevo SMTP key>
+   SMTP_FROM=LocalScore <your-verified-sender@domain>
+   FRONTEND_URL=https://<your-vercel-app>.vercel.app
+   ```
+   Save → redeploys. Now creating an admin emails their login + site link, and
+   assigned scorers get a reminder ~3h before the match.
+
+## Automatic cleanup
+No setup needed — the backend runs housekeeping **itself every hour** (purge old
+matches, expire stale admins, send reminders) while the uptime monitor keeps it
+awake. The `MAINTENANCE_TOKEN` + GitHub cron are an optional backup.
+
 ## Turning on the optional bits later (V2 / when needed)
 | Feature | Free now? | To enable |
 |---|---|---|

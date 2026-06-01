@@ -59,17 +59,18 @@ services:
       # Maintenance cron shared secret (auto-generated; copy into GitHub secret)
       - key: MAINTENANCE_TOKEN
         generateValue: true
-      # Email (SMTP) — optional; leave blank to disable email entirely
+      # Email via Brevo (free 300/day). Pre-filled host; set USER/PASSWORD/FROM.
+      # To disable email entirely, clear SMTP_HOST.
       - key: SMTP_HOST
-        sync: false
+        value: smtp-relay.brevo.com
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        sync: false
+        sync: false # your Brevo SMTP login (shown in Brevo → SMTP & API)
       - key: SMTP_PASSWORD
-        sync: false
+        sync: false # your Brevo SMTP key
       - key: SMTP_FROM
-        sync: false # e.g. LocalScore <you@gmail.com>
+        sync: false # LocalScore <your-verified-sender@domain>
 
   # ---------------- AI microservice ----------------
   - type: web
