@@ -83,7 +83,9 @@ function CreateMatchForm() {
         venue_id: venue === "" ? undefined : Number(venue),
         tournament_id: tournament === "" ? undefined : Number(tournament),
         overs_limit: overs,
-        scheduled_at: when ? new Date(when).toISOString() : undefined,
+        // Send the picked wall-clock time as-is (no UTC conversion) so it shows
+        // back exactly as chosen, in local/IST time. Add seconds for ISO format.
+        scheduled_at: when.length === 16 ? `${when}:00` : when,
         admin_ids: adminIds,
       });
       setCreatedId(match.id);

@@ -65,6 +65,8 @@ export default function Scoring() {
   const [info, setInfo] = useState<string | null>(null);
   // Players already dismissed this innings — hidden from the batter selectors.
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+  // The bowler of the just-completed over — can't bowl the next one.
+  const [lastOverBowler, setLastOverBowler] = useState<number | "">("");
 
   // Out players: from the scorecard (authoritative, per innings) + just-dismissed.
   const outIds = useMemo(() => {
@@ -79,8 +81,14 @@ export default function Scoring() {
     return s;
   }, [scorecard, openInnings, dismissed]);
 
-  // Reset the dismissed set when the innings changes (new innings → fresh batters).
-  useEffect(() => setDismissed(new Set()), [openInnings?.innings_id]);
+  // New innings → fresh batters/bowler; clear all on-field selections + flags.
+  useEffect(() => {
+    setDismissed(new Set());
+    setLastOverBowler("");
+    setStriker("");
+    setNonStriker("");
+    setBowler("");
+  }, [openInnings?.innings_id]);
 
   const allBatters = useMemo<Player[]>(() => {
     if (!battingTeamId) return [];
@@ -95,6 +103,12 @@ export default function Scoring() {
     if (!bowlingTeamId) return [];
     return (teamA?.id === bowlingTeamId ? teamA?.players : teamB?.players) ?? [];
   }, [bowlingTeamId, teamA, teamB]);
+
+  // Striker ≠ non-striker (each hidden from the other's list); bowler can't bowl
+  // two overs in a row (last over's bowler hidden until someone else bowls).
+  const strikerOptions = battingPlayers.filter((p) => p.id !== nonStriker);
+  const nonStrikerOptions = battingPlayers.filter((p) => p.id !== striker);
+  const bowlerOptions = bowlingPlayers.filter((p) => p.id !== lastOverBowler);
 
   useEffect(() => setMsg(null), [striker, bowler]);
 
@@ -155,6 +169,7 @@ export default function Scoring() {
     setNonStriker(newNonStriker);
 
     if (overCompleted) {
+      setLastOverBowler(payload.bowler_id); // can't bowl the next over
       setBowler(""); // a bowler can't bowl two overs in a row
       notes.push("Over complete — strike rotated, pick the new bowler.");
     }
@@ -242,9 +257,9 @@ export default function Scoring() {
           <fieldset disabled={busy} className="m-0 border-0 p-0">
           {/* Player selectors */}
           <div className="card-surface mb-5 grid gap-3 p-4 sm:grid-cols-3">
-            <PlayerSelect label="🏏 Striker (on strike)" players={battingPlayers} value={striker} onChange={setStriker} />
-            <PlayerSelect label="Non-striker" players={battingPlayers} value={nonStriker} onChange={setNonStriker} />
-            <PlayerSelect label="Bowler" players={bowlingPlayers} value={bowler} onChange={setBowler} />
+            <PlayerSelect label="🏏 Striker (on strike)" players={strikerOptions} value={striker} onChange={setStriker} />
+            <PlayerSelect label="Non-striker" players={nonStrikerOptions} value={nonStriker} onChange={setNonStriker} />
+            <PlayerSelect label="Bowler" players={bowlerOptions} value={bowler} onChange={setBowler} />
           </div>
 
           {striker && (

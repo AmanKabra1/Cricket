@@ -87,7 +87,10 @@ async def build_scorecard(db: AsyncSession, match: Match) -> dict:
                 "is_out": s.is_out,
             }
             for s in stats
-            if s.team_id == inn.batting_team_id and s.balls_faced > 0
+            # Show a batter once they've been at the crease (faced a ball, scored,
+            # or got out) — incl. a duck / run-out without facing.
+            if s.team_id == inn.batting_team_id
+            and (s.balls_faced > 0 or s.runs_scored > 0 or s.is_out)
         ]
         bowling = [
             {
