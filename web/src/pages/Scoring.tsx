@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "@/lib/api";
-import { useMatch, useLiveScore, useTeam, usePostBall, useUndoBall, type BallPayload } from "@/api/hooks";
+import { useMatch, useLiveScore, useScorecard, useTeam, usePostBall, useUndoBall, type BallPayload } from "@/api/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { teamName, useTeamMap } from "@/hooks/useTeamMap";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
@@ -44,6 +44,7 @@ export default function Scoring() {
 
   const { data: match, isLoading, isError } = useMatch(matchId);
   const { data: live } = useLiveScore(matchId);
+  const { data: scorecard } = useScorecard(matchId);
   const postBall = usePostBall(matchId);
   const undoBall = useUndoBall(matchId);
   useLiveSocket(matchId); // keep the displayed score live across devices too
@@ -55,15 +56,6 @@ export default function Scoring() {
   const { data: teamA } = useTeam(match?.team_a_id ?? 0);
   const { data: teamB } = useTeam(match?.team_b_id ?? 0);
 
-  const battingPlayers = useMemo<Player[]>(() => {
-    if (!battingTeamId) return [];
-    return (teamA?.id === battingTeamId ? teamA?.players : teamB?.players) ?? [];
-  }, [battingTeamId, teamA, teamB]);
-  const bowlingPlayers = useMemo<Player[]>(() => {
-    if (!bowlingTeamId) return [];
-    return (teamA?.id === bowlingTeamId ? teamA?.players : teamB?.players) ?? [];
-  }, [bowlingTeamId, teamA, teamB]);
-
   const [striker, setStriker] = useState<number | "">("");
   const [nonStriker, setNonStriker] = useState<number | "">("");
   const [bowler, setBowler] = useState<number | "">("");
@@ -71,6 +63,38 @@ export default function Scoring() {
   const [runOutEnd, setRunOutEnd] = useState<"striker" | "non_striker">("striker");
   const [msg, setMsg] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  // Players already dismissed this innings — hidden from the batter selectors.
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+
+  // Out players: from the scorecard (authoritative, per innings) + just-dismissed.
+  const outIds = useMemo(() => {
+    const s = new Set<number>(dismissed);
+    scorecard?.innings.forEach((inn) => {
+      if (openInnings && inn.innings_id === openInnings.innings_id) {
+        inn.batting.forEach((b) => {
+          if (b.is_out) s.add(b.player_id);
+        });
+      }
+    });
+    return s;
+  }, [scorecard, openInnings, dismissed]);
+
+  // Reset the dismissed set when the innings changes (new innings → fresh batters).
+  useEffect(() => setDismissed(new Set()), [openInnings?.innings_id]);
+
+  const allBatters = useMemo<Player[]>(() => {
+    if (!battingTeamId) return [];
+    return (teamA?.id === battingTeamId ? teamA?.players : teamB?.players) ?? [];
+  }, [battingTeamId, teamA, teamB]);
+  // Out batters are not selectable.
+  const battingPlayers = useMemo<Player[]>(
+    () => allBatters.filter((p) => !outIds.has(p.id)),
+    [allBatters, outIds],
+  );
+  const bowlingPlayers = useMemo<Player[]>(() => {
+    if (!bowlingTeamId) return [];
+    return (teamA?.id === bowlingTeamId ? teamA?.players : teamB?.players) ?? [];
+  }, [bowlingTeamId, teamA, teamB]);
 
   useEffect(() => setMsg(null), [striker, bowler]);
 
@@ -123,6 +147,7 @@ export default function Scoring() {
       if (out === newStriker) newStriker = "";
       else if (out === newNonStriker) newNonStriker = "";
       else newStriker = ""; // fallback: striker out
+      if (out) setDismissed((prev) => new Set(prev).add(out)); // hide them from selectors
       notes.push("Wicket — choose the new batsman.");
     }
 
@@ -303,7 +328,10 @@ export default function Scoring() {
           <button
             className="btn-ghost w-full"
             disabled={undoBall.isPending}
-            onClick={() => undoBall.mutate()}
+            onClick={() => {
+              setDismissed(new Set()); // re-derive out list from the scorecard after undo
+              undoBall.mutate();
+            }}
           >
             ↶ Undo last ball
           </button>
