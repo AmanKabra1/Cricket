@@ -57,9 +57,9 @@ export const useUpdateTeam = (teamId: number) => {
   return useMutation({
     mutationFn: (
       body: Partial<TeamInput> & {
-        captain_id?: number;
-        vice_captain_id?: number;
-        wicket_keeper_id?: number;
+        captain_id?: number | null;
+        vice_captain_id?: number | null;
+        wicket_keeper_id?: number | null;
       },
     ) => api.patch<Team>(`/teams/${teamId}`, body).then((r) => r.data),
     onSuccess: () => {

@@ -217,17 +217,32 @@ function TeamEditor({ teamId }: { teamId: number }) {
                 </span>
               </span>
             </div>
-            {/* Role actions — wrap neatly on their own row on mobile */}
+            {/* Role actions — each role goes to exactly one player. A "Make X"
+                button shows only if that role is unassigned AND this player holds
+                no role yet; the holder gets a "Clear" to free it up. */}
             <div className="flex flex-wrap items-center gap-1.5">
-              {team.captain_id !== pl.id && (
-                <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: pl.id })}>Make C</button>
-              )}
-              {team.vice_captain_id !== pl.id && (
-                <button className="btn-ghost text-xs" onClick={() => update.mutate({ vice_captain_id: pl.id })}>Make VC</button>
-              )}
-              {team.wicket_keeper_id !== pl.id && (
-                <button className="btn-ghost text-xs" onClick={() => update.mutate({ wicket_keeper_id: pl.id })}>Make WK</button>
-              )}
+              {(() => {
+                const isC = team.captain_id === pl.id;
+                const isVC = team.vice_captain_id === pl.id;
+                const isWK = team.wicket_keeper_id === pl.id;
+                const hasRole = isC || isVC || isWK;
+                return (
+                  <>
+                    {!team.captain_id && !hasRole && (
+                      <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: pl.id })}>Make C</button>
+                    )}
+                    {!team.vice_captain_id && !hasRole && (
+                      <button className="btn-ghost text-xs" onClick={() => update.mutate({ vice_captain_id: pl.id })}>Make VC</button>
+                    )}
+                    {!team.wicket_keeper_id && !hasRole && (
+                      <button className="btn-ghost text-xs" onClick={() => update.mutate({ wicket_keeper_id: pl.id })}>Make WK</button>
+                    )}
+                    {isC && <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: null })}>Clear C</button>}
+                    {isVC && <button className="btn-ghost text-xs" onClick={() => update.mutate({ vice_captain_id: null })}>Clear VC</button>}
+                    {isWK && <button className="btn-ghost text-xs" onClick={() => update.mutate({ wicket_keeper_id: null })}>Clear WK</button>}
+                  </>
+                );
+              })()}
               <button
                 className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
                 title="Remove player"
