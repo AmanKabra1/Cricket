@@ -14,6 +14,10 @@
     --muted: #64748b;
     --border: #e2e8f0;
     color-scheme: light;
+    /* Ambient background glows (per-tab accents override these below). */
+    --glow-1: rgba(22, 163, 74, 0.10);
+    --glow-2: rgba(59, 130, 246, 0.08);
+    --dot: rgba(15, 23, 42, 0.04);
   }
   .dark {
     --bg: #0b1220;
@@ -23,7 +27,18 @@
     --border: #1e293b;
     /* Make native controls (select option lists, scrollbars, pickers) dark. */
     color-scheme: dark;
+    --glow-1: rgba(22, 163, 74, 0.18);
+    --glow-2: rgba(13, 148, 136, 0.16);
+    --dot: rgba(255, 255, 255, 0.04);
   }
+
+  /* Per-tab accent colours (set on <body data-page> by the Layout). Subtle,
+     and tuned to read well over both the light and dark base. */
+  body[data-page="teams"] { --glow-1: rgba(99, 102, 241, 0.14); --glow-2: rgba(59, 130, 246, 0.10); }
+  body[data-page="tournaments"] { --glow-1: rgba(245, 158, 11, 0.14); --glow-2: rgba(234, 88, 12, 0.10); }
+  body[data-page="match"] { --glow-1: rgba(239, 68, 68, 0.12); --glow-2: rgba(22, 163, 74, 0.12); }
+  body[data-page="admin"] { --glow-1: rgba(100, 116, 139, 0.14); --glow-2: rgba(22, 163, 74, 0.10); }
+  body[data-page="auth"] { --glow-1: rgba(22, 163, 74, 0.16); --glow-2: rgba(2, 132, 199, 0.10); }
   /* Native <select> option lists are OS-rendered — force theme colours so team
      names etc. are readable in dark mode. */
   option {
@@ -33,10 +48,20 @@
   html, body, #root { height: 100%; }
   body {
     margin: 0;
-    background: var(--bg);
     color: var(--text);
     font-family: theme("fontFamily.sans");
     -webkit-font-smoothing: antialiased;
+    /* Layered ambient background: two soft accent glows + a faint dot texture,
+       all theme-aware and fixed so they don't scroll. Cards sit on var(--surface)
+       so content stays fully readable. */
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(1100px 560px at 108% -12%, var(--glow-1), transparent 60%),
+      radial-gradient(900px 520px at -12% 112%, var(--glow-2), transparent 58%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23808080' fill-opacity='0.18'/%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-attachment: fixed, fixed, fixed;
+    transition: background-color 0.3s ease;
   }
 }
 
