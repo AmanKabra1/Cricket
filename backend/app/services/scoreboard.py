@@ -78,6 +78,7 @@ async def build_scorecard(db: AsyncSession, match: Match) -> dict:
             {
                 "player_id": s.player_id,
                 "name": players[s.player_id].name if s.player_id in players else "—",
+                "photo_url": players[s.player_id].photo_url if s.player_id in players else None,
                 "runs": s.runs_scored,
                 "balls": s.balls_faced,
                 "fours": s.fours,
@@ -92,6 +93,7 @@ async def build_scorecard(db: AsyncSession, match: Match) -> dict:
             {
                 "player_id": s.player_id,
                 "name": players[s.player_id].name if s.player_id in players else "—",
+                "photo_url": players[s.player_id].photo_url if s.player_id in players else None,
                 "overs": f"{s.legal_balls_bowled // 6}.{s.legal_balls_bowled % 6}",
                 "runs_conceded": s.runs_conceded,
                 "wickets": s.wickets,

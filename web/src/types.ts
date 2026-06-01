@@ -85,6 +85,7 @@ export interface LiveScore {
 export interface BatterCard {
   player_id: number;
   name: string;
+  photo_url?: string | null;
   runs: number;
   balls: number;
   fours: number;
@@ -96,6 +97,7 @@ export interface BatterCard {
 export interface BowlerCard {
   player_id: number;
   name: string;
+  photo_url?: string | null;
   overs: string;
   runs_conceded: number;
   wickets: number;

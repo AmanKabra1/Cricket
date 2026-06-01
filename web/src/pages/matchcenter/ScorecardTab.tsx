@@ -3,6 +3,18 @@ import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import Spinner, { EmptyState } from "@/components/Spinner";
 import type { InningsCard } from "@/types";
 
+/** Player photo, or initials fallback when there's no image. */
+function PlayerAvatar({ name, photo }: { name: string; photo?: string | null }) {
+  if (photo) {
+    return <img src={photo} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />;
+  }
+  return (
+    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pitch-400 to-pitch-600 text-[10px] font-bold text-white">
+      {name.slice(0, 2).toUpperCase()}
+    </span>
+  );
+}
+
 function InningsBlock({ inn, teams }: { inn: InningsCard; teams: Map<number, import("@/types").Team> }) {
   return (
     <div className="card-surface mb-6 overflow-hidden">
@@ -14,7 +26,7 @@ function InningsBlock({ inn, teams }: { inn: InningsCard; teams: Map<number, imp
       <table className="w-full text-sm">
         <thead className="text-left muted">
           <tr style={{ borderBottom: "1px solid var(--border)" }}>
-            <th className="p-3">Batter</th>
+            <th className="p-3">🏏 Batting</th>
             <th className="p-3 text-center">R</th>
             <th className="p-3 text-center">B</th>
             <th className="p-3 text-center">4s</th>
@@ -26,7 +38,10 @@ function InningsBlock({ inn, teams }: { inn: InningsCard; teams: Map<number, imp
           {inn.batting.map((b) => (
             <tr key={b.player_id} style={{ borderBottom: "1px solid var(--border)" }}>
               <td className="p-3 font-medium">
-                {b.name} {!b.is_out && <span className="text-xs text-pitch-600">not out</span>}
+                <span className="flex items-center gap-2">
+                  <PlayerAvatar name={b.name} photo={b.photo_url} />
+                  <span>{b.name} {!b.is_out && <span className="text-xs text-pitch-600">not out</span>}</span>
+                </span>
               </td>
               <td className="p-3 text-center font-semibold">{b.runs}</td>
               <td className="p-3 text-center">{b.balls}</td>
@@ -42,7 +57,7 @@ function InningsBlock({ inn, teams }: { inn: InningsCard; teams: Map<number, imp
       <table className="w-full text-sm">
         <thead className="text-left muted">
           <tr style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-            <th className="p-3">Bowler</th>
+            <th className="p-3">🎯 Bowling</th>
             <th className="p-3 text-center">O</th>
             <th className="p-3 text-center">R</th>
             <th className="p-3 text-center">W</th>
@@ -52,7 +67,12 @@ function InningsBlock({ inn, teams }: { inn: InningsCard; teams: Map<number, imp
         <tbody>
           {inn.bowling.map((b) => (
             <tr key={b.player_id} style={{ borderBottom: "1px solid var(--border)" }}>
-              <td className="p-3 font-medium">{b.name}</td>
+              <td className="p-3 font-medium">
+                <span className="flex items-center gap-2">
+                  <PlayerAvatar name={b.name} photo={b.photo_url} />
+                  <span>{b.name}</span>
+                </span>
+              </td>
               <td className="p-3 text-center">{b.overs}</td>
               <td className="p-3 text-center">{b.runs_conceded}</td>
               <td className="p-3 text-center font-semibold">{b.wickets}</td>

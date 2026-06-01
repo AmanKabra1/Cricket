@@ -216,7 +216,12 @@ async def record_ball(
 
     # --- completion checks ---
     over_completed = is_legal and innings.legal_balls % 6 == 0
-    all_out = innings.total_wickets >= 10
+    # All out when no two batters remain: wickets == (squad size - 1). Works for
+    # any team size (11 → 10 wickets; a 6-a-side team → 5 wickets). Laws of Cricket.
+    batting_size = await db.scalar(
+        select(func.count(Player.id)).where(Player.team_id == innings.batting_team_id)
+    )
+    all_out = innings.total_wickets >= max(1, (batting_size or 11) - 1)
     overs_done = innings.legal_balls >= overs_limit * 6
     target_chased = innings.target is not None and innings.total_runs >= innings.target
 

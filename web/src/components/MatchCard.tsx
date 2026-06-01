@@ -15,7 +15,14 @@ const statusStyle: Record<string, string> = {
 function fmtDate(iso: string | null): string {
   if (!iso) return "TBD";
   const d = new Date(iso);
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function MatchCard({ match, teams }: { match: Match; teams: Map<number, Team> }) {
@@ -61,7 +68,7 @@ export default function MatchCard({ match, teams }: { match: Match; teams: Map<n
         className="mt-3 flex items-center justify-between border-t pt-3 text-xs muted"
         style={{ borderColor: "var(--border)" }}
       >
-        <span>{fmtDate(match.scheduled_at)}</span>
+        <span>📅 {fmtDate(match.scheduled_at)}</span>
         <span className="font-medium">{match.result_text ?? (live ? "In progress →" : "")}</span>
       </div>
     </Link>
