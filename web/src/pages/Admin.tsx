@@ -3,14 +3,15 @@ import ManageTeams from "./admin/ManageTeams";
 import ManageMatches from "./admin/ManageMatches";
 import ManageTournaments from "./admin/ManageTournaments";
 import ManageUsers from "./admin/ManageUsers";
+import ManageAppearance from "./admin/ManageAppearance";
 import { useAppSelector } from "@/store";
 
 export default function Admin() {
   const user = useAppSelector((s) => s.auth.user);
   const isSuper = user?.role === "SUPER_ADMIN";
-  // Only super admins see the "Admins" tab (user/role management).
+  // Only super admins see the "Admins" and "Appearance" tabs.
   const TABS = isSuper
-    ? (["Teams & players", "Matches", "Tournaments", "Admins"] as const)
+    ? (["Teams & players", "Matches", "Tournaments", "Admins", "Appearance"] as const)
     : (["Teams & players", "Matches", "Tournaments"] as const);
   const [tab, setTab] = useState<string>("Teams & players");
 
@@ -41,6 +42,7 @@ export default function Admin() {
       {tab === "Matches" && <ManageMatches />}
       {tab === "Tournaments" && <ManageTournaments />}
       {tab === "Admins" && isSuper && <ManageUsers />}
+      {tab === "Appearance" && isSuper && <ManageAppearance />}
     </div>
   );
 }

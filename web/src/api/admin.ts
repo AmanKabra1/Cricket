@@ -194,6 +194,16 @@ export const useApproveTournament = () => {
   });
 };
 
+// ---------- Backgrounds (super admin) ----------
+export const useUpdateBackgrounds = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pages: Record<string, { light?: string | null; dark?: string | null }>) =>
+      api.put("/admin/settings/backgrounds", { pages }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["backgrounds"] }),
+  });
+};
+
 // ---------- Image upload ----------
 export type UploadCategory = "team_logo" | "player_photo" | "match_image";
 

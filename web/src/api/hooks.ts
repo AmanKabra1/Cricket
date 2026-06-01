@@ -70,6 +70,13 @@ export interface Venue {
 export const useVenues = () =>
   useQuery({ queryKey: ["venues"], queryFn: () => get<Venue[]>("/venues") });
 
+export const useBackgrounds = () =>
+  useQuery({
+    queryKey: ["backgrounds"],
+    queryFn: () => get<Record<string, { light?: string | null; dark?: string | null }>>("/public/settings/backgrounds"),
+    staleTime: 5 * 60_000,
+  });
+
 export const useTeam = (id: number) =>
   useQuery({ queryKey: ["team", id], queryFn: () => get<TeamDetail>(`/teams/${id}`) });
 

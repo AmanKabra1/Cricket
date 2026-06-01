@@ -1,5 +1,7 @@
-"""Super-admin: user management and role assignment."""
+"""Super-admin: user management, role assignment, and app settings."""
 from __future__ import annotations
+
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
@@ -8,10 +10,39 @@ from sqlalchemy import select
 from app.api.deps import CurrentUser, DbSession, require_super_admin
 from app.core.security import hash_password
 from app.models.enums import UserRole
+from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.auth import UserOut
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+BACKGROUNDS_KEY = "backgrounds"
+
+
+class BackgroundEntry(BaseModel):
+    light: str | None = None
+    dark: str | None = None
+
+
+class BackgroundsUpdate(BaseModel):
+    # {page: {light, dark}} — page in home/teams/tournaments/match/admin/auth
+    pages: dict[str, BackgroundEntry]
+
+
+@router.put("/settings/backgrounds")
+async def set_backgrounds(
+    payload: BackgroundsUpdate,
+    db: DbSession,
+    _: User = Depends(require_super_admin),
+) -> dict:
+    data = {p: e.model_dump() for p, e in payload.pages.items()}
+    row = await db.get(AppSetting, BACKGROUNDS_KEY)
+    if row:
+        row.value = json.dumps(data)
+    else:
+        db.add(AppSetting(key=BACKGROUNDS_KEY, value=json.dumps(data)))
+    await db.commit()
+    return data
 
 
 class CreateUser(BaseModel):

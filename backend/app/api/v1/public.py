@@ -1,6 +1,8 @@
 """Public, no-auth endpoints: dashboard, live score, scorecard, commentary, AI."""
 from __future__ import annotations
 
+import json
+
 import httpx
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
@@ -11,10 +13,25 @@ from app.core.config import settings
 from app.models.ball import Ball
 from app.models.enums import MatchStatus
 from app.models.match import Match
+from app.models.setting import AppSetting
 from app.schemas.match import MatchOut
 from app.services import scoreboard
 
 router = APIRouter(prefix="/public", tags=["public"])
+
+BACKGROUNDS_KEY = "backgrounds"
+
+
+@router.get("/settings/backgrounds")
+async def get_backgrounds(db: DbSession) -> dict:
+    """Per-page background image config: {page: {light, dark}}. Empty if unset."""
+    row = await db.get(AppSetting, BACKGROUNDS_KEY)
+    if not row:
+        return {}
+    try:
+        return json.loads(row.value)
+    except (ValueError, TypeError):
+        return {}
 
 
 @router.get("/dashboard")
