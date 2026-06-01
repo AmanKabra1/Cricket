@@ -62,25 +62,31 @@ function CreateMatchForm() {
   const [when, setWhen] = useState("");
   const [adminIds, setAdminIds] = useState<number[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
+  const [createdId, setCreatedId] = useState<number | null>(null);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null);
+    setCreatedId(null);
     if (a === "" || b === "" || a === b) {
       setMsg("Pick two different teams.");
       return;
     }
-    await create.mutateAsync({
-      team_a_id: Number(a),
-      team_b_id: Number(b),
-      venue_id: venue === "" ? undefined : Number(venue),
-      tournament_id: tournament === "" ? undefined : Number(tournament),
-      overs_limit: overs,
-      scheduled_at: when ? new Date(when).toISOString() : undefined,
-      admin_ids: adminIds,
-    });
-    setMsg("✓ Match created (Upcoming). It goes LIVE automatically when you start scoring it — open it and tap “Score”.");
-    setA(""); setB(""); setWhen(""); setAdminIds([]);
+    try {
+      const match = await create.mutateAsync({
+        team_a_id: Number(a),
+        team_b_id: Number(b),
+        venue_id: venue === "" ? undefined : Number(venue),
+        tournament_id: tournament === "" ? undefined : Number(tournament),
+        overs_limit: overs,
+        scheduled_at: when ? new Date(when).toISOString() : undefined,
+        admin_ids: adminIds,
+      });
+      setCreatedId(match.id);
+      setA(""); setB(""); setWhen(""); setAdminIds([]);
+    } catch (err: unknown) {
+      setMsg((err as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Couldn't create the match (server may be waking — try again).");
+    }
   };
 
   return (
@@ -116,8 +122,18 @@ function CreateMatchForm() {
       {/* Super admins can grant scoring access to specific admins (optional). */}
       {isSuper && <AdminPicker selected={adminIds} onChange={setAdminIds} />}
 
-      {msg && <p className="text-sm text-pitch-600">{msg}</p>}
-      <button className="btn-primary w-full" disabled={create.isPending}>Create match</button>
+      {msg && <p className="text-sm text-red-500">{msg}</p>}
+      {createdId && (
+        <div className="rounded-lg border border-pitch-500/40 bg-pitch-500/10 p-3 text-sm">
+          ✓ Match created (Upcoming) — it’s in the list on the right.
+          <Link to={`/admin/matches/${createdId}/score`} className="ml-1 font-semibold text-pitch-600 underline">
+            Score it now →
+          </Link>
+        </div>
+      )}
+      <button className="btn-primary w-full" disabled={create.isPending}>
+        {create.isPending ? "Creating…" : "Create match"}
+      </button>
     </form>
   );
 }
@@ -172,12 +188,23 @@ function CreateVenueForm() {
 }
 
 function MatchList() {
-  const { data: matches } = useMatches();
+  const { data: matches, isLoading, isError, refetch, isFetching } = useMatches();
   const teams = useTeamMap();
   return (
     <div>
-      <h2 className="mb-3 text-lg font-bold">Matches</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-bold">Matches</h2>
+        <button className="btn-ghost text-xs" onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? "Refreshing…" : "↻ Refresh"}
+        </button>
+      </div>
       <div className="space-y-2">
+        {isLoading && <p className="muted">Loading matches…</p>}
+        {isError && (
+          <p className="text-sm text-red-500">
+            Couldn’t load matches (server may be waking up). Tap Refresh in a moment.
+          </p>
+        )}
         {(matches ?? []).map((m) => (
           <div key={m.id} className="card-surface flex items-center justify-between p-3">
             <div>
@@ -189,7 +216,7 @@ function MatchList() {
             <Link to={`/admin/matches/${m.id}/score`} className="btn-primary text-sm">Score</Link>
           </div>
         ))}
-        {!matches?.length && <p className="muted">No matches yet.</p>}
+        {!isLoading && !isError && !matches?.length && <p className="muted">No matches yet.</p>}
       </div>
     </div>
   );
