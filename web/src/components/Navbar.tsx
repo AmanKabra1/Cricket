@@ -19,6 +19,9 @@ export default function Navbar() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const isAdmin = !!user && user.role !== "PUBLIC";
+  const isSuper = user?.role === "SUPER_ADMIN";
+  const roleLabel = isSuper ? "Super Admin" : "Match Admin";
+  const roleIcon = isSuper ? "👑" : "🛡️";
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
 
@@ -55,9 +58,19 @@ export default function Navbar() {
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
           {isAdmin ? (
-            <button className="hidden btn-ghost sm:inline-flex" onClick={() => dispatch(logout())}>
-              Logout
-            </button>
+            <>
+              <span
+                className="hidden items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold sm:inline-flex"
+                style={{ background: "var(--surface-2, rgba(120,120,120,.12))", color: "var(--text)" }}
+                title={`Signed in as ${roleLabel}`}
+              >
+                <span>{roleIcon}</span>
+                <span>{roleLabel}</span>
+              </span>
+              <button className="hidden btn-ghost sm:inline-flex" onClick={() => dispatch(logout())}>
+                Logout
+              </button>
+            </>
           ) : (
             <Link to="/login" className="hidden btn-primary sm:inline-flex">Admin</Link>
           )}
@@ -82,12 +95,17 @@ export default function Navbar() {
           {isAdmin && <NavLink to="/admin" className={({ isActive }) => mobileItem(isActive)}>Manage</NavLink>}
           <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--border)" }}>
             {isAdmin ? (
-              <button
-                className="block w-full rounded-lg px-3 py-2 text-left font-medium hover:bg-pitch-50 dark:hover:bg-navy-700"
-                onClick={() => dispatch(logout())}
-              >
-                Logout ({user?.full_name})
-              </button>
+              <>
+                <div className="px-3 py-1 text-xs font-bold muted">
+                  {roleIcon} {roleLabel}
+                </div>
+                <button
+                  className="block w-full rounded-lg px-3 py-2 text-left font-medium hover:bg-pitch-50 dark:hover:bg-navy-700"
+                  onClick={() => dispatch(logout())}
+                >
+                  Logout ({user?.full_name})
+                </button>
+              </>
             ) : (
               <NavLink to="/login" className={({ isActive }) => mobileItem(isActive)}>Admin sign in</NavLink>
             )}

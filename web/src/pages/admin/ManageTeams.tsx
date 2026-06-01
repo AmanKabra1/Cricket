@@ -72,10 +72,11 @@ export default function ManageTeams() {
               </button>
               <button
                 onClick={() => onDelete(t.id, t.name)}
-                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+                disabled={deleteTeam.isPending && deleteTeam.variables === t.id}
+                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"
                 title="Delete team"
               >
-                Delete
+                {deleteTeam.isPending && deleteTeam.variables === t.id ? "Deleting…" : "Delete"}
               </button>
             </div>
           ))}

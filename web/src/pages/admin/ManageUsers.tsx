@@ -119,15 +119,16 @@ function UsersList() {
             </button>
             {u.id !== meId && (
               <button
-                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"
                 title="Delete user + their assigned matches"
+                disabled={del.isPending && del.variables === u.id}
                 onClick={() => {
                   if (confirm(`Delete ${u.full_name}? This also deletes matches assigned to them and all that match data.`)) {
                     del.mutate(u.id);
                   }
                 }}
               >
-                Delete
+                {del.isPending && del.variables === u.id ? "Deleting…" : "Delete"}
               </button>
             )}
           </div>

@@ -13,7 +13,6 @@ from app.api.deps import (
 from app.models.enums import MatchStatus
 from app.models.innings import Innings
 from app.models.match import Match
-from app.models.stats import PlayerMatchStats
 from app.models.user import User
 from app.schemas.match import (
     MatchCreate,
@@ -49,11 +48,10 @@ async def delete_match(
     match_id: int, db: DbSession, user: User = Depends(require_admin)
 ) -> dict:
     """Delete a match and ALL related data (stats, innings, balls, admin links)."""
-    match = await authorize_match_admin(match_id, db, user)
-    from sqlalchemy import delete as sa_delete
+    await authorize_match_admin(match_id, db, user)
+    from app.services.maintenance import _delete_matches
 
-    await db.execute(sa_delete(PlayerMatchStats).where(PlayerMatchStats.match_id == match_id))
-    await db.delete(match)  # cascades innings → balls; clears match_admins links
+    await _delete_matches(db, [match_id])  # fast set-based bulk delete
     await db.commit()
     return {"ok": True}
 

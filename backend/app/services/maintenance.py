@@ -11,7 +11,9 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.ball import Ball
 from app.models.enums import MatchStatus, UserRole
+from app.models.innings import Innings
 from app.models.match import Match
 from app.models.stats import PlayerMatchStats
 from app.models.user import User, match_admins
@@ -25,18 +27,22 @@ def _now() -> datetime:
 
 
 async def _delete_matches(db: AsyncSession, match_ids: list[int]) -> int:
-    """Delete matches + all their data (stats, innings→balls, admin links).
+    """Delete matches + all their data (balls, innings, stats, admin links).
 
-    Explicit deletes (not relying on DB FK cascade) so it behaves the same on
-    SQLite and MySQL/TiDB.
+    Uses set-based bulk DELETEs (a fixed handful of statements regardless of how
+    many balls/innings exist) instead of ORM per-row cascade, so it stays fast
+    over the network to TiDB. Order respects FKs: balls → innings → match.
+    Behaves the same on SQLite and MySQL/TiDB.
     """
     if not match_ids:
         return 0
+    innings_subq = select(Innings.id).where(Innings.match_id.in_(match_ids))
+    await db.execute(delete(Ball).where(Ball.innings_id.in_(innings_subq)))
+    await db.execute(delete(Innings).where(Innings.match_id.in_(match_ids)))
     await db.execute(delete(PlayerMatchStats).where(PlayerMatchStats.match_id.in_(match_ids)))
-    matches = (await db.scalars(select(Match).where(Match.id.in_(match_ids)))).all()
-    for m in matches:
-        await db.delete(m)  # cascades innings → balls; clears match_admins links
-    return len(matches)
+    await db.execute(delete(match_admins).where(match_admins.c.match_id.in_(match_ids)))
+    result = await db.execute(delete(Match).where(Match.id.in_(match_ids)))
+    return result.rowcount or len(match_ids)
 
 
 async def purge_old_matches(db: AsyncSession) -> int:

@@ -224,15 +224,16 @@ function MatchList() {
             <div className="flex shrink-0 items-center gap-2">
               <Link to={`/admin/matches/${m.id}/score`} className="btn-primary text-sm">Score</Link>
               <button
-                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"
                 title="Delete match + all its data"
+                disabled={del.isPending && del.variables === m.id}
                 onClick={() => {
                   if (confirm("Delete this match and ALL its data (scores, innings, balls)? This can't be undone.")) {
                     del.mutate(m.id);
                   }
                 }}
               >
-                Delete
+                {del.isPending && del.variables === m.id ? "Deleting…" : "Delete"}
               </button>
             </div>
           </div>
