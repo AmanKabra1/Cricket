@@ -12,16 +12,19 @@ export type BgConfig = Record<string, BgEntry>;
 export const BG_PAGES = ["home", "teams", "tournaments", "match", "admin", "auth"] as const;
 export type BgPage = (typeof BG_PAGES)[number];
 
-const hd = (seed: string) => `https://picsum.photos/seed/${seed}/1920/1080`;
+// Cricket-themed images by keyword (LoremFlickr, Creative-Commons, no API key).
+// `lock` pins a stable image per tab so it doesn't change on every load.
+const cricket = (tags: string, lock: number) =>
+  `https://loremflickr.com/1920/1080/${tags}?lock=${lock}`;
 
-// Distinct default image per tab (same for both modes — overlay handles contrast).
+// Distinct cricket image per tab (same for both modes — overlay handles contrast).
 export const DEFAULT_BACKGROUNDS: BgConfig = {
-  home: { light: hd("localscore-home"), dark: hd("localscore-home") },
-  teams: { light: hd("localscore-teams"), dark: hd("localscore-teams") },
-  tournaments: { light: hd("localscore-trophy"), dark: hd("localscore-trophy") },
-  match: { light: hd("localscore-match"), dark: hd("localscore-match") },
-  admin: { light: hd("localscore-admin"), dark: hd("localscore-admin") },
-  auth: { light: hd("localscore-auth"), dark: hd("localscore-auth") },
+  home: { light: cricket("cricket,stadium", 11), dark: cricket("cricket,stadium", 11) },
+  teams: { light: cricket("cricket,team", 22), dark: cricket("cricket,team", 22) },
+  tournaments: { light: cricket("cricket,trophy", 33), dark: cricket("cricket,trophy", 33) },
+  match: { light: cricket("cricket,batsman", 44), dark: cricket("cricket,batsman", 44) },
+  admin: { light: cricket("cricket,ground,pitch", 55), dark: cricket("cricket,ground,pitch", 55) },
+  auth: { light: cricket("cricket,ball", 66), dark: cricket("cricket,ball", 66) },
 };
 
 export function pageKey(pathname: string): BgPage {
