@@ -62,9 +62,16 @@ class Settings(BaseSettings):
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:
+        # Accept a comma-separated string or a list; normalise each origin by
+        # trimming whitespace and a trailing slash (browsers send the Origin
+        # without one, so "https://x.app/" must still match "https://x.app").
         if isinstance(v, str):
-            return [o.strip() for o in v.split(",") if o.strip()]
-        return v
+            items: list[str] = v.split(",")
+        elif isinstance(v, (list, tuple)):
+            items = [str(o) for o in v]
+        else:
+            return v
+        return [o.strip().rstrip("/") for o in items if o.strip()]
 
 
 @lru_cache
