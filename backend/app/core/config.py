@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     COMPLETED_MATCH_RETENTION_DAYS: int = 7  # delete completed matches older than this
     ADMIN_RETENTION_DAYS: int = 15  # delete match-admin accounts older than this
     MATCH_REMINDER_HOURS: int = 3  # email assigned admins this many hours before start
+    # Built-in automatic scheduler — runs cleanup + reminders without any cron.
+    MAINTENANCE_AUTO: bool = True
+    MAINTENANCE_INTERVAL_MINUTES: int = 60
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod

@@ -5,7 +5,10 @@ the realtime engine). Importing `app` alone gives only the REST surface.
 """
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
+from contextlib import asynccontextmanager
 
 import socketio
 from fastapi import FastAPI
@@ -17,6 +20,38 @@ from app.core.ratelimit import RateLimitMiddleware
 from app.realtime.socket import sio
 
 logging.basicConfig(level=logging.INFO if not settings.DEBUG else logging.DEBUG)
+logger = logging.getLogger("localscore")
+
+
+async def _maintenance_loop() -> None:
+    """Automatic housekeeping: runs cleanup + reminders on an interval, with no
+    external cron. While the instance is kept awake (uptime ping), this fires
+    every MAINTENANCE_INTERVAL_MINUTES — so old data is purged automatically."""
+    from app.core.database import AsyncSessionLocal
+    from app.services.maintenance import run_maintenance
+
+    await asyncio.sleep(60)  # let the app settle / DB be ready
+    while True:
+        try:
+            async with AsyncSessionLocal() as db:
+                result = await run_maintenance(db)
+            logger.info("auto-maintenance: %s", result)
+        except Exception as exc:  # noqa: BLE001 — never kill the loop
+            logger.warning("auto-maintenance failed: %s", exc)
+        await asyncio.sleep(max(60, settings.MAINTENANCE_INTERVAL_MINUTES * 60))
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    task = None
+    if settings.MAINTENANCE_AUTO:
+        task = asyncio.create_task(_maintenance_loop())
+    yield
+    if task:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -24,6 +59,7 @@ app = FastAPI(
     description="Local Sports Live Scoring Platform — REST + realtime API.",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(RateLimitMiddleware)
