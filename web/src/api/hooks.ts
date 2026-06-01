@@ -117,14 +117,41 @@ interface BallResult {
   live_score: LiveScore;
 }
 
+// Optimistic estimate of the score right after a delivery, so the number moves
+// the instant the scorer taps (the server's authoritative value lands ~50ms later).
+function applyBallOptimistically(prev: LiveScore, body: BallPayload): LiveScore {
+  const innings = prev.innings.map((i) => ({ ...i }));
+  const inn = [...innings].reverse().find((i) => !i.is_closed);
+  if (!inn) return prev;
+  const ex = body.extra_type ?? "NONE";
+  const penalty = ex === "WIDE" || ex === "NO_BALL" ? 1 : 0;
+  inn.runs += (body.runs_batsman ?? 0) + (body.extra_runs ?? 0) + penalty;
+  if (body.is_wicket) inn.wickets += 1;
+  if (ex === "NONE" || ex === "BYE" || ex === "LEG_BYE") {
+    const [o, b] = inn.overs.split(".").map(Number);
+    const balls = o * 6 + (b || 0) + 1;
+    inn.overs = `${Math.floor(balls / 6)}.${balls % 6}`;
+  }
+  return { ...prev, innings };
+}
+
 export const usePostBall = (matchId: number) => {
   const qc = useQueryClient();
-  return useMutation<BallResult, Error, BallPayload>({
+  return useMutation<BallResult, Error, BallPayload, { prev?: LiveScore }>({
     mutationFn: (body: BallPayload) =>
       api.post(`/matches/${matchId}/scoring/ball`, body).then((r) => r.data),
+    onMutate: async (body) => {
+      // Cancel in-flight refetches, snapshot, and optimistically bump the score.
+      await qc.cancelQueries({ queryKey: ["live", matchId] });
+      const prev = qc.getQueryData<LiveScore>(["live", matchId]);
+      if (prev) qc.setQueryData(["live", matchId], applyBallOptimistically(prev, body));
+      return { prev };
+    },
+    onError: (_e, _body, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["live", matchId], ctx.prev); // roll back
+    },
     onSuccess: (data) => {
-      // Push the fresh score straight into the cache → instant UI update,
-      // no refetch round-trip. Spectators also get it over the socket.
+      // Replace the estimate with the server's authoritative score.
       if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       qc.invalidateQueries({ queryKey: ["scorecard", matchId] });
       qc.invalidateQueries({ queryKey: ["commentary", matchId] });
