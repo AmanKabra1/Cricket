@@ -192,46 +192,57 @@ function TeamEditor({ teamId }: { teamId: number }) {
 
       <div className="card-surface divide-y" style={{ borderColor: "var(--border)" }}>
         {team.players.map((pl) => (
-          <div key={pl.id} className="flex flex-wrap items-center gap-2 p-3" style={{ borderColor: "var(--border)" }}>
-            {pl.photo_url ? (
-              <img src={pl.photo_url} className="h-8 w-8 rounded-full object-cover" alt="" />
-            ) : (
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-500/10 text-xs muted">{pl.jersey_number ?? "–"}</span>
-            )}
-            <span className="min-w-[40%] flex-1 font-medium">
-              {pl.name}
-              {team.captain_id === pl.id && <Badge>C</Badge>}
-              {team.vice_captain_id === pl.id && <Badge>VC</Badge>}
-              {team.wicket_keeper_id === pl.id && <Badge>WK</Badge>}
-              <span className="ml-2 text-xs muted">
-                {pl.role.replace("_", " ")}
-                {bowls(pl.role) && pl.bowling_style !== "None" ? ` · ${pl.bowling_style}` : ""}
+          <div
+            key={pl.id}
+            className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
+            style={{ borderColor: "var(--border)" }}
+          >
+            {/* Player info */}
+            <div className="flex min-w-0 items-center gap-2">
+              {pl.photo_url ? (
+                <img src={pl.photo_url} className="h-8 w-8 shrink-0 rounded-full object-cover" alt="" />
+              ) : (
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-500/10 text-xs muted">
+                  {pl.jersey_number ?? "–"}
+                </span>
+              )}
+              <span className="min-w-0 font-medium">
+                <span className="truncate">{pl.name}</span>
+                {team.captain_id === pl.id && <Badge>C</Badge>}
+                {team.vice_captain_id === pl.id && <Badge>VC</Badge>}
+                {team.wicket_keeper_id === pl.id && <Badge>WK</Badge>}
+                <span className="ml-2 block text-xs muted">
+                  {pl.role.replace("_", " ")}
+                  {bowls(pl.role) && pl.bowling_style !== "None" ? ` · ${pl.bowling_style}` : ""}
+                </span>
               </span>
-            </span>
-            {/* Show only the roles this player does NOT already hold. */}
-            {team.captain_id !== pl.id && (
-              <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: pl.id })}>C</button>
-            )}
-            {team.vice_captain_id !== pl.id && (
-              <button className="btn-ghost text-xs" onClick={() => update.mutate({ vice_captain_id: pl.id })}>VC</button>
-            )}
-            {team.wicket_keeper_id !== pl.id && (
-              <button className="btn-ghost text-xs" onClick={() => update.mutate({ wicket_keeper_id: pl.id })}>WK</button>
-            )}
-            <button
-              className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
-              title="Remove player"
-              onClick={async () => {
-                if (!confirm(`Remove ${pl.name}?`)) return;
-                try {
-                  await deletePlayer.mutateAsync(pl.id);
-                } catch (e: unknown) {
-                  alert((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Couldn't remove player");
-                }
-              }}
-            >
-              ✕
-            </button>
+            </div>
+            {/* Role actions — wrap neatly on their own row on mobile */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {team.captain_id !== pl.id && (
+                <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: pl.id })}>Make C</button>
+              )}
+              {team.vice_captain_id !== pl.id && (
+                <button className="btn-ghost text-xs" onClick={() => update.mutate({ vice_captain_id: pl.id })}>Make VC</button>
+              )}
+              {team.wicket_keeper_id !== pl.id && (
+                <button className="btn-ghost text-xs" onClick={() => update.mutate({ wicket_keeper_id: pl.id })}>Make WK</button>
+              )}
+              <button
+                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+                title="Remove player"
+                onClick={async () => {
+                  if (!confirm(`Remove ${pl.name}?`)) return;
+                  try {
+                    await deletePlayer.mutateAsync(pl.id);
+                  } catch (e: unknown) {
+                    alert((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Couldn't remove player");
+                  }
+                }}
+              >
+                Remove
+              </button>
+            </div>
           </div>
         ))}
         {!team.players.length && <p className="p-4 muted">No players yet.</p>}
