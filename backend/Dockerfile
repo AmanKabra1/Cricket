@@ -19,5 +19,5 @@ COPY . .
 
 EXPOSE 8000
 
-# socket_app wraps the FastAPI app with the Socket.IO ASGI server
-CMD ["uvicorn", "app.main:socket_app", "--host", "0.0.0.0", "--port", "8000"]
+# start.sh runs migrations then boots the ASGI app on $PORT (Render-friendly).
+CMD ["sh", "start.sh"]

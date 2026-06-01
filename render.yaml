@@ -15,8 +15,7 @@ services:
     plan: free # V1 on free tier (sleeps after ~15min idle); bump to "starter" for always-on
     healthCheckPath: /health
     autoDeploy: true
-    # Render injects $PORT; run migrations then boot the ASGI app (REST + WS).
-    dockerCommand: sh -c "alembic upgrade head && uvicorn app.main:socket_app --host 0.0.0.0 --port $PORT"
+    # Start command lives in the image (backend/start.sh): migrate then boot on $PORT.
     envVars:
       - key: ENVIRONMENT
         value: production
@@ -64,7 +63,7 @@ services:
     plan: free # V1 on free tier (sleeps after ~15min idle); bump to "starter" for always-on
     healthCheckPath: /health
     autoDeploy: true
-    dockerCommand: sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    # Start command lives in the image (ai-service/start.sh): boot on $PORT.
     envVars:
       - key: OPENAI_API_KEY
         sync: false # optional; templates used when empty
