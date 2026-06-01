@@ -23,8 +23,8 @@ export default function TeamDetail() {
       </div>
 
       <h2 className="mb-3 text-lg font-bold">Squad ({data.players.length})</h2>
-      <div className="card-surface overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="card-surface overflow-x-auto">
+        <table className="w-full min-w-[480px] text-sm">
           <thead className="text-left muted">
             <tr style={{ borderBottom: "1px solid var(--border)" }}>
               <th className="p-3">#</th>

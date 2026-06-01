@@ -192,13 +192,13 @@ function TeamEditor({ teamId }: { teamId: number }) {
 
       <div className="card-surface divide-y" style={{ borderColor: "var(--border)" }}>
         {team.players.map((pl) => (
-          <div key={pl.id} className="flex items-center gap-3 p-3" style={{ borderColor: "var(--border)" }}>
+          <div key={pl.id} className="flex flex-wrap items-center gap-2 p-3" style={{ borderColor: "var(--border)" }}>
             {pl.photo_url ? (
               <img src={pl.photo_url} className="h-8 w-8 rounded-full object-cover" alt="" />
             ) : (
               <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-500/10 text-xs muted">{pl.jersey_number ?? "–"}</span>
             )}
-            <span className="flex-1 font-medium">
+            <span className="min-w-[40%] flex-1 font-medium">
               {pl.name}
               {team.captain_id === pl.id && <Badge>C</Badge>}
               {team.vice_captain_id === pl.id && <Badge>VC</Badge>}
