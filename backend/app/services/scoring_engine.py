@@ -228,6 +228,45 @@ async def record_ball(
     return BallOutcome(ball=ball, innings_closed=innings_closed, over_completed=over_completed)
 
 
+def _team_name(match, team_id: int) -> str:
+    if match.team_a is not None and match.team_a.id == team_id:
+        return match.team_a.name
+    if match.team_b is not None and match.team_b.id == team_id:
+        return match.team_b.name
+    return f"Team {team_id}"
+
+
+def finalize_match_result(match) -> None:
+    """Decide winner + result text once both innings are complete.
+
+    Standard limited-overs result: the chasing side wins "by wickets", the side
+    batting first wins "by runs", or it's a tie.
+    """
+    if len(match.innings) < 2:
+        return
+    first, second = match.innings[0], match.innings[1]
+    chasing = second.batting_team_id
+    defending = first.batting_team_id
+    target = second.target if second.target is not None else first.total_runs + 1
+
+    if second.total_runs >= target:
+        wickets_in_hand = max(0, 10 - second.total_wickets)
+        match.winner_team_id = chasing
+        match.result_text = (
+            f"{_team_name(match, chasing)} won by {wickets_in_hand} "
+            f"wicket{'s' if wickets_in_hand != 1 else ''}"
+        )
+    elif second.total_runs == first.total_runs:
+        match.winner_team_id = None
+        match.result_text = "Match tied"
+    else:
+        margin = first.total_runs - second.total_runs
+        match.winner_team_id = defending
+        match.result_text = (
+            f"{_team_name(match, defending)} won by {margin} run{'s' if margin != 1 else ''}"
+        )
+
+
 async def undo_last_ball(db: AsyncSession, match_id: int, innings: Innings) -> bool:
     """Reverse the most recent delivery (scorer mis-entry). Returns False if none."""
     last = await db.scalar(

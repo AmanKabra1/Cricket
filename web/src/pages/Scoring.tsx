@@ -167,11 +167,19 @@ export default function Scoring() {
             <div className="mt-1 text-sm muted">Target {openInnings.target} · RRR {openInnings.required_run_rate?.toFixed(2)}</div>
           )}
         </div>
+      ) : match.status === "COMPLETED" ? (
+        <div className="card-surface mb-5 p-5 text-center">
+          <div className="text-sm muted">Match complete</div>
+          <div className="mt-1 text-xl font-extrabold text-pitch-600">
+            {match.result_text ?? "Result recorded"}
+          </div>
+        </div>
       ) : (
         <StartPanel
           match={match}
           teams={teams}
           existingInnings={live?.innings.length ?? 0}
+          firstBattingTeamId={live?.innings[0]?.batting_team_id ?? null}
           onStart={startInnings}
         />
       )}
@@ -300,14 +308,23 @@ function StartPanel({
   match,
   teams,
   existingInnings,
+  firstBattingTeamId,
   onStart,
 }: {
   match: import("@/types").Match;
   teams: Map<number, import("@/types").Team>;
   existingInnings: number;
+  firstBattingTeamId: number | null;
   onStart: (batId: number, bowlId: number) => void;
 }) {
-  const [batId, setBatId] = useState(match.team_a_id);
+  // For the 2nd innings, default the batting side to whoever bowled first.
+  const defaultBat =
+    existingInnings === 1 && firstBattingTeamId
+      ? firstBattingTeamId === match.team_a_id
+        ? match.team_b_id
+        : match.team_a_id
+      : match.team_a_id;
+  const [batId, setBatId] = useState(defaultBat);
   const bowlId = batId === match.team_a_id ? match.team_b_id : match.team_a_id;
 
   if (existingInnings >= 2) {

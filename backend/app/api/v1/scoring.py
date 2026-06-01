@@ -13,7 +13,12 @@ from app.models.enums import MatchStatus
 from app.realtime.socket import emit_commentary, emit_match_status, emit_score_update
 from app.schemas.match import BallEvent, MatchResultUpdate
 from app.services import scoreboard
-from app.services.scoring_engine import ScoringError, record_ball, undo_last_ball
+from app.services.scoring_engine import (
+    ScoringError,
+    finalize_match_result,
+    record_ball,
+    undo_last_ball,
+)
 
 from app.models.user import User
 
@@ -62,6 +67,10 @@ async def post_ball(
 
     if outcome.innings_closed and len(match.innings) >= 2:
         match.status = MatchStatus.COMPLETED
+        finalize_match_result(match)  # auto winner + "won by …" text
+        from app.services.tournament_engine import apply_match_result
+
+        await apply_match_result(db, match)  # update points table / NRR if in a tournament
     elif outcome.innings_closed:
         match.status = MatchStatus.INNINGS_BREAK
 

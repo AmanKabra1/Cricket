@@ -10,9 +10,43 @@ from app.models.match import Match
 from app.models.player import Player
 from app.models.stats import PlayerMatchStats
 from app.models.team import Team
-from app.services.scoring_engine import record_ball, undo_last_ball
+from app.services.scoring_engine import (
+    finalize_match_result,
+    record_ball,
+    undo_last_ball,
+)
 
 pytestmark = pytest.mark.asyncio
+
+
+async def test_finalize_result(db):
+    a = Team(name="Alpha")
+    b = Team(name="Beta")
+    db.add_all([a, b])
+    await db.flush()
+    match = Match(team_a_id=a.id, team_b_id=b.id, overs_limit=20)
+    match.team_a, match.team_b = a, b
+    # Innings 1: Alpha 150; Innings 2: Beta chasing 151.
+    match.innings = [
+        Innings(innings_number=1, batting_team_id=a.id, bowling_team_id=b.id, total_runs=150),
+        Innings(innings_number=2, batting_team_id=b.id, bowling_team_id=a.id,
+                total_runs=151, total_wickets=6, target=151),
+    ]
+    finalize_match_result(match)
+    assert match.winner_team_id == b.id
+    assert match.result_text == "Beta won by 4 wickets"
+
+    # Beta falls short → Alpha wins by runs.
+    match.innings[1].total_runs = 140
+    finalize_match_result(match)
+    assert match.winner_team_id == a.id
+    assert match.result_text == "Alpha won by 10 runs"
+
+    # Equal scores → tie.
+    match.innings[1].total_runs = 150
+    finalize_match_result(match)
+    assert match.winner_team_id is None
+    assert match.result_text == "Match tied"
 
 
 async def _setup(db):
