@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession, require_admin
+from app.models.ball import Ball
+from app.models.match import Match
 from app.models.player import Player
 from app.models.team import Team
 from app.schemas.catalog import (
@@ -112,3 +114,45 @@ async def update_player(
     await db.commit()
     await db.refresh(player)
     return player
+
+
+@router.delete("/players/{player_id}")
+async def delete_player(
+    player_id: int, db: DbSession, user: User = Depends(require_admin)
+) -> dict:
+    player = await db.get(Player, player_id)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    # Block deletion if the player already appears in scored deliveries.
+    used = await db.scalar(
+        select(Ball.id).where(
+            (Ball.striker_id == player_id)
+            | (Ball.non_striker_id == player_id)
+            | (Ball.bowler_id == player_id)
+        ).limit(1)
+    )
+    if used:
+        raise HTTPException(status_code=400, detail="Player has match data and can't be deleted")
+    await db.delete(player)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{team_id}")
+async def delete_team(
+    team_id: int, db: DbSession, user: User = Depends(require_admin)
+) -> dict:
+    team = await db.get(Team, team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    # Block deletion if the team is part of any match (FK is RESTRICT).
+    in_match = await db.scalar(
+        select(Match.id).where(
+            (Match.team_a_id == team_id) | (Match.team_b_id == team_id)
+        ).limit(1)
+    )
+    if in_match:
+        raise HTTPException(status_code=400, detail="Team is used in a match and can't be deleted")
+    await db.delete(team)  # players cascade
+    await db.commit()
+    return {"ok": True}

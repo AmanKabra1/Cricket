@@ -13,6 +13,7 @@
     --text: #0f172a;
     --muted: #64748b;
     --border: #e2e8f0;
+    color-scheme: light;
   }
   .dark {
     --bg: #0b1220;
@@ -20,6 +21,14 @@
     --text: #e2e8f0;
     --muted: #94a3b8;
     --border: #1e293b;
+    /* Make native controls (select option lists, scrollbars, pickers) dark. */
+    color-scheme: dark;
+  }
+  /* Native <select> option lists are OS-rendered — force theme colours so team
+     names etc. are readable in dark mode. */
+  option {
+    background: var(--surface);
+    color: var(--text);
   }
   html, body, #root { height: 100%; }
   body {

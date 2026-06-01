@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMatches, useTeams, useVenues, useTournaments } from "@/api/hooks";
-import { useCreateMatch, useCreateVenue } from "@/api/admin";
+import { useCreateMatch, useCreateVenue, useDeleteVenue } from "@/api/admin";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 
 export default function ManageMatches() {
@@ -10,8 +10,38 @@ export default function ManageMatches() {
       <div className="space-y-6">
         <CreateMatchForm />
         <CreateVenueForm />
+        <VenueList />
       </div>
       <MatchList />
+    </div>
+  );
+}
+
+function VenueList() {
+  const { data: venues } = useVenues();
+  const del = useDeleteVenue();
+  if (!venues?.length) return null;
+  return (
+    <div className="card-surface p-4">
+      <h2 className="mb-2 text-lg font-bold">Venues</h2>
+      <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+        {venues.map((v) => (
+          <div key={v.id} className="flex items-center justify-between py-2">
+            <span>
+              <span className="font-medium">{v.name}</span>
+              <span className="ml-2 text-xs muted">{v.city}</span>
+            </span>
+            <button
+              className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+              onClick={() => {
+                if (confirm(`Delete venue "${v.name}"?`)) del.mutate(v.id);
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { useTeams, useTeam } from "@/api/hooks";
-import { useAddPlayer, useCreateTeam, useUpdateTeam, type PlayerInput } from "@/api/admin";
+import {
+  useAddPlayer,
+  useCreateTeam,
+  useDeletePlayer,
+  useDeleteTeam,
+  useUpdateTeam,
+  type PlayerInput,
+} from "@/api/admin";
 import ImageUpload from "@/components/ImageUpload";
 import Spinner from "@/components/Spinner";
 
@@ -11,6 +18,17 @@ const BOWL = ["NONE", "FAST", "MEDIUM", "OFF_SPIN", "LEG_SPIN", "LEFT_ARM_SPIN",
 export default function ManageTeams() {
   const { data: teams } = useTeams();
   const [selected, setSelected] = useState<number | null>(null);
+  const deleteTeam = useDeleteTeam();
+
+  const onDelete = async (id: number, name: string) => {
+    if (!confirm(`Delete team "${name}"? This removes its players too.`)) return;
+    try {
+      await deleteTeam.mutateAsync(id);
+      if (selected === id) setSelected(null);
+    } catch (e: unknown) {
+      alert((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Couldn't delete team");
+    }
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -21,23 +39,31 @@ export default function ManageTeams() {
         <h3 className="mb-2 mt-6 font-bold">Teams</h3>
         <div className="space-y-2">
           {(teams ?? []).map((t) => (
-            <button
+            <div
               key={t.id}
-              onClick={() => setSelected(t.id)}
-              className={`flex w-full items-center gap-3 rounded-lg border p-2 text-left ${
+              className={`flex items-center gap-3 rounded-lg border p-2 ${
                 selected === t.id ? "border-pitch-500" : ""
               }`}
               style={{ borderColor: selected === t.id ? undefined : "var(--border)" }}
             >
-              {t.logo_url ? (
-                <img src={t.logo_url} className="h-8 w-8 rounded-full object-cover" alt="" />
-              ) : (
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-pitch-100 text-xs font-bold text-pitch-700 dark:bg-navy-700">
-                  {t.name.slice(0, 2).toUpperCase()}
-                </span>
-              )}
-              <span className="font-medium">{t.name}</span>
-            </button>
+              <button onClick={() => setSelected(t.id)} className="flex flex-1 items-center gap-3 text-left">
+                {t.logo_url ? (
+                  <img src={t.logo_url} className="h-8 w-8 rounded-full object-cover" alt="" />
+                ) : (
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-pitch-100 text-xs font-bold text-pitch-700 dark:bg-navy-700">
+                    {t.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <span className="font-medium">{t.name}</span>
+              </button>
+              <button
+                onClick={() => onDelete(t.id, t.name)}
+                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+                title="Delete team"
+              >
+                Delete
+              </button>
+            </div>
           ))}
         </div>
       </div>
@@ -86,6 +112,7 @@ function TeamEditor({ teamId }: { teamId: number }) {
   const { data: team, isLoading } = useTeam(teamId);
   const addPlayer = useAddPlayer(teamId);
   const update = useUpdateTeam(teamId);
+  const deletePlayer = useDeletePlayer(teamId);
 
   const [p, setP] = useState<PlayerInput>({ name: "", role: "BATSMAN", batting_style: "RIGHT_HAND", bowling_style: "NONE" });
   const [photo, setPhoto] = useState<string | undefined>();
@@ -141,6 +168,20 @@ function TeamEditor({ teamId }: { teamId: number }) {
                 Make captain
               </button>
             )}
+            <button
+              className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+              title="Remove player"
+              onClick={async () => {
+                if (!confirm(`Remove ${pl.name}?`)) return;
+                try {
+                  await deletePlayer.mutateAsync(pl.id);
+                } catch (e: unknown) {
+                  alert((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Couldn't remove player");
+                }
+              }}
+            >
+              ✕
+            </button>
           </div>
         ))}
         {!team.players.length && <p className="p-4 muted">No players yet.</p>}

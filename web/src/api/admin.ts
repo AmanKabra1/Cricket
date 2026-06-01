@@ -83,12 +83,51 @@ export const useAddPlayer = (teamId: number) => {
   });
 };
 
+export const useDeletePlayer = (teamId: number) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (playerId: number) => api.delete(`/teams/players/${playerId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["team", teamId] }),
+  });
+};
+
+export const useDeleteTeam = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (teamId: number) => api.delete(`/teams/${teamId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
+  });
+};
+
 // ---------- Venues ----------
+interface VenueInput {
+  name: string;
+  city: string;
+  address?: string;
+  capacity?: number;
+}
+
 export const useCreateVenue = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; city: string; address?: string; capacity?: number }) =>
-      api.post("/venues", body).then((r) => r.data),
+    mutationFn: (body: VenueInput) => api.post("/venues", body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["venues"] }),
+  });
+};
+
+export const useUpdateVenue = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: VenueInput & { id: number }) =>
+      api.patch(`/venues/${id}`, body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["venues"] }),
+  });
+};
+
+export const useDeleteVenue = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/venues/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["venues"] }),
   });
 };
