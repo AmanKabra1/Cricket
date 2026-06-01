@@ -12,19 +12,20 @@ export type BgConfig = Record<string, BgEntry>;
 export const BG_PAGES = ["home", "teams", "tournaments", "match", "admin", "auth"] as const;
 export type BgPage = (typeof BG_PAGES)[number];
 
-// Cricket-themed images by keyword (LoremFlickr, Creative-Commons, no API key).
-// `lock` pins a stable image per tab so it doesn't change on every load.
-const cricket = (tags: string, lock: number) =>
-  `https://loremflickr.com/1920/1080/${tags}?lock=${lock}`;
+// Ultra-HD cricket wallpapers (direct image files). Super admin can override any
+// of these per tab/mode in Manage → Appearance.
+const W1 = "https://wallpaperaccess.com/full/4650746.jpg";
+const W2 = "https://wallpaperaccess.com/full/4650798.jpg";
+const W3 = "https://wallpaperaccess.com/full/4650915.jpg";
 
-// Distinct cricket image per tab (same for both modes — overlay handles contrast).
+// Distinct image per tab (same for both modes — the overlay handles contrast).
 export const DEFAULT_BACKGROUNDS: BgConfig = {
-  home: { light: cricket("cricket,stadium", 11), dark: cricket("cricket,stadium", 11) },
-  teams: { light: cricket("cricket,team", 22), dark: cricket("cricket,team", 22) },
-  tournaments: { light: cricket("cricket,trophy", 33), dark: cricket("cricket,trophy", 33) },
-  match: { light: cricket("cricket,batsman", 44), dark: cricket("cricket,batsman", 44) },
-  admin: { light: cricket("cricket,ground,pitch", 55), dark: cricket("cricket,ground,pitch", 55) },
-  auth: { light: cricket("cricket,ball", 66), dark: cricket("cricket,ball", 66) },
+  home: { light: W1, dark: W1 },
+  teams: { light: W2, dark: W2 },
+  tournaments: { light: W3, dark: W3 },
+  match: { light: W1, dark: W1 },
+  admin: { light: W2, dark: W2 },
+  auth: { light: W3, dark: W3 },
 };
 
 export function pageKey(pathname: string): BgPage {

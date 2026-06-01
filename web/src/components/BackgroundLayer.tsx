@@ -15,10 +15,12 @@ export default function BackgroundLayer() {
   const url = resolveBackground(data, pageKey(pathname), theme);
   if (!url) return null;
 
+  // Lighter veil in light mode so the image actually shows (it was washed out);
+  // dark mode keeps a stronger veil for contrast.
   const overlay =
     theme === "dark"
-      ? "linear-gradient(rgba(11,18,32,0.82), rgba(11,18,32,0.92))"
-      : "linear-gradient(rgba(248,250,252,0.84), rgba(248,250,252,0.92))";
+      ? "linear-gradient(rgba(11,18,32,0.80), rgba(11,18,32,0.90))"
+      : "linear-gradient(rgba(248,250,252,0.55), rgba(248,250,252,0.70))";
 
   return (
     <div
