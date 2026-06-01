@@ -78,6 +78,7 @@ export default function Scoring() {
   if (isError || !match) return <ErrorState />;
 
   const ready = striker && nonStriker && bowler && striker !== nonStriker;
+  const busy = postBall.isPending || undoBall.isPending; // lock the panel while saving
 
   async function send(partial: Partial<BallPayload>) {
     if (!ready) {
@@ -203,7 +204,17 @@ export default function Scoring() {
       )}
 
       {openInnings && (
-        <>
+        <div className="relative">
+          {busy && (
+            <div className="absolute inset-0 z-20 grid place-items-center rounded-xl bg-black/20 backdrop-blur-[1px]">
+              <span className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-semibold shadow dark:bg-navy-800 dark:text-white">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-pitch-500 border-t-transparent" />
+                Saving…
+              </span>
+            </div>
+          )}
+          {/* fieldset disabled locks every control while a ball is saving */}
+          <fieldset disabled={busy} className="m-0 border-0 p-0">
           {/* Player selectors */}
           <div className="card-surface mb-5 grid gap-3 p-4 sm:grid-cols-3">
             <PlayerSelect label="🏏 Striker (on strike)" players={battingPlayers} value={striker} onChange={setStriker} />
@@ -296,7 +307,8 @@ export default function Scoring() {
           >
             ↶ Undo last ball
           </button>
-        </>
+          </fieldset>
+        </div>
       )}
     </div>
   );
