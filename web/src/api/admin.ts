@@ -159,6 +159,29 @@ export const useCreateMatch = () => {
   });
 };
 
+export const useDeleteMatch = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (matchId: number) => api.delete(`/matches/${matchId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["matches"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+};
+
+export const useDeleteUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => api.delete(`/admin/users/${userId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["users"] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+};
+
 // ---------- Tournaments ----------
 export const useCreateTournament = () => {
   const qc = useQueryClient();

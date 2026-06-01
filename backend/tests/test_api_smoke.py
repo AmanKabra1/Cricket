@@ -66,7 +66,12 @@ async def test_happy_path(client: AsyncClient):
     # create match
     rm = await client.post(
         "/api/v1/matches",
-        json={"team_a_id": team_ids[0], "team_b_id": team_ids[1], "overs_limit": 5},
+        json={
+            "team_a_id": team_ids[0],
+            "team_b_id": team_ids[1],
+            "overs_limit": 5,
+            "scheduled_at": "2030-01-01T10:00:00",
+        },
         headers=auth,
     )
     assert rm.status_code == 201, rm.text

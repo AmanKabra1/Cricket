@@ -53,6 +53,23 @@ services:
         sync: false
       - key: RATE_LIMIT_ENABLED
         value: "true"
+      # Public site URL (used in emails)
+      - key: FRONTEND_URL
+        sync: false # e.g. https://cricket-one-flax.vercel.app
+      # Maintenance cron shared secret (auto-generated; copy into GitHub secret)
+      - key: MAINTENANCE_TOKEN
+        generateValue: true
+      # Email (SMTP) — optional; leave blank to disable email entirely
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false # e.g. LocalScore <you@gmail.com>
 
   # ---------------- AI microservice ----------------
   - type: web

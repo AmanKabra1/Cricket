@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { useCreateUser, useSetUserActive, useSetUserRole, useUsers } from "@/api/admin";
+import { useCreateUser, useDeleteUser, useSetUserActive, useSetUserRole, useUsers } from "@/api/admin";
+import { useAppSelector } from "@/store";
 import Spinner from "@/components/Spinner";
 import type { User } from "@/types";
 
@@ -58,6 +59,8 @@ function UsersList() {
   const { data, isLoading } = useUsers();
   const setRole = useSetUserRole();
   const setActive = useSetUserActive();
+  const del = useDeleteUser();
+  const meId = useAppSelector((s) => s.auth.user?.id);
 
   if (isLoading) return <Spinner />;
 
@@ -86,6 +89,19 @@ function UsersList() {
             >
               {u.is_active ? "Disable" : "Enable"}
             </button>
+            {u.id !== meId && (
+              <button
+                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+                title="Delete user + their assigned matches"
+                onClick={() => {
+                  if (confirm(`Delete ${u.full_name}? This also deletes matches assigned to them and all that match data.`)) {
+                    del.mutate(u.id);
+                  }
+                }}
+              >
+                Delete
+              </button>
+            )}
           </div>
         ))}
         {!data?.length && <p className="p-4 muted">No users yet.</p>}

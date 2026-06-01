@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from app.api.v1 import (
     admin,
     auth,
+    maintenance,
     matches,
     public,
     scoring,
@@ -23,3 +24,4 @@ api_router.include_router(scoring.router)
 api_router.include_router(public.router)
 api_router.include_router(uploads.router)
 api_router.include_router(admin.router)
+api_router.include_router(maintenance.router)

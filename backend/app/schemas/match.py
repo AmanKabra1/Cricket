@@ -14,7 +14,7 @@ class MatchCreate(BaseModel):
     team_b_id: int
     venue_id: int | None = None
     tournament_id: int | None = None
-    scheduled_at: datetime | None = None
+    scheduled_at: datetime  # required — every match needs a date & time
     overs_limit: int = Field(default=20, ge=1, le=100)
     admin_ids: list[int] = []
 

@@ -59,6 +59,23 @@ class Settings(BaseSettings):
     AI_SERVICE_URL: str = "http://localhost:8100"
     OPENAI_API_KEY: str = ""
 
+    # Public site URL (used in emails so admins get a working link)
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    # Email (SMTP). Leave SMTP_HOST blank to disable email (calls become no-ops).
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "LocalScore <no-reply@localscore.app>"
+    SMTP_TLS: bool = True
+
+    # Maintenance / data retention (free-tier housekeeping)
+    MAINTENANCE_TOKEN: str = ""  # shared secret for the cron to call the endpoint
+    COMPLETED_MATCH_RETENTION_DAYS: int = 7  # delete completed matches older than this
+    ADMIN_RETENTION_DAYS: int = 15  # delete match-admin accounts older than this
+    MATCH_REMINDER_HOURS: int = 3  # email assigned admins this many hours before start
+
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:

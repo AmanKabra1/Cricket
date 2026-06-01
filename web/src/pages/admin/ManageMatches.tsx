@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMatches, useTeams, useVenues, useTournaments } from "@/api/hooks";
-import { useCreateMatch, useCreateVenue, useDeleteVenue, useUsers } from "@/api/admin";
+import { useCreateMatch, useCreateVenue, useDeleteMatch, useDeleteVenue, useUsers } from "@/api/admin";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { useAppSelector } from "@/store";
 
@@ -72,6 +72,10 @@ function CreateMatchForm() {
       setMsg("Pick two different teams.");
       return;
     }
+    if (!when) {
+      setMsg("Pick a date & time for the match.");
+      return;
+    }
     try {
       const match = await create.mutateAsync({
         team_a_id: Number(a),
@@ -111,8 +115,9 @@ function CreateMatchForm() {
           onChange={(e) => setOvers(Number(e.target.value))} placeholder="Overs" />
       </div>
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold muted">Date &amp; time (optional)</span>
-        <input className="input" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+        <span className="mb-1 block text-xs font-semibold muted">Date &amp; time *</span>
+        <input className="input" type="datetime-local" value={when} required
+          onChange={(e) => setWhen(e.target.value)} />
       </label>
       <select className="input" value={tournament} onChange={(e) => setTournament(Number(e.target.value))}>
         <option value="">Tournament (optional)</option>
@@ -190,6 +195,7 @@ function CreateVenueForm() {
 function MatchList() {
   const { data: matches, isLoading, isError, refetch, isFetching } = useMatches();
   const teams = useTeamMap();
+  const del = useDeleteMatch();
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -206,14 +212,27 @@ function MatchList() {
           </p>
         )}
         {(matches ?? []).map((m) => (
-          <div key={m.id} className="card-surface flex items-center justify-between p-3">
-            <div>
-              <div className="font-medium">
+          <div key={m.id} className="card-surface flex items-center justify-between gap-2 p-3">
+            <div className="min-w-0">
+              <div className="truncate font-medium">
                 {teamName(teams, m.team_a_id)} vs {teamName(teams, m.team_b_id)}
               </div>
               <div className="text-xs muted">{m.status.replace("_", " ")} · {m.overs_limit} ov</div>
             </div>
-            <Link to={`/admin/matches/${m.id}/score`} className="btn-primary text-sm">Score</Link>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link to={`/admin/matches/${m.id}/score`} className="btn-primary text-sm">Score</Link>
+              <button
+                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+                title="Delete match + all its data"
+                onClick={() => {
+                  if (confirm("Delete this match and ALL its data (scores, innings, balls)? This can't be undone.")) {
+                    del.mutate(m.id);
+                  }
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
         {!isLoading && !isError && !matches?.length && <p className="muted">No matches yet.</p>}

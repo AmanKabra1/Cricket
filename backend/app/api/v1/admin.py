@@ -13,6 +13,8 @@ from app.models.enums import UserRole
 from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.auth import UserOut
+from app.services.email import send_email, welcome_admin_body
+from app.services.maintenance import delete_user_and_matches, run_maintenance
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -86,6 +88,12 @@ async def create_user(
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    # Email the new admin their login details + site link (best-effort).
+    await send_email(
+        user.email,
+        "Your LocalScore admin account",
+        welcome_admin_body(user.full_name, payload.email, payload.password, user.role.value),
+    )
     return user
 
 
@@ -119,3 +127,24 @@ async def set_active(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int, db: DbSession, current: User = Depends(require_super_admin)
+) -> dict:
+    """Delete a user AND every match they were assigned to (+ that match's data)."""
+    if user_id == current.id:
+        raise HTTPException(status_code=400, detail="You can't delete your own account")
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    removed = await delete_user_and_matches(db, user)
+    await db.commit()
+    return {"ok": True, "deleted_matches": removed}
+
+
+@router.post("/maintenance/run")
+async def maintenance_run(db: DbSession, _: User = Depends(require_super_admin)) -> dict:
+    """Manually run housekeeping (purge old matches, expire stale admins, reminders)."""
+    return await run_maintenance(db)

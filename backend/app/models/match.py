@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -45,6 +45,8 @@ class Match(Base, TimestampMixin):
         ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
     )
     result_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # True once a pre-match reminder email has been sent (avoids duplicates).
+    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     team_a = relationship("Team", foreign_keys=[team_a_id], lazy="selectin")
     team_b = relationship("Team", foreign_keys=[team_b_id], lazy="selectin")
