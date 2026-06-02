@@ -12,6 +12,18 @@ const statusStyle: Record<string, string> = {
   ABANDONED: "muted",
 };
 
+/** Neutral calendar glyph — an emoji 📅 renders as a date-stamped image
+ *  (e.g. "JUL 17") on Android, so we use a plain SVG that looks the same
+ *  on every device. */
+function CalendarIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
 function fmtDate(iso: string | null): string {
   if (!iso) return "TBD";
   const d = new Date(iso);
@@ -68,7 +80,7 @@ export default function MatchCard({ match, teams }: { match: Match; teams: Map<n
         className="mt-3 flex items-center justify-between border-t pt-3 text-xs muted"
         style={{ borderColor: "var(--border)" }}
       >
-        <span>📅 {fmtDate(match.scheduled_at)}</span>
+        <span className="inline-flex items-center gap-1.5"><CalendarIcon />{fmtDate(match.scheduled_at)}</span>
         <span className="font-medium">{match.result_text ?? (live ? "In progress →" : "")}</span>
       </div>
     </Link>

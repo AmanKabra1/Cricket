@@ -11,6 +11,15 @@ import type { Player } from "@/types";
 
 const WICKET_TYPES = ["BOWLED", "CAUGHT", "LBW", "RUN_OUT", "STUMPED", "HIT_WICKET"];
 
+// On-field positions captured before a ball, restored on undo.
+type Snapshot = {
+  striker: number | "";
+  nonStriker: number | "";
+  bowler: number | "";
+  lastOverBowler: number | "";
+  dismissed: number[];
+};
+
 function PlayerSelect({
   label,
   players,
@@ -69,6 +78,9 @@ export default function Scoring() {
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
   // The bowler of the just-completed over — can't bowl the next one.
   const [lastOverBowler, setLastOverBowler] = useState<number | "">("");
+  // Snapshots of the on-field positions BEFORE each ball, so "Undo" can put the
+  // striker/non-striker/bowler back exactly where they were.
+  const [history, setHistory] = useState<Snapshot[]>([]);
 
   // Out players: from the scorecard (authoritative, per innings) + just-dismissed.
   const outIds = useMemo(() => {
@@ -90,6 +102,7 @@ export default function Scoring() {
     setStriker("");
     setNonStriker("");
     setBowler("");
+    setHistory([]);
   }, [openInnings?.innings_id]);
 
   const allBatters = useMemo<Player[]>(() => {
@@ -138,6 +151,11 @@ export default function Scoring() {
     try {
       const res = await postBall.mutateAsync(payload);
       setMsg(null);
+      // Remember where everyone stood BEFORE this ball, so undo can restore it.
+      setHistory((h) => [
+        ...h,
+        { striker, nonStriker, bowler, lastOverBowler, dismissed: [...dismissed] },
+      ]);
       applyPostBall(payload, res.over_completed);
     } catch (e: unknown) {
       setInfo(null);
@@ -361,7 +379,19 @@ export default function Scoring() {
             className="btn-ghost w-full"
             disabled={undoBall.isPending}
             onClick={() => {
-              setDismissed(new Set()); // re-derive out list from the scorecard after undo
+              // Put the batters/bowler back where they were before the last ball.
+              const prev = history[history.length - 1];
+              if (prev) {
+                setStriker(prev.striker);
+                setNonStriker(prev.nonStriker);
+                setBowler(prev.bowler);
+                setLastOverBowler(prev.lastOverBowler);
+                setDismissed(new Set(prev.dismissed));
+                setHistory((h) => h.slice(0, -1));
+              } else {
+                setDismissed(new Set()); // re-derive out list from the scorecard
+              }
+              setInfo(null);
               undoBall.mutate();
             }}
           >

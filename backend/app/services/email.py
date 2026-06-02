@@ -33,15 +33,24 @@ def _send_sync(to: str, subject: str, body: str) -> None:
 
 async def send_email(to: str, subject: str, body: str) -> bool:
     """Best-effort send. Returns True if sent, False if disabled/failed."""
+    ok, _ = await try_send_email(to, subject, body)
+    return ok
+
+
+async def try_send_email(to: str, subject: str, body: str) -> tuple[bool, str | None]:
+    """Like send_email but also returns the failure reason (for diagnostics).
+
+    Returns (True, None) on success, (False, reason) otherwise.
+    """
     if not email_enabled():
         logger.info("email disabled — would send to %s: %s", to, subject)
-        return False
+        return False, "SMTP not configured"
     try:
         await run_in_threadpool(_send_sync, to, subject, body)
-        return True
+        return True, None
     except Exception as exc:  # noqa: BLE001 — never let email break a request
         logger.warning("email send failed to %s: %s", to, exc)
-        return False
+        return False, f"{type(exc).__name__}: {exc}"
 
 
 def welcome_admin_body(full_name: str, email: str, password: str, role: str) -> str:

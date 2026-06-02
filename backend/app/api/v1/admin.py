@@ -13,7 +13,7 @@ from app.models.enums import UserRole
 from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.auth import UserOut
-from app.services.email import email_enabled, send_email, welcome_admin_body
+from app.services.email import email_enabled, send_email, try_send_email, welcome_admin_body
 from app.services.maintenance import delete_user_and_matches, run_maintenance
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -158,13 +158,13 @@ async def test_email(current: User = Depends(require_super_admin)) -> dict:
     """Send a test email to the signed-in super admin to verify SMTP config."""
     if not email_enabled():
         return {"configured": False, "sent": False, "detail": "SMTP not configured (set SMTP_HOST/SMTP_USER)."}
-    ok = await send_email(
+    ok, error = await try_send_email(
         current.email,
         "LocalScore test email",
         "This is a test email from LocalScore. If you received it, email is working.",
     )
-    return {
-        "configured": True,
-        "sent": ok,
-        "detail": "Sent — check your inbox/spam." if ok else "Send failed — check SMTP key / verified sender.",
-    }
+    if ok:
+        detail = "Sent — check your inbox/spam."
+    else:
+        detail = f"Send failed: {error}. Tip: the SMTP_FROM address must be a sender VERIFIED in Brevo (free webmail like gmail.com is usually rejected)."
+    return {"configured": True, "sent": ok, "detail": detail}
