@@ -33,21 +33,21 @@ export const useLiveScore = (id: number) =>
   useQuery({
     queryKey: ["live", id],
     queryFn: () => get<LiveScore>(`/public/matches/${id}/live`),
-    refetchInterval: 8000,
+    refetchInterval: 3000,
   });
 
 export const useScorecard = (id: number) =>
   useQuery({
     queryKey: ["scorecard", id],
     queryFn: () => get<Scorecard>(`/public/matches/${id}/scorecard`),
-    refetchInterval: 10000,
+    refetchInterval: 4000,
   });
 
 export const useCommentary = (id: number) =>
   useQuery({
     queryKey: ["commentary", id],
     queryFn: () => get<CommentaryItem[]>(`/public/matches/${id}/commentary`),
-    refetchInterval: 10000,
+    refetchInterval: 5000,
   });
 
 export const useAnalytics = (id: number) =>

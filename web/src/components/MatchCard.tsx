@@ -47,7 +47,7 @@ export default function MatchCard({ match, teams }: { match: Match; teams: Map<n
     queryKey: ["live", match.id],
     queryFn: async () => (await api.get<LiveScore>(`/public/matches/${match.id}/live`)).data,
     enabled: showScore,
-    refetchInterval: live ? 12_000 : false,
+    refetchInterval: live ? 5_000 : false,
   });
 
   const scoreFor = (teamId: number): string | null => {
