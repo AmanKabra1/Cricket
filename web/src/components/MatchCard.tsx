@@ -105,9 +105,9 @@ function TeamRow({ name, logo, score, overs, winner }: { name: string; logo: str
           {name.slice(0, 2).toUpperCase()}
         </span>
       )}
-      <span className={`flex-1 truncate ${winner ? "font-extrabold text-pitch-600" : "font-semibold"}`}>
-        {name}
-        {winner && <span title="Winner"> 🏆</span>}
+      <span className="flex min-w-0 flex-1 items-center gap-1">
+        <span className={`truncate ${winner ? "font-extrabold text-pitch-600" : "font-semibold"}`}>{name}</span>
+        {winner && <span title="Winner" className="shrink-0">🏆</span>}
       </span>
       {score && (
         <span className="text-right">

@@ -62,7 +62,7 @@ export default function MatchCenter() {
             </p>
             {match.result_text && <p className="mt-1 font-semibold text-pitch-600">{match.result_text}</p>}
           </div>
-          {canScore && (
+          {canScore && match.status !== "COMPLETED" && match.status !== "ABANDONED" && (
             <Link to={`/admin/matches/${matchId}/score`} className="btn-primary">
               Score this match
             </Link>
