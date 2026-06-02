@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { useTeams, useTournaments, useVenues } from "@/api/hooks";
-import { useApproveTournament, useCreateTournament, useDeleteTournament, useGenerateFixtures } from "@/api/admin";
+import { useStandings, useTeams, useTournaments, useVenues } from "@/api/hooks";
+import { useApproveTournament, useCreateMatch, useCreateTournament, useDeleteTournament, useGenerateFixtures } from "@/api/admin";
 import { useAppSelector } from "@/store";
 import DateTimePicker from "@/components/DateTimePicker";
 import type { Tournament } from "@/types";
@@ -188,8 +188,9 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
 
   if (!open) {
     return (
-      <span className="flex items-center gap-2">
-        <button className="btn-ghost text-xs" onClick={() => setOpen(true)}>Generate fixtures…</button>
+      <span className="flex flex-wrap items-center gap-2">
+        <button className="btn-ghost text-xs" onClick={() => setOpen(true)}>Auto-generate fixtures…</button>
+        <ManualMatchForm tournament={tournament} />
         {msg && <span className="text-xs muted">{msg}</span>}
       </span>
     );
@@ -197,6 +198,7 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
 
   return (
     <form onSubmit={run} className="mt-1 w-full space-y-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
+      <p className="text-xs font-semibold text-pitch-600">Auto-generate (whole schedule at once)</p>
       <p className="text-xs muted">Applied to every fixture. With a start time, matches fill each day then continue the next — so a long tournament spans days, not one overnight run.</p>
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
@@ -238,6 +240,88 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
         <button type="button" className="btn-ghost text-sm" onClick={() => setOpen(false)}>Cancel</button>
       </div>
       {msg && <p className="text-xs text-red-500">{msg}</p>}
+    </form>
+  );
+}
+
+// Lets the admin add tournament matches one at a time on their own schedule:
+// pick the two teams, exact date & time, venue and overs for each.
+function ManualMatchForm({ tournament }: { tournament: Tournament }) {
+  const { data: standings } = useStandings(tournament.id);
+  const { data: venues } = useVenues();
+  const create = useCreateMatch();
+  const [open, setOpen] = useState(false);
+  const [a, setA] = useState<number | "">("");
+  const [b, setB] = useState<number | "">("");
+  const [overs, setOvers] = useState(20);
+  const [venueId, setVenueId] = useState<number | "">("");
+  const [when, setWhen] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const teamsList = standings ?? [];
+
+  const add = async (e: FormEvent) => {
+    e.preventDefault();
+    setMsg(null);
+    if (a === "" || b === "" || a === b) {
+      setMsg("Pick two different teams.");
+      return;
+    }
+    try {
+      await create.mutateAsync({
+        team_a_id: Number(a),
+        team_b_id: Number(b),
+        tournament_id: tournament.id,
+        venue_id: venueId === "" ? undefined : Number(venueId),
+        overs_limit: overs,
+        scheduled_at: when ? (when.length === 16 ? `${when}:00` : when) : undefined,
+      });
+      setMsg("Match added ✓");
+      setA(""); setB(""); setWhen("");
+    } catch (err: unknown) {
+      setMsg((err as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Failed to add match");
+    }
+  };
+
+  if (!open) {
+    return <button className="btn-ghost text-xs" onClick={() => setOpen(true)}>Add match manually…</button>;
+  }
+
+  return (
+    <form onSubmit={add} className="mt-1 w-full space-y-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
+      <p className="text-xs font-semibold text-pitch-600">Add one match (your own schedule)</p>
+      <div className="grid grid-cols-2 gap-2">
+        <select className="input" value={a} onChange={(e) => setA(Number(e.target.value))} required>
+          <option value="">Team A *</option>
+          {teamsList.map((t) => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
+        </select>
+        <select className="input" value={b} onChange={(e) => setB(Number(e.target.value))} required>
+          <option value="">Team B *</option>
+          {teamsList.map((t) => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
+        </select>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold muted">Overs</span>
+          <input className="input" type="number" min={1} max={100} value={overs} onChange={(e) => setOvers(Number(e.target.value))} />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold muted">Venue</span>
+          <select className="input" value={venueId} onChange={(e) => setVenueId(e.target.value === "" ? "" : Number(e.target.value))}>
+            <option value="">— none —</option>
+            {(venues ?? []).map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+          </select>
+        </label>
+      </div>
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold muted">Date &amp; time</span>
+        <DateTimePicker value={when} onChange={setWhen} />
+      </label>
+      <div className="flex gap-2">
+        <button type="submit" className="btn-primary flex-1 text-sm" disabled={create.isPending}>
+          {create.isPending ? "Adding…" : "Add match"}
+        </button>
+        <button type="button" className="btn-ghost text-sm" onClick={() => setOpen(false)}>Done</button>
+      </div>
+      {msg && <p className="text-xs muted">{msg}</p>}
     </form>
   );
 }
