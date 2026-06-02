@@ -219,10 +219,18 @@ export const useCreateTournament = () => {
   });
 };
 
+export interface FixtureOptions {
+  overs_limit?: number;
+  venue_id?: number | null;
+  start_at?: string | null;
+  interval_minutes?: number;
+}
+
 export const useGenerateFixtures = (tournamentId: number) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post(`/tournaments/${tournamentId}/fixtures`).then((r) => r.data),
+    mutationFn: (opts: FixtureOptions = {}) =>
+      api.post(`/tournaments/${tournamentId}/fixtures`, opts).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tournament-matches", tournamentId] });
       qc.invalidateQueries({ queryKey: ["matches"] });

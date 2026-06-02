@@ -10,6 +10,7 @@ where a side bowled out counts the full over quota (per NRR convention).
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from itertools import combinations
 
 from sqlalchemy import select
@@ -23,8 +24,21 @@ WIN_POINTS = 2
 DRAW_POINTS = 1
 
 
-async def generate_fixtures(db: AsyncSession, tournament: Tournament) -> list[Match]:
-    """Create SCHEDULED matches for the tournament's participating teams."""
+async def generate_fixtures(
+    db: AsyncSession,
+    tournament: Tournament,
+    *,
+    overs_limit: int = 20,
+    venue_id: int | None = None,
+    start_at: datetime | None = None,
+    interval_minutes: int = 180,
+) -> list[Match]:
+    """Create SCHEDULED matches for the tournament's participating teams.
+
+    Each match inherits overs_limit + venue_id; if a start time is given the
+    matches are staggered by interval_minutes (1st at start_at, 2nd at
+    start_at + interval, …) so the whole schedule is laid out automatically.
+    """
     team_ids = [s.team_id for s in tournament.standings]
     if len(team_ids) < 2:
         raise ValueError("Tournament needs at least two teams to generate fixtures")
@@ -53,12 +67,17 @@ async def generate_fixtures(db: AsyncSession, tournament: Tournament) -> list[Ma
         TournamentStatus.COMPLETED,
     )
     created: list[Match] = []
-    for a, b in pairings:
+    for i, (a, b) in enumerate(pairings):
+        scheduled_at = (
+            start_at + timedelta(minutes=interval_minutes * i) if start_at else None
+        )
         match = Match(
             tournament_id=tournament.id,
             team_a_id=a,
             team_b_id=b,
-            overs_limit=20,
+            venue_id=venue_id,
+            scheduled_at=scheduled_at,
+            overs_limit=overs_limit,
             status=MatchStatus.SCHEDULED,
             approved=approved,
         )

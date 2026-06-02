@@ -1,7 +1,10 @@
 """Tournament management, standings, and super-admin approval."""
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.api.deps import (
@@ -68,17 +71,40 @@ async def approve_tournament(
     return tournament
 
 
+class FixtureOptions(BaseModel):
+    """Defaults applied to every generated fixture; matches are staggered in time."""
+    overs_limit: int = Field(default=20, ge=1, le=100)
+    venue_id: int | None = None
+    start_at: datetime | None = None  # kickoff of the first match
+    interval_minutes: int = Field(default=180, ge=0, le=100_000)  # gap between matches
+
+
 @router.post("/{tournament_id}/fixtures", response_model=list[MatchOut], status_code=201)
 async def create_fixtures(
     tournament_id: int,
     db: DbSession,
+    payload: FixtureOptions | None = None,
     user: User = Depends(require_admin),
 ) -> list[Match]:
     tournament = await db.get(Tournament, tournament_id)
     if not tournament:
         raise HTTPException(status_code=404, detail="Tournament not found")
+    # Fixtures can only be generated once a super admin has approved the tournament.
+    if tournament.status not in (TournamentStatus.APPROVED, TournamentStatus.ONGOING):
+        raise HTTPException(
+            status_code=400,
+            detail="A super admin must approve this tournament before fixtures can be generated.",
+        )
+    opts = payload or FixtureOptions()
     try:
-        matches = await generate_fixtures(db, tournament)
+        matches = await generate_fixtures(
+            db,
+            tournament,
+            overs_limit=opts.overs_limit,
+            venue_id=opts.venue_id,
+            start_at=opts.start_at,
+            interval_minutes=opts.interval_minutes,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     await db.commit()
