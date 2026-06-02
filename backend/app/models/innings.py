@@ -39,6 +39,12 @@ class Innings(Base, TimestampMixin):
     target: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_closed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
+    # The two batters currently at the crease (so a freshly-sent-in batter shows
+    # in the scorecard at 0* even before facing a ball). Plain ints, not FKs, to
+    # keep deletes simple.
+    current_striker_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    current_non_striker_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     match = relationship("Match", back_populates="innings")
     balls = relationship(
         "Ball",

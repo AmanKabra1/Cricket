@@ -86,8 +86,13 @@ export const useBackgrounds = () =>
 export const useTeam = (id: number) =>
   useQuery({ queryKey: ["team", id], queryFn: () => get<TeamDetail>(`/teams/${id}`) });
 
-export const useTournaments = () =>
-  useQuery({ queryKey: ["tournaments"], queryFn: () => get<Tournament[]>("/tournaments") });
+// `mine` = the admin-management view: super admins see all, match admins only
+// the tournaments they created. Without it, the public list (approved only).
+export const useTournaments = (mine = false) =>
+  useQuery({
+    queryKey: ["tournaments", mine],
+    queryFn: () => get<Tournament[]>(`/tournaments${mine ? "?mine=true" : ""}`),
+  });
 
 export const useStandings = (id: number) =>
   useQuery({

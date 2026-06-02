@@ -93,7 +93,7 @@ function CreateTournamentForm() {
 }
 
 function TournamentList() {
-  const { data: tournaments } = useTournaments();
+  const { data: tournaments } = useTournaments(true); // management view: own (admin) / all (super)
   const user = useAppSelector((s) => s.auth.user);
   const approve = useApproveTournament();
   const del = useDeleteTournament();

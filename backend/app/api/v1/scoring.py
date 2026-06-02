@@ -6,6 +6,7 @@ Socket.IO to every spectator in the match room.
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, DbSession, authorize_match_admin, require_admin
 from app.core.cache import DASHBOARD_KEY, cache, live_key, scorecard_key
@@ -111,6 +112,32 @@ async def post_ball(
         "over_completed": outcome.over_completed,
         "live_score": live,
     }
+
+
+class AtCrease(BaseModel):
+    striker_id: int
+    non_striker_id: int
+
+
+@router.post("/at-crease")
+async def set_at_crease(
+    match_id: int, payload: AtCrease, db: DbSession, user: User = Depends(require_admin)
+) -> dict:
+    """Tell the scorecard who's currently batting, so a newly sent-in batter
+    shows at 0* before facing a ball."""
+    match = await authorize_match_admin(match_id, db, user)
+    innings = _current_innings(match)
+    if innings is None:
+        return {"ok": False}
+    innings.current_striker_id = payload.striker_id
+    innings.current_non_striker_id = payload.non_striker_id
+    await db.commit()
+    # Refresh derived views so the new batter appears immediately.
+    await db.refresh(match)
+    live = await scoreboard.build_live_score(db, match)
+    await cache.set_json(live_key(match_id), live, ttl=5)
+    await cache.invalidate(scorecard_key(match_id))
+    return {"ok": True}
 
 
 @router.post("/undo")

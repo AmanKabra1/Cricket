@@ -161,6 +161,10 @@ async def record_ball(
 
     # --- apply to innings ---
     innings.total_runs += total_delta
+    # Remember who was at the crease for this ball (the scorer updates these via
+    # the at-crease endpoint when a new batter comes in after a wicket).
+    innings.current_striker_id = striker_id
+    innings.current_non_striker_id = non_striker_id
     if is_legal:
         innings.legal_balls += 1
     if is_wicket and wicket_type != WicketType.RETIRED_HURT:
@@ -359,5 +363,12 @@ async def undo_last_ball(db: AsyncSession, match_id: int, innings: Innings) -> b
         fielder_stats.catches = max(0, fielder_stats.catches - 1)
 
     await db.delete(last)
+    await db.flush()
+    # Point "at the crease" back at the previous delivery's batters (or clear).
+    prev = await db.scalar(
+        select(Ball).where(Ball.innings_id == innings.id).order_by(Ball.sequence.desc()).limit(1)
+    )
+    innings.current_striker_id = prev.striker_id if prev else None
+    innings.current_non_striker_id = prev.non_striker_id if prev else None
     await db.flush()
     return True

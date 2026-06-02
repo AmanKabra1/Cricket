@@ -174,6 +174,21 @@ export default function Scoring() {
 
   useEffect(() => setMsg(null), [striker, bowler]);
 
+  // Tell the backend who's at the crease so a freshly sent-in batter shows in
+  // the scorecard at 0* before facing a ball.
+  useEffect(() => {
+    const mayScore = !!user && !!match && (user.role === "SUPER_ADMIN" || (match.admin_ids ?? []).includes(user.id));
+    if (!mayScore || !openInnings) return;
+    if (striker === "" || nonStriker === "" || striker === nonStriker) return;
+    api
+      .post(`/matches/${matchId}/scoring/at-crease`, {
+        striker_id: Number(striker),
+        non_striker_id: Number(nonStriker),
+      })
+      .then(() => qc.invalidateQueries({ queryKey: ["scorecard", matchId] }))
+      .catch(() => {});
+  }, [striker, nonStriker, openInnings?.innings_id, user, match, matchId, qc]);
+
   if (isLoading) return <Spinner />;
   if (isError || !match) return <ErrorState />;
 

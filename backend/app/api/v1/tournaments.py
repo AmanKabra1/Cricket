@@ -27,12 +27,23 @@ router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
 @router.get("", response_model=list[TournamentOut])
-async def list_tournaments(db: DbSession, user: OptionalUser = None) -> list[Tournament]:
-    """Admins see every tournament; the public only sees approved ones (so a
-    pending/rejected tournament isn't visible until a super admin approves it)."""
+async def list_tournaments(
+    db: DbSession, user: OptionalUser = None, mine: bool = False
+) -> list[Tournament]:
+    """Two views of the same list:
+
+    • Public (mine=false): only approved/ongoing/completed tournaments.
+    • Management (mine=true): a super admin sees every tournament; a match admin
+      sees only the ones they created.
+    """
     stmt = select(Tournament).order_by(Tournament.start_date.desc())
-    is_admin = user is not None and user.role != UserRole.PUBLIC
-    if not is_admin:
+    is_super = user is not None and user.role == UserRole.SUPER_ADMIN
+    if mine:
+        if user is None:
+            return []
+        if not is_super:
+            stmt = stmt.where(Tournament.created_by == user.id)
+    elif not is_super:
         stmt = stmt.where(
             Tournament.status.in_(
                 [

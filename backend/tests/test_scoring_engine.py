@@ -174,6 +174,23 @@ async def test_no_ball_and_undo(db):
     assert innings.legal_balls == 0
 
 
+async def test_scorecard_shows_current_batter_at_zero(db):
+    from app.services.scoreboard import build_scorecard
+
+    match, innings, striker, non_striker, bowler, _ = await _setup(db)
+    # A batter is sent to the crease but hasn't faced a ball yet.
+    innings.current_striker_id = striker.id
+    innings.current_non_striker_id = non_striker.id
+    await db.commit()
+    await db.refresh(match, attribute_names=["innings"])  # load innings in async ctx
+
+    card = await build_scorecard(db, match)
+    batting = card["innings"][0]["batting"]
+    ids = {b["player_id"]: b for b in batting}
+    assert striker.id in ids and ids[striker.id]["runs"] == 0 and ids[striker.id]["is_out"] is False
+    assert non_striker.id in ids
+
+
 async def test_free_hit_rules(db):
     match, innings, striker, non_striker, bowler, keeper = await _setup(db)
     # Add more batters so a single dismissal doesn't end the innings (all-out).

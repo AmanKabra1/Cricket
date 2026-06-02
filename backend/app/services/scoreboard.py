@@ -123,6 +123,30 @@ async def build_scorecard(db: AsyncSession, match: Match) -> dict:
             for s in stats
             if s.team_id == inn.bowling_team_id and s.legal_balls_bowled > 0
         ]
+        # Ensure the two batters currently at the crease appear even if they
+        # haven't faced a ball yet (shown 0* — standard cricket scorecard).
+        shown = {b["player_id"] for b in batting}
+        for pid in (inn.current_striker_id, inn.current_non_striker_id):
+            if pid and pid not in shown:
+                p = players.get(pid)
+                if not p:
+                    p = await db.get(Player, pid)
+                if p and p.team_id == inn.batting_team_id:
+                    batting.append(
+                        {
+                            "player_id": pid,
+                            "name": p.name,
+                            "photo_url": p.photo_url,
+                            "runs": 0,
+                            "balls": 0,
+                            "fours": 0,
+                            "sixes": 0,
+                            "strike_rate": 0.0,
+                            "is_out": False,
+                        }
+                    )
+                    shown.add(pid)
+
         card = innings_score(inn, match.overs_limit)
         card["batting"] = sorted(batting, key=lambda b: b["player_id"])
         card["bowling"] = sorted(bowling, key=lambda b: b["player_id"])
