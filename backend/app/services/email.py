@@ -16,8 +16,12 @@ logger = logging.getLogger("localscore.email")
 
 
 def email_enabled() -> bool:
-    # Either the Brevo HTTP API (preferred) or classic SMTP can be configured.
-    return bool(settings.BREVO_API_KEY or (settings.SMTP_HOST and settings.SMTP_USER))
+    # Any one of: Brevo HTTP API, Resend HTTP API, or classic SMTP.
+    return bool(
+        settings.BREVO_API_KEY
+        or settings.RESEND_API_KEY
+        or (settings.SMTP_HOST and settings.SMTP_USER)
+    )
 
 
 def _from_parts() -> tuple[str, str]:
@@ -39,6 +43,18 @@ async def _send_via_brevo_api(to: str, subject: str, body: str) -> None:
                 "subject": subject,
                 "textContent": body,
             },
+        )
+        resp.raise_for_status()
+
+
+async def _send_via_resend(to: str, subject: str, body: str) -> None:
+    """Send over Resend's HTTPS API (https://resend.com)."""
+    sender = settings.RESEND_FROM or settings.SMTP_FROM
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
+            json={"from": sender, "to": [to], "subject": subject, "text": body},
         )
         resp.raise_for_status()
 
@@ -74,6 +90,8 @@ async def try_send_email(to: str, subject: str, body: str) -> tuple[bool, str | 
     try:
         if settings.BREVO_API_KEY:
             await _send_via_brevo_api(to, subject, body)  # HTTPS — preferred
+        elif settings.RESEND_API_KEY:
+            await _send_via_resend(to, subject, body)  # HTTPS alternative
         else:
             await run_in_threadpool(_send_sync, to, subject, body)  # SMTP fallback
         return True, None

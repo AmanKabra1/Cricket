@@ -59,7 +59,7 @@ function InningsBlock({ inn, teams }: { inn: InningsCard; teams: Map<number, imp
       <div className="overflow-x-auto">
       <table className="w-full min-w-[420px] text-sm">
         <thead className="text-left">
-          <tr className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
+          <tr className="bg-pitch-500/15 text-pitch-700 dark:text-pitch-300">
             <th className="p-3 font-bold">🔴 Bowling</th>
             <th className="p-3 text-center">O</th>
             <th className="p-3 text-center">R</th>
