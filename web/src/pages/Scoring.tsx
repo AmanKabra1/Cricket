@@ -124,6 +124,10 @@ export default function Scoring() {
   // from localStorage so reopening the link doesn't wipe them; a brand-new
   // innings (nothing saved) starts fresh. Undo history is not persisted.
   useEffect(() => {
+    // Always reset the wicket selector and undo history for a fresh innings.
+    setWicketType(WICKET_TYPES[0]);
+    setRunOutEnd("striker");
+    setHistory([]);
     const innId = openInnings?.innings_id;
     if (!innId) {
       setDismissed(new Set());
@@ -131,7 +135,6 @@ export default function Scoring() {
       setStriker("");
       setNonStriker("");
       setBowler("");
-      setHistory([]);
       return;
     }
     const saved = loadScoring(matchId, innId);
@@ -140,7 +143,6 @@ export default function Scoring() {
     setBowler(saved?.bowler ?? "");
     setLastOverBowler(saved?.lastOverBowler ?? "");
     setDismissed(new Set(saved?.dismissed ?? []));
-    setHistory([]);
   }, [openInnings?.innings_id, matchId]);
 
   // Persist the on-field picks whenever they change (per match + innings).
@@ -206,6 +208,9 @@ export default function Scoring() {
         { striker, nonStriker, bowler, lastOverBowler, dismissed: [...dismissed] },
       ]);
       applyPostBall(payload, res.over_completed);
+      // Reset the wicket selector back to default after every delivery.
+      setWicketType(WICKET_TYPES[0]);
+      setRunOutEnd("striker");
     } catch (e: unknown) {
       setInfo(null);
       setMsg((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Failed to record ball");
@@ -495,35 +500,48 @@ function StartPanel({
   teams: Map<number, import("@/types").Team>;
   existingInnings: number;
   firstBattingTeamId: number | null;
-  onStart: (batId: number, bowlId: number) => void;
+  onStart: (batId: number, bowlId: number) => void | Promise<void>;
 }) {
-  // For the 2nd innings, default the batting side to whoever bowled first.
-  const defaultBat =
-    existingInnings === 1 && firstBattingTeamId
-      ? firstBattingTeamId === match.team_a_id
-        ? match.team_b_id
-        : match.team_a_id
-      : match.team_a_id;
-  const [batId, setBatId] = useState(defaultBat);
+  // For the 2nd innings the team that batted first can't bat again — only the
+  // side that bowled first may be picked (so it's not even offered).
+  const battedFirst = existingInnings === 1 ? firstBattingTeamId : null;
+  const battingOptions = [match.team_a_id, match.team_b_id].filter((id) => id !== battedFirst);
+  const [batId, setBatId] = useState(battingOptions[0]);
   const bowlId = batId === match.team_a_id ? match.team_b_id : match.team_a_id;
+  const [starting, setStarting] = useState(false);
 
   if (existingInnings >= 2) {
     return <div className="card-surface mb-5 p-5 text-center muted">Both innings are complete.</div>;
   }
+
+  const start = async () => {
+    if (starting) return;
+    setStarting(true);
+    try {
+      await onStart(batId, bowlId);
+    } finally {
+      setStarting(false);
+    }
+  };
 
   return (
     <div className="card-surface mb-5 p-5">
       <h2 className="mb-3 font-bold">Start {existingInnings === 0 ? "first" : "second"} innings</h2>
       <label className="mb-3 block">
         <span className="mb-1 block text-xs font-semibold muted">Batting team</span>
-        <select className="input" value={batId} onChange={(e) => setBatId(Number(e.target.value))}>
-          <option value={match.team_a_id}>{teamName(teams, match.team_a_id)}</option>
-          <option value={match.team_b_id}>{teamName(teams, match.team_b_id)}</option>
-        </select>
+        {battingOptions.length > 1 ? (
+          <select className="input" value={batId} onChange={(e) => setBatId(Number(e.target.value))}>
+            {battingOptions.map((id) => (
+              <option key={id} value={id}>{teamName(teams, id)}</option>
+            ))}
+          </select>
+        ) : (
+          <div className="input flex items-center font-semibold">{teamName(teams, batId)}</div>
+        )}
       </label>
       <p className="mb-3 text-sm muted">Bowling: {teamName(teams, bowlId)}</p>
-      <button className="btn-primary w-full" onClick={() => onStart(batId, bowlId)}>
-        Start innings
+      <button className="btn-primary w-full" onClick={start} disabled={starting}>
+        {starting ? "Starting…" : "Start innings"}
       </button>
     </div>
   );
