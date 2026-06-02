@@ -58,6 +58,44 @@ async def test_all_formats_generate_fixtures(db):
     assert len(matches) == 2
 
 
+async def test_fixture_edge_cases_by_size_and_type(db):
+    import pytest as _pytest
+
+    async def make(fmt, n):
+        teams = await _teams(db, n)
+        t = Tournament(name=f"{fmt.value}-{n}", format=fmt)
+        t.standings = [TournamentTeam(team_id=tm.id) for tm in teams]
+        db.add(t)
+        await db.flush()
+        return t
+
+    # Minimum size (2 teams): every type → exactly 1 match.
+    for fmt in TournamentFormat:
+        t = await make(fmt, 2)
+        assert len(await generate_fixtures(db, t)) == 1, fmt
+
+    # Round-robin scales as C(n,2): 3→3, 5→10, 8→28.
+    for n, expected in [(3, 3), (5, 10), (8, 28)]:
+        t = await make(TournamentFormat.LEAGUE, n)
+        assert len(await generate_fixtures(db, t)) == expected, n
+
+    # Knockout = floor(n/2); odd sizes drop one team in round 1.
+    for n, expected in [(3, 1), (5, 2), (8, 4)]:
+        t = await make(TournamentFormat.KNOCKOUT, n)
+        assert len(await generate_fixtures(db, t)) == expected, n
+
+    # Fewer than two teams is rejected.
+    t = await make(TournamentFormat.LEAGUE, 1)
+    with _pytest.raises(ValueError):
+        await generate_fixtures(db, t)
+
+    # Re-generating an already-populated tournament is rejected.
+    t = await make(TournamentFormat.LEAGUE, 2)
+    await generate_fixtures(db, t)
+    with _pytest.raises(ValueError):
+        await generate_fixtures(db, t)
+
+
 async def test_fixtures_scheduled_across_days(db):
     from datetime import datetime
 

@@ -1,10 +1,30 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useStandings, useTeams, useTournaments, useVenues } from "@/api/hooks";
 import { useApproveTournament, useCreateMatch, useCreateTournament, useDeleteTournament, useGenerateFixtures } from "@/api/admin";
 import { useAppSelector } from "@/store";
 import DateTimePicker from "@/components/DateTimePicker";
 import type { Tournament } from "@/types";
+
+// Close an open popover/form when the user clicks or taps anywhere outside it.
+function useClickOutside(active: boolean, onClose: () => void) {
+  const ref = useRef<HTMLFormElement>(null);
+  const cb = useRef(onClose);
+  cb.current = onClose;
+  useEffect(() => {
+    if (!active) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) cb.current();
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [active]);
+  return ref;
+}
 
 // What each format does when you "Generate fixtures", shown in the form so the
 // organiser knows exactly which matches will be created.
@@ -180,6 +200,7 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
   const [interval, setInterval] = useState(180);
   const [perDay, setPerDay] = useState(2);
   const [msg, setMsg] = useState<string | null>(null);
+  const formRef = useClickOutside(open, () => setOpen(false)); // click away to close
 
   // How many matches this format will create, and how many days they span.
   const nTeams = standings?.length ?? 0;
@@ -226,7 +247,7 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
   }
 
   return (
-    <form onSubmit={run} className="mt-1 w-full space-y-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
+    <form ref={formRef} onSubmit={run} className="mt-1 w-full space-y-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
       <p className="text-xs font-semibold text-pitch-600">Auto-generate (whole schedule at once)</p>
       <p className="text-xs muted">Applied to every fixture. With a start time, matches fill each day then continue the next — so a long tournament spans days, not one overnight run.</p>
       <div className="grid grid-cols-2 gap-2">
@@ -300,6 +321,7 @@ function ManualMatchForm({ tournament }: { tournament: Tournament }) {
   const [venueId, setVenueId] = useState<number | "">("");
   const [when, setWhen] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const formRef = useClickOutside(open, () => setOpen(false)); // click away to close
 
   const teamsList = standings ?? [];
 
@@ -331,7 +353,7 @@ function ManualMatchForm({ tournament }: { tournament: Tournament }) {
   }
 
   return (
-    <form onSubmit={add} className="mt-1 w-full space-y-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
+    <form ref={formRef} onSubmit={add} className="mt-1 w-full space-y-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
       <p className="text-xs font-semibold text-pitch-600">Add one match (your own schedule)</p>
       <div className="grid grid-cols-2 gap-2">
         <select className="input" value={a} onChange={(e) => setA(Number(e.target.value))} required>
