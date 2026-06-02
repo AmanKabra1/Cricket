@@ -67,7 +67,14 @@ async def post_ball(
 
     if outcome.innings_closed and len(match.innings) >= 2:
         match.status = MatchStatus.COMPLETED
-        finalize_match_result(match)  # auto winner + "won by …" text
+        # Wickets-in-hand depends on the chasing team's squad size (6-a-side → 5).
+        from app.models.player import Player
+        from sqlalchemy import func, select
+
+        chasing_size = await db.scalar(
+            select(func.count(Player.id)).where(Player.team_id == match.innings[1].batting_team_id)
+        )
+        finalize_match_result(match, chasing_squad_size=chasing_size or 11)
         from app.services.tournament_engine import apply_match_result
 
         await apply_match_result(db, match)  # update points table / NRR if in a tournament

@@ -49,6 +49,12 @@ async def test_finalize_result(db):
     assert match.winner_team_id is None
     assert match.result_text == "Match tied"
 
+    # 6-a-side: wickets-in-hand is out of 5, not 10.
+    match.innings[1].total_runs = 151
+    match.innings[1].total_wickets = 2
+    finalize_match_result(match, chasing_squad_size=6)
+    assert match.result_text == "Beta won by 3 wickets"
+
 
 async def _setup(db):
     bat = Team(name="Bat XI")

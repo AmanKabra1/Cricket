@@ -80,9 +80,9 @@ export default function MatchCard({ match, teams }: { match: Match; teams: Map<n
         <span className="rounded-full bg-slate-500/10 px-2 py-0.5 text-xs muted">{match.overs_limit} ov</span>
       </div>
 
-      <TeamRow name={teamName(teams, match.team_a_id)} logo={teams.get(match.team_a_id)?.logo_url ?? null} score={scoreFor(match.team_a_id)} overs={oversFor(match.team_a_id)} />
+      <TeamRow name={teamName(teams, match.team_a_id)} logo={teams.get(match.team_a_id)?.logo_url ?? null} score={scoreFor(match.team_a_id)} overs={oversFor(match.team_a_id)} winner={match.winner_team_id === match.team_a_id} />
       <div className="my-1 ml-9 text-xs font-semibold muted">vs</div>
-      <TeamRow name={teamName(teams, match.team_b_id)} logo={teams.get(match.team_b_id)?.logo_url ?? null} score={scoreFor(match.team_b_id)} overs={oversFor(match.team_b_id)} />
+      <TeamRow name={teamName(teams, match.team_b_id)} logo={teams.get(match.team_b_id)?.logo_url ?? null} score={scoreFor(match.team_b_id)} overs={oversFor(match.team_b_id)} winner={match.winner_team_id === match.team_b_id} />
 
       <div
         className="mt-3 flex items-center justify-between border-t pt-3 text-xs muted"
@@ -95,7 +95,7 @@ export default function MatchCard({ match, teams }: { match: Match; teams: Map<n
   );
 }
 
-function TeamRow({ name, logo, score, overs }: { name: string; logo: string | null; score: string | null; overs: string | null }) {
+function TeamRow({ name, logo, score, overs, winner }: { name: string; logo: string | null; score: string | null; overs: string | null; winner?: boolean }) {
   return (
     <div className="flex items-center gap-3">
       {logo ? (
@@ -105,7 +105,10 @@ function TeamRow({ name, logo, score, overs }: { name: string; logo: string | nu
           {name.slice(0, 2).toUpperCase()}
         </span>
       )}
-      <span className="flex-1 truncate font-semibold">{name}</span>
+      <span className={`flex-1 truncate ${winner ? "font-extrabold text-pitch-600" : "font-semibold"}`}>
+        {name}
+        {winner && <span title="Winner"> 🏆</span>}
+      </span>
       {score && (
         <span className="text-right">
           <span className="text-lg font-extrabold leading-none">{score}</span>

@@ -256,11 +256,13 @@ def _team_name(match, team_id: int) -> str:
     return f"Team {team_id}"
 
 
-def finalize_match_result(match) -> None:
+def finalize_match_result(match, chasing_squad_size: int = 11) -> None:
     """Decide winner + result text once both innings are complete.
 
     Standard limited-overs result: the chasing side wins "by wickets", the side
-    batting first wins "by runs", or it's a tie.
+    batting first wins "by runs", or it's a tie. "Wickets in hand" is based on
+    the chasing team's actual squad size (a 6-a-side team has 5 wickets to lose,
+    not 10), so the margin message is correct for any team size.
     """
     if len(match.innings) < 2:
         return
@@ -270,7 +272,8 @@ def finalize_match_result(match) -> None:
     target = second.target if second.target is not None else first.total_runs + 1
 
     if second.total_runs >= target:
-        wickets_in_hand = max(0, 10 - second.total_wickets)
+        max_wickets = max(1, chasing_squad_size - 1)
+        wickets_in_hand = max(0, max_wickets - second.total_wickets)
         match.winner_team_id = chasing
         match.result_text = (
             f"{_team_name(match, chasing)} won by {wickets_in_hand} "

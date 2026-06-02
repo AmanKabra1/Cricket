@@ -5,6 +5,7 @@ import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useAppSelector } from "@/store";
 import Spinner, { ErrorState } from "@/components/Spinner";
+import Celebration from "@/components/Celebration";
 import LiveTab from "./matchcenter/LiveTab";
 import ScorecardTab from "./matchcenter/ScorecardTab";
 import CommentaryTab from "./matchcenter/CommentaryTab";
@@ -29,9 +30,13 @@ export default function MatchCenter() {
 
   const live = match.status === "LIVE";
   const canScore = user && user.role !== "PUBLIC";
+  const completed = match.status === "COMPLETED";
+  const winnerId = match.winner_team_id;
 
   return (
     <div>
+      {/* Celebrate a finished match with a winner. */}
+      <Celebration run={completed && !!winnerId} />
       {/* Header */}
       <div className="card-surface mb-5 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -44,7 +49,11 @@ export default function MatchCenter() {
               )}
             </div>
             <h1 className="text-2xl font-extrabold">
-              {teamName(teams, match.team_a_id)} <span className="muted">vs</span> {teamName(teams, match.team_b_id)}
+              {teamName(teams, match.team_a_id)}
+              {winnerId === match.team_a_id && <span title="Winner"> 🏆</span>}
+              <span className="muted"> vs </span>
+              {teamName(teams, match.team_b_id)}
+              {winnerId === match.team_b_id && <span title="Winner"> 🏆</span>}
             </h1>
             <p className="text-sm muted">
               {match.overs_limit} overs
