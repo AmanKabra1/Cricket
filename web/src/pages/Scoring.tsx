@@ -550,19 +550,29 @@ function StartPanel({
     }
   };
 
+  // The batting side is fixed when the toss already decided it (1st innings) or
+  // when only one team can bat (2nd innings) — no need to ask again.
+  const locked = tossBat != null || battingOptions.length <= 1;
+
   return (
     <div className="card-surface mb-5 p-5">
       <h2 className="mb-3 font-bold">Start {existingInnings === 0 ? "first" : "second"} innings</h2>
+      {tossBat != null && match.toss_winner_id && (
+        <p className="mb-3 text-sm font-medium text-pitch-600">
+          {teamName(teams, match.toss_winner_id)} won the toss & chose to{" "}
+          {match.toss_decision === "BAT" ? "bat" : "bowl"}.
+        </p>
+      )}
       <label className="mb-3 block">
         <span className="mb-1 block text-xs font-semibold muted">Batting team</span>
-        {battingOptions.length > 1 ? (
+        {locked ? (
+          <div className="input flex items-center font-semibold">{teamName(teams, batId)}</div>
+        ) : (
           <select className="input" value={batId} onChange={(e) => setBatId(Number(e.target.value))}>
             {battingOptions.map((id) => (
               <option key={id} value={id}>{teamName(teams, id)}</option>
             ))}
           </select>
-        ) : (
-          <div className="input flex items-center font-semibold">{teamName(teams, batId)}</div>
         )}
       </label>
       <p className="mb-3 text-sm muted">Bowling: {teamName(teams, bowlId)}</p>
