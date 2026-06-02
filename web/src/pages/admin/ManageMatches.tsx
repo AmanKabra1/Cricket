@@ -148,14 +148,16 @@ function CreateMatchForm() {
 
 function AdminPicker({ selected, onChange }: { selected: number[]; onChange: (ids: number[]) => void }) {
   const { data: users } = useUsers();
-  const admins = (users ?? []).filter((u) => u.role !== "PUBLIC" && u.is_active);
+  // Only match admins are assignable — super admins can already score any match,
+  // so there's no point listing them here.
+  const admins = (users ?? []).filter((u) => u.role === "MATCH_ADMIN" && u.is_active);
   const toggle = (id: number) =>
     onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
   if (!admins.length) return null;
   return (
     <div>
       <span className="mb-1 block text-xs font-semibold muted">
-        Assign scorers (optional — you're always added; super admins can always score)
+        Assign match admins to score (optional — super admins can always score)
       </span>
       <div className="flex flex-wrap gap-2">
         {admins.map((u) => (

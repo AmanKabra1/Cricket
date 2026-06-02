@@ -4,7 +4,28 @@ import { useTeams, useTournaments } from "@/api/hooks";
 import { useApproveTournament, useCreateTournament, useGenerateFixtures } from "@/api/admin";
 import { useAppSelector } from "@/store";
 
-const FORMATS = ["LEAGUE", "ROUND_ROBIN", "KNOCKOUT", "GROUP_STAGE"];
+// What each format does when you "Generate fixtures", shown in the form so the
+// organiser knows exactly which matches will be created.
+const FORMAT_INFO: Record<string, { label: string; desc: string; evenTeams?: boolean }> = {
+  LEAGUE: {
+    label: "League (round-robin)",
+    desc: "Every team plays every other team once. Ranked by points (win 2, tie/no-result 1), then net run rate. Best for a season table.",
+  },
+  ROUND_ROBIN: {
+    label: "Round robin",
+    desc: "Same as league — everyone plays everyone once and the points table decides the winner.",
+  },
+  GROUP_STAGE: {
+    label: "Group stage",
+    desc: "Single round-robin among the selected teams (treated as one group); the top of the table advances.",
+  },
+  KNOCKOUT: {
+    label: "Knockout (bracket)",
+    desc: "Single elimination. The first round pairs teams (1v2, 3v4, …) and winners advance. Use an even number of teams.",
+    evenTeams: true,
+  },
+};
+const FORMATS = Object.keys(FORMAT_INFO);
 
 export default function ManageTournaments() {
   return (
@@ -40,8 +61,12 @@ function CreateTournamentForm() {
       <h2 className="text-lg font-bold">Create tournament</h2>
       <input className="input" placeholder="Tournament name *" value={name} onChange={(e) => setName(e.target.value)} required />
       <select className="input" value={format} onChange={(e) => setFormat(e.target.value)}>
-        {FORMATS.map((f) => <option key={f}>{f}</option>)}
+        {FORMATS.map((f) => <option key={f} value={f}>{FORMAT_INFO[f].label}</option>)}
       </select>
+      {/* Format-specific explanation of what fixtures will be generated. */}
+      <p className="rounded-lg bg-pitch-500/10 p-2 text-xs text-pitch-700 dark:text-pitch-300">
+        {FORMAT_INFO[format].desc}
+      </p>
       <div>
         <span className="mb-1 block text-xs font-semibold muted">Teams ({picked.size} selected)</span>
         <div className="grid max-h-48 grid-cols-2 gap-1 overflow-y-auto">
@@ -53,10 +78,14 @@ function CreateTournamentForm() {
           ))}
         </div>
       </div>
+      {/* Knockout pairs teams two-by-two, so an odd count leaves one without a match. */}
+      {FORMAT_INFO[format].evenTeams && picked.size % 2 === 1 && (
+        <p className="text-xs text-amber-600">Knockout works best with an even number of teams — one team would be left unpaired.</p>
+      )}
       <button className="btn-primary w-full" disabled={create.isPending || picked.size < 2}>
-        Create tournament
+        {create.isPending ? "Creating…" : "Create tournament"}
       </button>
-      <p className="text-xs muted">Pick at least 2 teams. Generate fixtures after creating.</p>
+      <p className="text-xs muted">Pick at least 2 teams, create the tournament, then "Generate fixtures" to schedule the matches.</p>
     </form>
   );
 }
