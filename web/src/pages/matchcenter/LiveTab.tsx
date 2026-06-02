@@ -9,6 +9,10 @@ export default function LiveTab({ matchId }: { matchId: number }) {
   if (!data || !data.innings.length)
     return <EmptyState message="The match hasn't started. Scores appear here ball-by-ball." />;
 
+  // Once the match is over, run-rates (CRR/RRR) are no longer meaningful — show
+  // just the final scores.
+  const done = data.status === "COMPLETED" || data.status === "ABANDONED";
+
   return (
     <div className="space-y-4">
       {data.innings.map((inn) => (
@@ -21,12 +25,14 @@ export default function LiveTab({ matchId }: { matchId: number }) {
                 <span className="ml-2 text-base font-medium muted">({inn.overs} ov)</span>
               </div>
             </div>
-            <div className="text-right text-sm">
-              <div className="muted">CRR <b className="text-pitch-600">{inn.run_rate.toFixed(2)}</b></div>
-              {inn.required_run_rate != null && (
-                <div className="muted">RRR <b className="text-amber-500">{inn.required_run_rate.toFixed(2)}</b></div>
-              )}
-            </div>
+            {!done && (
+              <div className="text-right text-sm">
+                <div className="muted">CRR <b className="text-pitch-600">{inn.run_rate.toFixed(2)}</b></div>
+                {inn.required_run_rate != null && (
+                  <div className="muted">RRR <b className="text-amber-500">{inn.required_run_rate.toFixed(2)}</b></div>
+                )}
+              </div>
+            )}
           </div>
           <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm muted">
             <span>Extras: {inn.extras}</span>

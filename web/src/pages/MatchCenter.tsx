@@ -80,7 +80,8 @@ export default function MatchCenter() {
               tab === t ? "border-pitch-500 text-pitch-600" : "border-transparent muted hover:text-pitch-500"
             }`}
           >
-            {t}
+            {/* Once finished there's nothing "live" — label it Summary. */}
+            {t === "Live" && (match.status === "COMPLETED" || match.status === "ABANDONED") ? "Summary" : t}
           </button>
         ))}
       </div>
