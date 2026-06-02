@@ -49,6 +49,8 @@ class Ball(Base, TimestampMixin):
     )
 
     is_legal_delivery: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # True if this delivery was bowled as a free hit (the ball after a no-ball).
+    is_free_hit: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     commentary: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     innings = relationship("Innings", back_populates="balls")

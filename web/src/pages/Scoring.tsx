@@ -5,7 +5,7 @@ import { useMatch, useLiveScore, useScorecard, useTeam, usePostBall, useUndoBall
 import { useQueryClient } from "@tanstack/react-query";
 import { teamName, useTeamMap } from "@/hooks/useTeamMap";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
-import { useAppSelector } from "@/store";
+import { useAppSelector } from "@/store";/*  */
 import Spinner, { ErrorState } from "@/components/Spinner";
 import type { Player } from "@/types";
 
@@ -180,6 +180,10 @@ export default function Scoring() {
   // Only assigned admins (or any super admin) may edit the score.
   const canScore =
     !!user && (user.role === "SUPER_ADMIN" || (match.admin_ids ?? []).includes(user.id));
+  // After a no-ball the next delivery is a free hit — the batter can only be run out.
+  const freeHit = !!live?.free_hit;
+  // Coerce the dismissal type to run-out while a free hit is in effect.
+  const effectiveWicket = freeHit ? "RUN_OUT" : wicketType;
 
   async function send(partial: Partial<BallPayload>) {
     if (!ready) {
@@ -274,6 +278,11 @@ export default function Scoring() {
           </div>
           {openInnings.target != null && (
             <div className="mt-1 text-sm muted">Target {openInnings.target} · RRR {openInnings.required_run_rate?.toFixed(2)}</div>
+          )}
+          {freeHit && (
+            <div className="mx-auto mt-3 inline-block rounded-full bg-amber-500 px-4 py-1 text-sm font-extrabold uppercase tracking-wide text-white">
+              ⚡ Free hit — batter can only be run out
+            </div>
           )}
         </div>
       ) : match.status === "COMPLETED" ? (
@@ -383,19 +392,24 @@ export default function Scoring() {
             </div>
           </div>
 
-          {/* Wicket */}
+          {/* Wicket — on a free hit only a run-out is allowed. */}
           <div className="card-surface mb-4 p-4">
             <div className="mb-2 text-xs font-semibold muted">WICKET</div>
             <div className="flex flex-wrap gap-2">
-              <select className="input flex-1" value={wicketType} onChange={(e) => setWicketType(e.target.value)}>
-                {WICKET_TYPES.map((w) => (
+              <select
+                className="input flex-1"
+                value={effectiveWicket}
+                disabled={freeHit}
+                onChange={(e) => setWicketType(e.target.value)}
+              >
+                {(freeHit ? ["RUN_OUT"] : WICKET_TYPES).map((w) => (
                   <option key={w} value={w}>
                     {w.replace("_", " ")}
                   </option>
                 ))}
               </select>
               {/* Run-out can dismiss either batsman; everything else is the striker. */}
-              {wicketType === "RUN_OUT" && (
+              {effectiveWicket === "RUN_OUT" && (
                 <select className="input flex-1" value={runOutEnd} onChange={(e) => setRunOutEnd(e.target.value as "striker" | "non_striker")}>
                   <option value="striker">Striker out</option>
                   <option value="non_striker">Non-striker out</option>
@@ -407,9 +421,9 @@ export default function Scoring() {
                 onClick={() =>
                   send({
                     is_wicket: true,
-                    wicket_type: wicketType,
+                    wicket_type: effectiveWicket,
                     dismissed_player_id:
-                      wicketType === "RUN_OUT" && runOutEnd === "non_striker"
+                      effectiveWicket === "RUN_OUT" && runOutEnd === "non_striker"
                         ? Number(nonStriker)
                         : Number(striker),
                   })
@@ -418,6 +432,7 @@ export default function Scoring() {
                 OUT
               </button>
             </div>
+            {freeHit && <p className="mt-2 text-xs text-amber-600">Free hit: only run-out counts.</p>}
           </div>
 
           <button

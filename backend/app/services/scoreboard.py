@@ -8,10 +8,25 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.ball import Ball
+from app.models.enums import ExtraType
 from app.models.innings import Innings
 from app.models.match import Match
 from app.models.player import Player
 from app.models.stats import PlayerMatchStats
+
+
+async def _next_is_free_hit(db: AsyncSession, innings: Innings) -> bool:
+    """Whether the NEXT delivery in this innings is a free hit (after a no-ball,
+    persisting across further illegal deliveries until a legal ball is bowled)."""
+    last = await db.scalar(
+        select(Ball).where(Ball.innings_id == innings.id).order_by(Ball.sequence.desc()).limit(1)
+    )
+    if last is None:
+        return False
+    if last.extra_type == ExtraType.NO_BALL:
+        return True
+    return bool(last.is_free_hit and not last.is_legal_delivery)
 
 
 def _run_rate(runs: int, legal_balls: int) -> float:
@@ -49,10 +64,13 @@ def innings_score(inn: Innings, overs_limit: int) -> dict:
 
 
 async def build_live_score(db: AsyncSession, match: Match) -> dict:
+    open_innings = next((i for i in match.innings if not i.is_closed), None)
+    free_hit = await _next_is_free_hit(db, open_innings) if open_innings else False
     return {
         "match_id": match.id,
         "status": match.status,
         "overs_limit": match.overs_limit,
+        "free_hit": free_hit,
         "innings": [innings_score(inn, match.overs_limit) for inn in match.innings],
     }
 

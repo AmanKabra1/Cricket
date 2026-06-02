@@ -11,6 +11,7 @@ from app.models.player import Player
 from app.models.stats import PlayerMatchStats
 from app.models.team import Team
 from app.services.scoring_engine import (
+    ScoringError,
     finalize_match_result,
     record_ball,
     undo_last_ball,
@@ -165,3 +166,37 @@ async def test_no_ball_and_undo(db):
     assert undone is True
     assert innings.total_runs == 5
     assert innings.legal_balls == 0
+
+
+async def test_free_hit_rules(db):
+    match, innings, striker, non_striker, bowler, keeper = await _setup(db)
+    # Add more batters so a single dismissal doesn't end the innings (all-out).
+    db.add_all([Player(team_id=striker.team_id, name=f"Bat{i}") for i in range(3)])
+    await db.flush()
+
+    # No-ball → the NEXT delivery is a free hit.
+    nb = await _ball(db, match, innings, striker, non_striker, bowler,
+                     extra_type=ExtraType.NO_BALL, runs_batsman=0)
+    assert nb.ball.is_free_hit is False  # the no-ball itself isn't the free hit
+
+    # On the free hit the batter can't be bowled/caught etc. — only run out.
+    with pytest.raises(ScoringError):
+        await _ball(db, match, innings, striker, non_striker, bowler,
+                    is_wicket=True, wicket_type=WicketType.BOWLED,
+                    dismissed_player_id=striker.id)
+
+    # A wide on the free hit keeps the NEXT delivery a free hit too.
+    fh_wide = await _ball(db, match, innings, striker, non_striker, bowler,
+                          extra_type=ExtraType.WIDE, extra_runs=0)
+    assert fh_wide.ball.is_free_hit is True
+
+    # Run out IS allowed on a free hit; this legal ball ends the free-hit period.
+    ro = await _ball(db, match, innings, striker, non_striker, bowler,
+                     is_wicket=True, wicket_type=WicketType.RUN_OUT,
+                     dismissed_player_id=non_striker.id)
+    assert ro.ball.is_free_hit is True
+    assert innings.total_wickets == 1
+
+    # The following delivery is no longer a free hit.
+    after = await _ball(db, match, innings, striker, non_striker, bowler, runs_batsman=1)
+    assert after.ball.is_free_hit is False

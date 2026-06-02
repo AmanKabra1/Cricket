@@ -66,19 +66,20 @@ async def _stats_row(
 
 
 def _auto_commentary(event_runs: int, ball: Ball, striker_name: str, bowler_name: str) -> str:
+    fh = "FREE HIT — " if ball.is_free_hit else ""
     if ball.is_wicket:
-        return f"OUT! {striker_name} departs — {ball.wicket_type.value.replace('_', ' ').title()} off {bowler_name}."
+        return f"{fh}OUT! {striker_name} departs — {ball.wicket_type.value.replace('_', ' ').title()} off {bowler_name}."
     if ball.extra_type == ExtraType.WIDE:
-        return f"Wide signalled. {ball.extra_runs + 1} extra run(s)."
+        return f"{fh}Wide signalled. {ball.extra_runs + 1} extra run(s)."
     if ball.extra_type == ExtraType.NO_BALL:
-        return f"No ball! Free hit pressure on {bowler_name}."
+        return f"No ball! The next delivery is a free hit."
     if ball.runs_batsman == 6:
-        return f"SIX! {striker_name} goes big off {bowler_name}."
+        return f"{fh}SIX! {striker_name} goes big off {bowler_name}."
     if ball.runs_batsman == 4:
-        return f"FOUR! Beautifully struck by {striker_name}."
+        return f"{fh}FOUR! Beautifully struck by {striker_name}."
     if event_runs == 0:
-        return f"Dot ball. {bowler_name} keeps it tight."
-    return f"{event_runs} run(s) to {striker_name}."
+        return f"{fh}Dot ball. {bowler_name} keeps it tight."
+    return f"{fh}{event_runs} run(s) to {striker_name}."
 
 
 async def record_ball(
@@ -104,16 +105,29 @@ async def record_ball(
 
     is_legal = extra_type in (ExtraType.NONE, ExtraType.BYE, ExtraType.LEG_BYE)
 
-    # --- numbering (based on current legal-ball count) ---
+    # --- numbering & free-hit (based on the previous delivery) ---
     over_number = innings.legal_balls // 6 + 1
     ball_in_over = innings.legal_balls % 6 + 1
-    # Sequence from the DB (the in-memory collection won't reflect just-added balls).
-    max_seq = await db.scalar(
-        select(func.coalesce(func.max(Ball.sequence), 0)).where(
-            Ball.innings_id == innings.id
-        )
+    # The last ball drives the sequence AND whether THIS delivery is a free hit.
+    last_ball = await db.scalar(
+        select(Ball).where(Ball.innings_id == innings.id).order_by(Ball.sequence.desc()).limit(1)
     )
-    sequence = int(max_seq) + 1
+    sequence = (last_ball.sequence + 1) if last_ball else 1
+
+    # Free hit: the delivery after a no-ball. It persists across further illegal
+    # deliveries (a wide/no-ball on the free hit keeps the next one a free hit too)
+    # until a legal ball is finally bowled.
+    is_free_hit = False
+    if last_ball is not None:
+        if last_ball.extra_type == ExtraType.NO_BALL:
+            is_free_hit = True
+        elif last_ball.is_free_hit and not last_ball.is_legal_delivery:
+            is_free_hit = True
+
+    # On a free hit the striker can only be run out (or retire hurt) — bowled,
+    # caught, LBW, stumped and hit-wicket don't count.
+    if is_free_hit and is_wicket and wicket_type in _BOWLER_WICKETS:
+        raise ScoringError("On a free hit the batter can only be run out.")
 
     # --- run accounting ---
     total_delta = 0
@@ -200,6 +214,7 @@ async def record_ball(
         dismissed_player_id=dismissed_player_id,
         fielder_id=fielder_id,
         is_legal_delivery=is_legal,
+        is_free_hit=is_free_hit,
     )
 
     if not commentary:

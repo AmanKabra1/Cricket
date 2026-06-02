@@ -82,6 +82,7 @@ export interface LiveScore {
   match_id: number;
   status: MatchStatus;
   overs_limit: number;
+  free_hit?: boolean;
   innings: InningsScore[];
 }
 

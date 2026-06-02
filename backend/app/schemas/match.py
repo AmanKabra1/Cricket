@@ -125,6 +125,7 @@ class LiveScore(BaseModel):
     match_id: int
     status: MatchStatus
     overs_limit: int
+    free_hit: bool = False  # next delivery is a free hit (after a no-ball)
     innings: list[InningsScore]
 
 
