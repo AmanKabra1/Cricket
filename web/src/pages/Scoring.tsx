@@ -287,8 +287,13 @@ export default function Scoring() {
         batting_team_id: batId,
         bowling_team_id: bowlId,
       });
-      qc.invalidateQueries({ queryKey: ["live", matchId] });
-      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      // Await the refetch so the panel only flips to scoring once the new innings
+      // is actually loaded — otherwise the button briefly reverts to "Start
+      // innings" and looks like the press did nothing.
+      await Promise.all([
+        qc.refetchQueries({ queryKey: ["live", matchId] }),
+        qc.refetchQueries({ queryKey: ["match", matchId] }),
+      ]);
     } catch (e: unknown) {
       setMsg((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Could not start innings");
     }
@@ -296,7 +301,7 @@ export default function Scoring() {
 
   async function recordToss(winnerId: number, decision: "BAT" | "BOWL") {
     await api.post(`/matches/${matchId}/toss`, { toss_winner_id: winnerId, decision });
-    qc.invalidateQueries({ queryKey: ["match", matchId] });
+    await qc.refetchQueries({ queryKey: ["match", matchId] }); // wait so the panel advances cleanly
   }
 
   return (
