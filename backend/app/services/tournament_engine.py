@@ -32,12 +32,14 @@ async def generate_fixtures(
     venue_id: int | None = None,
     start_at: datetime | None = None,
     interval_minutes: int = 180,
+    matches_per_day: int = 2,
 ) -> list[Match]:
     """Create SCHEDULED matches for the tournament's participating teams.
 
-    Each match inherits overs_limit + venue_id; if a start time is given the
-    matches are staggered by interval_minutes (1st at start_at, 2nd at
-    start_at + interval, …) so the whole schedule is laid out automatically.
+    Each match inherits overs_limit + venue_id. If a start time is given, matches
+    are laid out across match-days: up to `matches_per_day` per day spaced by
+    `interval_minutes` from the daily start time, then the next day resumes at the
+    same time — so a big tournament spans several days instead of running overnight.
     """
     team_ids = [s.team_id for s in tournament.standings]
     if len(team_ids) < 2:
@@ -68,9 +70,11 @@ async def generate_fixtures(
     )
     created: list[Match] = []
     for i, (a, b) in enumerate(pairings):
-        scheduled_at = (
-            start_at + timedelta(minutes=interval_minutes * i) if start_at else None
-        )
+        scheduled_at = None
+        if start_at:
+            day = i // matches_per_day  # which match-day
+            slot = i % matches_per_day  # position within that day
+            scheduled_at = start_at + timedelta(days=day, minutes=interval_minutes * slot)
         match = Match(
             tournament_id=tournament.id,
             team_a_id=a,

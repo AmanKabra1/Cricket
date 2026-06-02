@@ -224,6 +224,7 @@ export interface FixtureOptions {
   venue_id?: number | null;
   start_at?: string | null;
   interval_minutes?: number;
+  matches_per_day?: number;
 }
 
 export const useGenerateFixtures = (tournamentId: number) => {

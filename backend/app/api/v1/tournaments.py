@@ -85,11 +85,13 @@ async def approve_tournament(
 
 
 class FixtureOptions(BaseModel):
-    """Defaults applied to every generated fixture; matches are staggered in time."""
+    """Defaults applied to every generated fixture; matches are laid out across
+    match-days so a long tournament doesn't run overnight."""
     overs_limit: int = Field(default=20, ge=1, le=100)
     venue_id: int | None = None
-    start_at: datetime | None = None  # kickoff of the first match
-    interval_minutes: int = Field(default=180, ge=0, le=100_000)  # gap between matches
+    start_at: datetime | None = None  # date + daily start time of the 1st match
+    interval_minutes: int = Field(default=180, ge=0, le=100_000)  # gap on the same day
+    matches_per_day: int = Field(default=2, ge=1, le=50)  # how many to fit per day
 
 
 @router.post("/{tournament_id}/fixtures", response_model=list[MatchOut], status_code=201)
@@ -117,6 +119,7 @@ async def create_fixtures(
             venue_id=opts.venue_id,
             start_at=opts.start_at,
             interval_minutes=opts.interval_minutes,
+            matches_per_day=opts.matches_per_day,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
