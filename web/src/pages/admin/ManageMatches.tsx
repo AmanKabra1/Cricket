@@ -33,12 +33,13 @@ function VenueList() {
               <span className="ml-2 text-xs muted">{v.city}</span>
             </span>
             <button
-              className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10"
+              className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+              disabled={del.isPending && del.variables === v.id}
               onClick={() => {
                 if (confirm(`Delete venue "${v.name}"?`)) del.mutate(v.id);
               }}
             >
-              Delete
+              {del.isPending && del.variables === v.id ? "Deleting…" : "Delete"}
             </button>
           </div>
         ))}
@@ -189,7 +190,7 @@ function CreateVenueForm() {
       <h2 className="text-lg font-bold">Add venue</h2>
       <input className="input" placeholder="Venue name *" value={name} onChange={(e) => setName(e.target.value)} required />
       <input className="input" placeholder="City *" value={city} onChange={(e) => setCity(e.target.value)} required />
-      <button className="btn-primary w-full" disabled={create.isPending}>Add venue</button>
+      <button className="btn-primary w-full" disabled={create.isPending}>{create.isPending ? "Adding…" : "Add venue"}</button>
     </form>
   );
 }

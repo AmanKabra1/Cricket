@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import BackgroundLayer from "./BackgroundLayer";
+import TopProgressBar from "./TopProgressBar";
 import { pageKey } from "@/lib/backgrounds";
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -13,6 +14,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-full">
+      <TopProgressBar />
       <BackgroundLayer />
       <Navbar />
       <main className="mx-auto w-full max-w-6xl px-4 py-6">{children}</main>

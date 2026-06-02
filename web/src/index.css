@@ -63,11 +63,13 @@
     background-attachment: fixed, fixed, fixed;
     transition: background-color 0.3s ease;
   }
-  /* Headings/labels that sit directly on the background image get a subtle halo
-     in the current bg colour, so they stay readable in BOTH light and dark mode
-     (and when toggling between them). Harmless on text inside cards. */
-  main h1, main h2, main .on-bg {
-    text-shadow: 0 1px 10px var(--bg), 0 1px 3px var(--bg);
+  /* Headings/labels that sit directly on the background image get a halo in the
+     current bg colour, so they stay readable in BOTH light and dark mode (and
+     when toggling between them). Harmless on text inside cards. The footer +
+     other muted text on the bare background gets the same treatment so it never
+     washes out over a busy photo in light mode. */
+  main h1, main h2, main h3, main .on-bg, footer.muted, footer .muted {
+    text-shadow: 0 0 12px var(--bg), 0 1px 3px var(--bg), 0 0 2px var(--bg);
   }
 }
 

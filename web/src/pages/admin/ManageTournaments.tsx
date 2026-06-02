@@ -79,7 +79,9 @@ function TournamentList() {
             <div className="mt-2 flex gap-2">
               <FixturesButton tournamentId={t.id} />
               {user?.role === "SUPER_ADMIN" && t.status === "PENDING" && (
-                <button className="btn-ghost text-xs" onClick={() => approve.mutate(t.id)}>Approve</button>
+                <button className="btn-ghost text-xs disabled:opacity-50" disabled={approve.isPending && approve.variables === t.id} onClick={() => approve.mutate(t.id)}>
+                  {approve.isPending && approve.variables === t.id ? "Approving…" : "Approve"}
+                </button>
               )}
             </div>
           </div>
@@ -103,7 +105,9 @@ function FixturesButton({ tournamentId }: { tournamentId: number }) {
   };
   return (
     <span className="flex items-center gap-2">
-      <button className="btn-ghost text-xs" onClick={run} disabled={gen.isPending}>Generate fixtures</button>
+      <button className="btn-ghost text-xs disabled:opacity-50" onClick={run} disabled={gen.isPending}>
+        {gen.isPending ? "Generating…" : "Generate fixtures"}
+      </button>
       {msg && <span className="text-xs muted">{msg}</span>}
     </span>
   );

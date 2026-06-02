@@ -19,8 +19,8 @@ export default function BackgroundLayer() {
   // dark mode keeps a stronger veil for contrast.
   const overlay =
     theme === "dark"
-      ? "linear-gradient(rgba(11,18,32,0.80), rgba(11,18,32,0.90))"
-      : "linear-gradient(rgba(248,250,252,0.55), rgba(248,250,252,0.70))";
+      ? "linear-gradient(rgba(11,18,32,0.82), rgba(11,18,32,0.91))"
+      : "linear-gradient(rgba(248,250,252,0.72), rgba(248,250,252,0.84))";
 
   return (
     <div

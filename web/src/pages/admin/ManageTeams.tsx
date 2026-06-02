@@ -188,7 +188,7 @@ function TeamEditor({ teamId }: { teamId: number }) {
           )}
         </div>
         <ImageUpload category="player_photo" label="Photo" value={photo} onChange={setPhoto} />
-        <button className="btn-primary w-full" disabled={addPlayer.isPending}>Add player</button>
+        <button className="btn-primary w-full" disabled={addPlayer.isPending}>{addPlayer.isPending ? "Adding…" : "Add player"}</button>
       </form>
 
       <div className="card-surface divide-y" style={{ borderColor: "var(--border)" }}>
@@ -227,20 +227,21 @@ function TeamEditor({ teamId }: { teamId: number }) {
                 const isVC = team.vice_captain_id === pl.id;
                 const isWK = team.wicket_keeper_id === pl.id;
                 const hasRole = isC || isVC || isWK;
+                const busy = update.isPending;
                 return (
                   <>
                     {!team.captain_id && !hasRole && (
-                      <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: pl.id })}>Make C</button>
+                      <button disabled={busy} className="btn-ghost text-xs disabled:opacity-50" onClick={() => update.mutate({ captain_id: pl.id })}>Make C</button>
                     )}
                     {!team.vice_captain_id && !hasRole && (
-                      <button className="btn-ghost text-xs" onClick={() => update.mutate({ vice_captain_id: pl.id })}>Make VC</button>
+                      <button disabled={busy} className="btn-ghost text-xs disabled:opacity-50" onClick={() => update.mutate({ vice_captain_id: pl.id })}>Make VC</button>
                     )}
                     {!team.wicket_keeper_id && !hasRole && (
-                      <button className="btn-ghost text-xs" onClick={() => update.mutate({ wicket_keeper_id: pl.id })}>Make WK</button>
+                      <button disabled={busy} className="btn-ghost text-xs disabled:opacity-50" onClick={() => update.mutate({ wicket_keeper_id: pl.id })}>Make WK</button>
                     )}
-                    {isC && <button className="btn-ghost text-xs" onClick={() => update.mutate({ captain_id: null })}>Clear C</button>}
-                    {isVC && <button className="btn-ghost text-xs" onClick={() => update.mutate({ vice_captain_id: null })}>Clear VC</button>}
-                    {isWK && <button className="btn-ghost text-xs" onClick={() => update.mutate({ wicket_keeper_id: null })}>Clear WK</button>}
+                    {isC && <button disabled={busy} className="btn-ghost text-xs disabled:opacity-50" onClick={() => update.mutate({ captain_id: null })}>Clear C</button>}
+                    {isVC && <button disabled={busy} className="btn-ghost text-xs disabled:opacity-50" onClick={() => update.mutate({ vice_captain_id: null })}>Clear VC</button>}
+                    {isWK && <button disabled={busy} className="btn-ghost text-xs disabled:opacity-50" onClick={() => update.mutate({ wicket_keeper_id: null })}>Clear WK</button>}
                   </>
                 );
               })()}

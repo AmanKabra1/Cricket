@@ -105,17 +105,21 @@ function UsersList() {
               <div className="truncate text-xs muted">{u.email}</div>
             </div>
             <select
-              className="input max-w-[9rem] text-xs"
+              className="input max-w-[9rem] text-xs disabled:opacity-50"
               value={u.role}
+              disabled={setRole.isPending && setRole.variables?.id === u.id}
               onChange={(e) => setRole.mutate({ id: u.id, role: e.target.value })}
             >
               {ROLES.map((r) => <option key={r} value={r}>{r.replace("_", " ")}</option>)}
             </select>
             <button
-              className="btn-ghost text-xs"
+              className="btn-ghost text-xs disabled:opacity-50"
+              disabled={setActive.isPending && setActive.variables?.id === u.id}
               onClick={() => setActive.mutate({ id: u.id, is_active: !u.is_active })}
             >
-              {u.is_active ? "Disable" : "Enable"}
+              {setActive.isPending && setActive.variables?.id === u.id
+                ? "…"
+                : u.is_active ? "Disable" : "Enable"}
             </button>
             {u.id !== meId && (
               <button
