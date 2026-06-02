@@ -165,4 +165,5 @@ export interface Tournament {
   status: string;
   start_date: string | null;
   end_date: string | null;
+  match_count?: number;
 }

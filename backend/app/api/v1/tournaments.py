@@ -53,7 +53,23 @@ async def list_tournaments(
                 ]
             )
         )
-    return list((await db.scalars(stmt)).all())
+    rows = list((await db.scalars(stmt)).all())
+    # Attach fixture counts in one query so the UI can hide "re-generate".
+    if rows:
+        from sqlalchemy import func
+
+        counts = dict(
+            (
+                await db.execute(
+                    select(Match.tournament_id, func.count(Match.id))
+                    .where(Match.tournament_id.in_([t.id for t in rows]))
+                    .group_by(Match.tournament_id)
+                )
+            ).all()
+        )
+        for t in rows:
+            t.match_count = counts.get(t.id, 0)
+    return rows
 
 
 @router.post("", response_model=TournamentOut, status_code=status.HTTP_201_CREATED)

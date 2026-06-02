@@ -110,6 +110,7 @@ class TournamentOut(BaseModel):
     status: TournamentStatus
     start_date: date | None
     end_date: date | None
+    match_count: int = 0  # fixtures generated/added so far (UI hides re-generate)
     model_config = {"from_attributes": True}
 
 

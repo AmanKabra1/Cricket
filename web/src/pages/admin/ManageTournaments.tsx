@@ -198,10 +198,19 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
     }
   };
 
+  // Auto-generate lays out the whole schedule once — offered only while the
+  // tournament has no fixtures yet. Once any exist (auto or manual), it's hidden
+  // for everyone (admin and super admin); you can still add more manually.
+  const hasFixtures = (tournament.match_count ?? 0) > 0;
+
   if (!open) {
     return (
       <span className="flex flex-wrap items-center gap-2">
-        <button className="btn-ghost text-xs" onClick={() => setOpen(true)}>Auto-generate fixtures…</button>
+        {hasFixtures ? (
+          <span className="text-xs muted">{tournament.match_count} fixture{tournament.match_count === 1 ? "" : "s"} created</span>
+        ) : (
+          <button className="btn-ghost text-xs" onClick={() => setOpen(true)}>Auto-generate fixtures…</button>
+        )}
         <ManualMatchForm tournament={tournament} />
         {msg && <span className="text-xs muted">{msg}</span>}
       </span>

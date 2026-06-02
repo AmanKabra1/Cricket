@@ -166,6 +166,7 @@ export const useCreateMatch = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["matches"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tournaments"] }); // refresh fixture count
     },
   });
 };
@@ -235,6 +236,7 @@ export const useGenerateFixtures = (tournamentId: number) => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tournament-matches", tournamentId] });
       qc.invalidateQueries({ queryKey: ["matches"] });
+      qc.invalidateQueries({ queryKey: ["tournaments"] }); // refresh fixture count
     },
   });
 };
