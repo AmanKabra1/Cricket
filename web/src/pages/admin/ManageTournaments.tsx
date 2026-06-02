@@ -131,10 +131,14 @@ function TournamentList() {
                   {approve.isPending && approve.variables === t.id ? "Approving…" : "Approve"}
                 </button>
               )}
-              {t.status === "PENDING" ? (
+              {/* Fixtures can only be generated after a super admin approves —
+                  applies to match admins AND super admins alike. */}
+              {t.status === "APPROVED" || t.status === "ONGOING" ? (
+                <FixturesPanel tournament={t} />
+              ) : t.status === "PENDING" ? (
                 <span className="text-xs muted">Awaiting super-admin approval before fixtures.</span>
               ) : (
-                <FixturesPanel tournament={t} />
+                <span className="text-xs muted">{t.status.toLowerCase()} — fixtures unavailable.</span>
               )}
             </div>
           </div>
