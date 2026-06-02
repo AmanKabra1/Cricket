@@ -188,10 +188,8 @@ export default function Scoring() {
   const effectiveWicket = freeHit ? "RUN_OUT" : wicketType;
 
   async function send(partial: Partial<BallPayload>) {
-    if (!ready) {
-      setMsg("Pick striker, non-striker and bowler first (striker ≠ non-striker).");
-      return;
-    }
+    // Controls are disabled until ready, so this is just a defensive no-op.
+    if (!ready) return;
     const payload: BallPayload = {
       striker_id: Number(striker),
       non_striker_id: Number(nonStriker),
@@ -282,7 +280,13 @@ export default function Scoring() {
             <span className="ml-2 text-lg font-medium muted">({openInnings.overs})</span>
           </div>
           {openInnings.target != null && (
-            <div className="mt-1 text-sm muted">Target {openInnings.target} · RRR {openInnings.required_run_rate?.toFixed(2)}</div>
+            <div className="mt-1 text-sm font-semibold text-pitch-600">
+              Target {openInnings.target} (beat {openInnings.target - 1}) · need{" "}
+              {Math.max(0, openInnings.target - openInnings.runs)} to win
+              {openInnings.required_run_rate != null && (
+                <span className="muted"> · RRR {openInnings.required_run_rate.toFixed(2)}</span>
+              )}
+            </div>
           )}
           {freeHit && (
             <div className="mx-auto mt-3 inline-block rounded-full bg-amber-500 px-4 py-1 text-sm font-extrabold uppercase tracking-wide text-white">
@@ -368,6 +372,10 @@ export default function Scoring() {
 
           {msg && <p className="mb-3 text-sm text-red-500">{msg}</p>}
           {info && <p className="mb-3 text-sm font-medium text-pitch-600">{info}</p>}
+          {/* Gentle hint instead of an error — controls below stay disabled until ready. */}
+          {!ready && (
+            <p className="mb-3 text-sm muted">Select striker, non-striker &amp; bowler above to start scoring.</p>
+          )}
 
           {/* Run buttons */}
           <div className="card-surface mb-4 p-4">
@@ -377,7 +385,7 @@ export default function Scoring() {
                 <button
                   key={r}
                   className={`rounded-xl py-4 text-xl font-extrabold text-white shadow-sm transition active:scale-95 disabled:opacity-50 ${runBtnColor(r)}`}
-                  disabled={postBall.isPending}
+                  disabled={postBall.isPending || !ready}
                   onClick={() => send({ runs_batsman: r })}
                 >
                   {r}
@@ -390,10 +398,10 @@ export default function Scoring() {
           <div className="card-surface mb-4 p-4">
             <div className="mb-2 text-xs font-semibold muted">EXTRAS</div>
             <div className="grid grid-cols-4 gap-2">
-              <ExtraBtn label="Wide" onClick={() => send({ extra_type: "WIDE", extra_runs: 0 })} disabled={postBall.isPending} />
-              <ExtraBtn label="No ball" onClick={() => send({ extra_type: "NO_BALL", extra_runs: 0 })} disabled={postBall.isPending} />
-              <ExtraBtn label="Bye" onClick={() => send({ extra_type: "BYE", extra_runs: 1 })} disabled={postBall.isPending} />
-              <ExtraBtn label="Leg bye" onClick={() => send({ extra_type: "LEG_BYE", extra_runs: 1 })} disabled={postBall.isPending} />
+              <ExtraBtn label="Wide" onClick={() => send({ extra_type: "WIDE", extra_runs: 0 })} disabled={postBall.isPending || !ready} />
+              <ExtraBtn label="No ball" onClick={() => send({ extra_type: "NO_BALL", extra_runs: 0 })} disabled={postBall.isPending || !ready} />
+              <ExtraBtn label="Bye" onClick={() => send({ extra_type: "BYE", extra_runs: 1 })} disabled={postBall.isPending || !ready} />
+              <ExtraBtn label="Leg bye" onClick={() => send({ extra_type: "LEG_BYE", extra_runs: 1 })} disabled={postBall.isPending || !ready} />
             </div>
           </div>
 
@@ -422,7 +430,7 @@ export default function Scoring() {
               )}
               <button
                 className="rounded-lg bg-red-500 px-4 py-2 font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
-                disabled={postBall.isPending}
+                disabled={postBall.isPending || !ready}
                 onClick={() =>
                   send({
                     is_wicket: true,
