@@ -254,12 +254,15 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
             <input className="input" type="number" min={1} max={20} value={perDay}
               onChange={(e) => setPerDay(Math.max(1, Number(e.target.value)))} />
           </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold muted">Gap (same day)</span>
-            <select className="input" value={interval} onChange={(e) => setInterval(Number(e.target.value))}>
-              {INTERVALS.map((i) => <option key={i.minutes} value={i.minutes}>{i.label}</option>)}
-            </select>
-          </label>
+          {/* Gap only applies when more than one match shares a day. */}
+          {perDay > 1 && (
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold muted">Gap between them</span>
+              <select className="input" value={interval} onChange={(e) => setInterval(Number(e.target.value))}>
+                {INTERVALS.map((i) => <option key={i.minutes} value={i.minutes}>{i.label}</option>)}
+              </select>
+            </label>
+          )}
         </div>
       )}
       {/* Edge-case-aware preview of what will be created. */}
