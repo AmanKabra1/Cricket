@@ -32,8 +32,8 @@ const FORMATS = Object.keys(FORMAT_INFO);
 export default function ManageTournaments() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <CreateTournamentForm />
-      <TournamentList />
+      <div className="min-w-0"><CreateTournamentForm /></div>
+      <div className="min-w-0"><TournamentList /></div>
     </div>
   );
 }

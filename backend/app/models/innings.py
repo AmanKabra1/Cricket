@@ -44,6 +44,9 @@ class Innings(Base, TimestampMixin):
     # keep deletes simple.
     current_striker_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     current_non_striker_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # The bowler currently bowling (so they show in the bowling card at 0-0 before
+    # completing a delivery).
+    current_bowler_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     match = relationship("Match", back_populates="innings")
     balls = relationship(

@@ -9,12 +9,15 @@ import DateTimePicker from "@/components/DateTimePicker";
 export default function ManageMatches() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <div className="space-y-6">
+      {/* min-w-0 lets these grid columns shrink on mobile instead of overflowing. */}
+      <div className="min-w-0 space-y-6">
         <CreateMatchForm />
         <CreateVenueForm />
         <VenueList />
       </div>
-      <MatchList />
+      <div className="min-w-0">
+        <MatchList />
+      </div>
     </div>
   );
 }

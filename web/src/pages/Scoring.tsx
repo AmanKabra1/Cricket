@@ -190,10 +190,11 @@ export default function Scoring() {
       .post(`/matches/${matchId}/scoring/at-crease`, {
         striker_id: Number(striker),
         non_striker_id: Number(nonStriker),
+        bowler_id: bowler === "" ? null : Number(bowler),
       })
       .then(() => qc.invalidateQueries({ queryKey: ["scorecard", matchId] }))
       .catch(() => {});
-  }, [striker, nonStriker, openInnings?.innings_id, user, match, matchId, qc]);
+  }, [striker, nonStriker, bowler, openInnings?.innings_id, user, match, matchId, qc]);
 
   if (isLoading) return <Spinner />;
   if (isError || !match) return <ErrorState />;

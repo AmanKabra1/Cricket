@@ -117,20 +117,23 @@ async def post_ball(
 class AtCrease(BaseModel):
     striker_id: int
     non_striker_id: int
+    bowler_id: int | None = None
 
 
 @router.post("/at-crease")
 async def set_at_crease(
     match_id: int, payload: AtCrease, db: DbSession, user: User = Depends(require_admin)
 ) -> dict:
-    """Tell the scorecard who's currently batting, so a newly sent-in batter
-    shows at 0* before facing a ball."""
+    """Tell the scorecard who's currently batting/bowling, so a newly sent-in
+    batter (and the current bowler) show at 0 before a ball is completed."""
     match = await authorize_match_admin(match_id, db, user)
     innings = _current_innings(match)
     if innings is None:
         return {"ok": False}
     innings.current_striker_id = payload.striker_id
     innings.current_non_striker_id = payload.non_striker_id
+    if payload.bowler_id:
+        innings.current_bowler_id = payload.bowler_id
     await db.commit()
     # Refresh derived views so the new batter appears immediately.
     await db.refresh(match)

@@ -165,6 +165,7 @@ async def record_ball(
     # the at-crease endpoint when a new batter comes in after a wicket).
     innings.current_striker_id = striker_id
     innings.current_non_striker_id = non_striker_id
+    innings.current_bowler_id = bowler_id
     if is_legal:
         innings.legal_balls += 1
     if is_wicket and wicket_type != WicketType.RETIRED_HURT:
@@ -370,5 +371,6 @@ async def undo_last_ball(db: AsyncSession, match_id: int, innings: Innings) -> b
     )
     innings.current_striker_id = prev.striker_id if prev else None
     innings.current_non_striker_id = prev.non_striker_id if prev else None
+    innings.current_bowler_id = prev.bowler_id if prev else None
     await db.flush()
     return True

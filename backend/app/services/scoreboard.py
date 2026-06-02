@@ -123,6 +123,22 @@ async def build_scorecard(db: AsyncSession, match: Match) -> dict:
             for s in stats
             if s.team_id == inn.bowling_team_id and s.legal_balls_bowled > 0
         ]
+        # Ensure the current bowler appears even before completing a delivery.
+        if inn.current_bowler_id and inn.current_bowler_id not in {b["player_id"] for b in bowling}:
+            bp = players.get(inn.current_bowler_id) or await db.get(Player, inn.current_bowler_id)
+            if bp and bp.team_id == inn.bowling_team_id:
+                bowling.append(
+                    {
+                        "player_id": bp.id,
+                        "name": bp.name,
+                        "photo_url": bp.photo_url,
+                        "overs": "0.0",
+                        "runs_conceded": 0,
+                        "wickets": 0,
+                        "economy": 0.0,
+                    }
+                )
+
         # Ensure the two batters currently at the crease appear even if they
         # haven't faced a ball yet (shown 0* — standard cricket scorecard).
         shown = {b["player_id"] for b in batting}
