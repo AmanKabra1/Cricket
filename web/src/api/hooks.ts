@@ -94,10 +94,11 @@ export const useTournaments = (mine = false) =>
     queryFn: () => get<Tournament[]>(`/tournaments${mine ? "?mine=true" : ""}`),
   });
 
-export const useStandings = (id: number) =>
+export const useStandings = (id: number, enabled = true) =>
   useQuery({
     queryKey: ["standings", id],
     queryFn: () => get<StandingRow[]>(`/tournaments/${id}/standings`),
+    enabled,
   });
 
 export const useTournamentMatches = (id: number) =>

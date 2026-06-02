@@ -247,10 +247,11 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
 // Lets the admin add tournament matches one at a time on their own schedule:
 // pick the two teams, exact date & time, venue and overs for each.
 function ManualMatchForm({ tournament }: { tournament: Tournament }) {
-  const { data: standings } = useStandings(tournament.id);
+  const [open, setOpen] = useState(false);
+  // Only fetch the team list once the form is actually opened.
+  const { data: standings } = useStandings(tournament.id, open);
   const { data: venues } = useVenues();
   const create = useCreateMatch();
-  const [open, setOpen] = useState(false);
   const [a, setA] = useState<number | "">("");
   const [b, setB] = useState<number | "">("");
   const [overs, setOvers] = useState(20);
