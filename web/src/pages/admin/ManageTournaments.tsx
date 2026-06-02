@@ -93,7 +93,8 @@ function CreateTournamentForm() {
 }
 
 function TournamentList() {
-  const { data: tournaments } = useTournaments(true); // management view: own (admin) / all (super)
+  // Management view: own (admin) / all (super). Same load/refresh UX as Matches.
+  const { data: tournaments, isLoading, isError, refetch, isFetching } = useTournaments(true);
   const user = useAppSelector((s) => s.auth.user);
   const approve = useApproveTournament();
   const del = useDeleteTournament();
@@ -101,8 +102,19 @@ function TournamentList() {
 
   return (
     <div>
-      <h2 className="mb-3 text-lg font-bold">Tournaments</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-bold">Tournaments</h2>
+        <button className="btn-ghost text-xs" onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? "Refreshing…" : "↻ Refresh"}
+        </button>
+      </div>
       <div className="space-y-2">
+        {isLoading && <p className="muted">Loading tournaments…</p>}
+        {isError && (
+          <p className="text-sm text-red-500">
+            Couldn’t load tournaments (server may be waking up). Tap Refresh in a moment.
+          </p>
+        )}
         {(tournaments ?? []).map((t) => (
           <div key={t.id} className="card-surface p-3">
             <div className="flex items-center justify-between gap-2">
@@ -143,7 +155,7 @@ function TournamentList() {
             </div>
           </div>
         ))}
-        {!tournaments?.length && <p className="muted">No tournaments yet.</p>}
+        {!isLoading && !isError && !tournaments?.length && <p className="muted">No tournaments yet.</p>}
       </div>
     </div>
   );
