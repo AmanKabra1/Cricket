@@ -99,6 +99,31 @@ async def expire_stale_admins(db: AsyncSession) -> dict:
     return {"admins": len(admins), "matches": removed_matches}
 
 
+async def retire_noshow_matches(db: AsyncSession) -> int:
+    """Mark scheduled matches that never started and whose window elapsed as
+    ABANDONED, so they drop off the live/upcoming lists into recent results."""
+    from app.services.match_timing import is_noshow, local_now
+
+    now = local_now()
+    scheduled = (
+        await db.scalars(
+            select(Match).where(
+                Match.status == MatchStatus.SCHEDULED,
+                Match.scheduled_at.is_not(None),
+            )
+        )
+    ).all()
+    retired = 0
+    for m in scheduled:
+        if is_noshow(m, now):
+            m.status = MatchStatus.ABANDONED
+            m.result_text = m.result_text or "Match did not start — no result"
+            retired += 1
+    if retired:
+        logger.info("retired %d no-show matches", retired)
+    return retired
+
+
 async def send_due_reminders(db: AsyncSession) -> int:
     """Email assigned admins for matches starting within MATCH_REMINDER_HOURS."""
     now = _now()
@@ -135,11 +160,18 @@ async def run_maintenance(db: AsyncSession) -> dict:
     """Run all jobs in one pass; commit once."""
     purged = await purge_old_matches(db)
     admins = await expire_stale_admins(db)
+    retired = await retire_noshow_matches(db)
     reminders = await send_due_reminders(db)
     await db.commit()
+    # No-shows just moved to "recent" — drop the cached dashboard so it reflects.
+    if retired:
+        from app.core.cache import DASHBOARD_KEY, cache
+
+        await cache.invalidate(DASHBOARD_KEY)
     return {
         "purged_matches": purged,
         "expired_admins": admins["admins"],
         "expired_admin_matches": admins["matches"],
+        "retired_noshows": retired,
         "reminders_sent": reminders,
     }

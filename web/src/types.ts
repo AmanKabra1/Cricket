@@ -59,6 +59,8 @@ export interface Match {
   winner_team_id: number | null;
   result_text: string | null;
   admin_ids: number[];
+  // Set by the dashboard for a scheduled match whose start time has arrived.
+  starting_soon?: boolean;
 }
 
 export interface InningsScore {

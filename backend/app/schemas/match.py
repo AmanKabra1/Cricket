@@ -50,6 +50,8 @@ class MatchOut(BaseModel):
     winner_team_id: int | None
     result_text: str | None
     admin_ids: list[int] = []  # user ids allowed to score this match
+    # True for a scheduled match whose start time has arrived (shown in "Live").
+    starting_soon: bool = False
     model_config = {"from_attributes": True}
 
 

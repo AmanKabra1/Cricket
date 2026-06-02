@@ -79,6 +79,15 @@ class Settings(BaseSettings):
     MAINTENANCE_AUTO: bool = True
     MAINTENANCE_INTERVAL_MINUTES: int = 60
 
+    # Match lifecycle timing. scheduled_at is stored as the picked wall-clock
+    # time (no UTC conversion), so we compare against "now" in this timezone.
+    APP_TIMEZONE: str = "Asia/Kolkata"
+    # BCCI-style pacing used to estimate when an un-scored match should have
+    # finished, so a no-show can be auto-retired off the live/upcoming lists.
+    MATCH_MINUTES_PER_OVER: float = 4.5  # ~T20 over rate (one innings)
+    MATCH_INNINGS_BREAK_MINUTES: int = 20  # break between innings (doubled for >20 overs)
+    MATCH_NOSHOW_GRACE_MINUTES: int = 60  # slack for toss/late start before retiring it
+
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:

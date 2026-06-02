@@ -65,10 +65,18 @@ export default function MatchCard({ match, teams }: { match: Match; teams: Map<n
       className="card-surface group block overflow-hidden p-4 transition hover:-translate-y-0.5 hover:shadow-lg"
     >
       <div className="mb-3 flex items-center justify-between">
-        <span className={`text-xs font-bold uppercase tracking-wide ${statusStyle[match.status] ?? "muted"}`}>
-          {live && <span className="pulse-dot mr-1 inline-block align-middle" />}
-          {match.status.replace("_", " ")}
-        </span>
+        {/* A scheduled match whose time has arrived shows a pulsing "STARTING". */}
+        {match.starting_soon && match.status === "SCHEDULED" ? (
+          <span className="text-xs font-bold uppercase tracking-wide text-pitch-600">
+            <span className="pulse-dot mr-1 inline-block align-middle" />
+            Starting
+          </span>
+        ) : (
+          <span className={`text-xs font-bold uppercase tracking-wide ${statusStyle[match.status] ?? "muted"}`}>
+            {live && <span className="pulse-dot mr-1 inline-block align-middle" />}
+            {match.status.replace("_", " ")}
+          </span>
+        )}
         <span className="rounded-full bg-slate-500/10 px-2 py-0.5 text-xs muted">{match.overs_limit} ov</span>
       </div>
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -16,6 +17,7 @@ from app.models.match import Match
 from app.models.setting import AppSetting
 from app.schemas.match import MatchOut
 from app.services import scoreboard
+from app.services.match_timing import is_due_live, is_noshow, local_now
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -38,6 +40,15 @@ async def get_backgrounds(db: DbSession) -> dict:
 async def dashboard(db: DbSession) -> dict:
     """Live, upcoming, and recent matches for the home screen.
 
+    Time-aware bucketing (so the lists move on their own as the clock advances):
+      • LIVE / INNINGS_BREAK matches are always "live".
+      • a SCHEDULED match whose start time has arrived (but whose window hasn't
+        elapsed) is shown as "live (starting)" even before the first ball.
+      • a SCHEDULED match still in the future is "upcoming".
+      • a SCHEDULED match whose whole expected window passed with no ball ever
+        scored is a no-show → shown under "recent" (and auto-marked ABANDONED by
+        maintenance). COMPLETED + ABANDONED are also "recent".
+
     Cached (short TTL) — this is the most-hit endpoint and must not query the DB
     on every spectator load.
     """
@@ -45,29 +56,43 @@ async def dashboard(db: DbSession) -> dict:
     if cached is not None:
         return cached
 
-    async def _by_status(s: MatchStatus, limit: int) -> list[Match]:
+    async def _by_status(statuses: list[MatchStatus], limit: int) -> list[Match]:
         return list(
             (
                 await db.scalars(
                     select(Match)
-                    .where(Match.status == s)
+                    .where(Match.status.in_(statuses))
                     .order_by(Match.scheduled_at.is_(None), Match.scheduled_at.desc())
                     .limit(limit)
                 )
             ).all()
         )
 
-    live = await _by_status(MatchStatus.LIVE, 20)
-    upcoming = await _by_status(MatchStatus.SCHEDULED, 20)
-    recent = await _by_status(MatchStatus.COMPLETED, 20)
+    live_db = await _by_status([MatchStatus.LIVE, MatchStatus.INNINGS_BREAK], 20)
+    scheduled = await _by_status([MatchStatus.SCHEDULED], 60)
+    completed = await _by_status([MatchStatus.COMPLETED, MatchStatus.ABANDONED], 20)
 
-    def serialize(matches: list[Match]) -> list[dict]:
-        return [MatchOut.model_validate(m).model_dump() for m in matches]
+    now = local_now()
+    due = [m for m in scheduled if is_due_live(m, now)]
+    noshow = [m for m in scheduled if is_noshow(m, now)]
+    future = [m for m in scheduled if m not in due and m not in noshow]
+    # Soonest-first for upcoming; most-recent-first elsewhere.
+    future.sort(key=lambda m: (m.scheduled_at is None, m.scheduled_at or datetime.max))
+
+    def serialize(matches: list[Match], starting: bool = False) -> list[dict]:
+        out = []
+        for m in matches:
+            d = MatchOut.model_validate(m).model_dump()
+            if starting:
+                d["starting_soon"] = True
+            out.append(d)
+        return out
 
     result = {
-        "live": serialize(live),
-        "upcoming": serialize(upcoming),
-        "recent": serialize(recent),
+        # Real live first, then scheduled matches whose time has come.
+        "live": serialize(live_db) + serialize(due, starting=True),
+        "upcoming": serialize(future),
+        "recent": serialize(completed) + serialize(noshow),
     }
     await cache.set_json(DASHBOARD_KEY, result, ttl=10)
     return result
