@@ -63,6 +63,18 @@
     background-attachment: fixed, fixed, fixed;
     transition: background-color 0.3s ease;
   }
+  /* Every button gives tactile feedback when pressed: a quick scale-down + dim.
+     Lives in @layer base so per-button Tailwind utilities (e.g. active:scale-95
+     on the run buttons) still win where set. Disabled buttons don't react. */
+  button {
+    transition: transform 0.08s ease, filter 0.12s ease, background-color 0.2s ease,
+      border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+  button:not(:disabled):active {
+    transform: scale(0.96);
+    filter: brightness(0.94);
+  }
+
   /* Headings/labels that sit directly on the background image get a halo in the
      current bg colour, so they stay readable in BOTH light and dark mode (and
      when toggling between them). Harmless on text inside cards. The footer +
