@@ -20,6 +20,31 @@ type Snapshot = {
   dismissed: number[];
 };
 
+// The scorer's on-field selections are kept in localStorage per match+innings,
+// so closing the tab and reopening the scoring link restores them (the score
+// itself always comes from the server; this is just the UI's batter/bowler
+// picks, which would otherwise reset to empty on reload).
+type Persisted = Omit<Snapshot, never>;
+
+const scoringKey = (matchId: number, inningsId: number) => `localscore:scoring:${matchId}:${inningsId}`;
+
+function loadScoring(matchId: number, inningsId: number): Persisted | null {
+  try {
+    const raw = localStorage.getItem(scoringKey(matchId, inningsId));
+    return raw ? (JSON.parse(raw) as Persisted) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveScoring(matchId: number, inningsId: number, data: Persisted) {
+  try {
+    localStorage.setItem(scoringKey(matchId, inningsId), JSON.stringify(data));
+  } catch {
+    /* storage full / unavailable — non-fatal */
+  }
+}
+
 function PlayerSelect({
   label,
   players,
@@ -95,15 +120,35 @@ export default function Scoring() {
     return s;
   }, [scorecard, openInnings, dismissed]);
 
-  // New innings → fresh batters/bowler; clear all on-field selections + flags.
+  // On (re)entering an open innings, restore the scorer's last on-field picks
+  // from localStorage so reopening the link doesn't wipe them; a brand-new
+  // innings (nothing saved) starts fresh. Undo history is not persisted.
   useEffect(() => {
-    setDismissed(new Set());
-    setLastOverBowler("");
-    setStriker("");
-    setNonStriker("");
-    setBowler("");
+    const innId = openInnings?.innings_id;
+    if (!innId) {
+      setDismissed(new Set());
+      setLastOverBowler("");
+      setStriker("");
+      setNonStriker("");
+      setBowler("");
+      setHistory([]);
+      return;
+    }
+    const saved = loadScoring(matchId, innId);
+    setStriker(saved?.striker ?? "");
+    setNonStriker(saved?.nonStriker ?? "");
+    setBowler(saved?.bowler ?? "");
+    setLastOverBowler(saved?.lastOverBowler ?? "");
+    setDismissed(new Set(saved?.dismissed ?? []));
     setHistory([]);
-  }, [openInnings?.innings_id]);
+  }, [openInnings?.innings_id, matchId]);
+
+  // Persist the on-field picks whenever they change (per match + innings).
+  useEffect(() => {
+    const innId = openInnings?.innings_id;
+    if (!innId) return;
+    saveScoring(matchId, innId, { striker, nonStriker, bowler, lastOverBowler, dismissed: [...dismissed] });
+  }, [striker, nonStriker, bowler, lastOverBowler, dismissed, openInnings?.innings_id, matchId]);
 
   const allBatters = useMemo<Player[]>(() => {
     if (!battingTeamId) return [];
