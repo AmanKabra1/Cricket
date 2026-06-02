@@ -99,12 +99,14 @@ export const useStandings = (id: number, enabled = true) =>
     queryKey: ["standings", id],
     queryFn: () => get<StandingRow[]>(`/tournaments/${id}/standings`),
     enabled,
+    refetchInterval: 15000, // keep the points table live while a match is on
   });
 
 export const useTournamentMatches = (id: number) =>
   useQuery({
     queryKey: ["tournament-matches", id],
     queryFn: () => get<Match[]>(`/tournaments/${id}/matches`),
+    refetchInterval: 15000,
   });
 
 export const useMatches = (status?: string) =>
@@ -178,6 +180,9 @@ export const usePostBall = (matchId: number) => {
       // console flips to the result screen instead of a stale "innings break".
       qc.invalidateQueries({ queryKey: ["match", matchId] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      // A completed match feeds the tournament points table — refresh it.
+      qc.invalidateQueries({ queryKey: ["standings"] });
+      qc.invalidateQueries({ queryKey: ["tournament-matches"] });
     },
   });
 };
@@ -191,6 +196,8 @@ export const useUndoBall = (matchId: number) => {
       qc.invalidateQueries({ queryKey: ["scorecard", matchId] });
       qc.invalidateQueries({ queryKey: ["match", matchId] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["standings"] });
+      qc.invalidateQueries({ queryKey: ["tournament-matches"] });
     },
   });
 };
