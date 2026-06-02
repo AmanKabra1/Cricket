@@ -264,6 +264,11 @@ export default function Scoring() {
     }
   }
 
+  async function recordToss(winnerId: number, decision: "BAT" | "BOWL") {
+    await api.post(`/matches/${matchId}/toss`, { toss_winner_id: winnerId, decision });
+    qc.invalidateQueries({ queryKey: ["match", matchId] });
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-1 text-2xl font-bold">Scoring console</h1>
@@ -320,13 +325,17 @@ export default function Scoring() {
             </div>
           )}
           {canScore ? (
-            <StartPanel
-              match={match}
-              teams={teams}
-              existingInnings={live?.innings.length ?? 0}
-              firstBattingTeamId={live?.innings[0]?.batting_team_id ?? null}
-              onStart={startInnings}
-            />
+            (live?.innings.length ?? 0) === 0 && !match.toss_winner_id ? (
+              <TossPanel match={match} teams={teams} onToss={recordToss} />
+            ) : (
+              <StartPanel
+                match={match}
+                teams={teams}
+                existingInnings={live?.innings.length ?? 0}
+                firstBattingTeamId={live?.innings[0]?.batting_team_id ?? null}
+                onStart={startInnings}
+              />
+            )
           ) : (
             <div className="card-surface p-5 text-center text-red-500">
               You're not assigned to score this match — view only.
@@ -514,7 +523,16 @@ function StartPanel({
   // side that bowled first may be picked (so it's not even offered).
   const battedFirst = existingInnings === 1 ? firstBattingTeamId : null;
   const battingOptions = [match.team_a_id, match.team_b_id].filter((id) => id !== battedFirst);
-  const [batId, setBatId] = useState(battingOptions[0]);
+  // For the 1st innings, default to whoever the toss put in to bat.
+  const tossBat =
+    existingInnings === 0 && match.toss_winner_id && match.toss_decision
+      ? match.toss_decision === "BAT"
+        ? match.toss_winner_id
+        : match.toss_winner_id === match.team_a_id
+          ? match.team_b_id
+          : match.team_a_id
+      : null;
+  const [batId, setBatId] = useState(tossBat ?? battingOptions[0]);
   const bowlId = batId === match.team_a_id ? match.team_b_id : match.team_a_id;
   const [starting, setStarting] = useState(false);
 
@@ -551,6 +569,109 @@ function StartPanel({
       <button className="btn-primary w-full" onClick={start} disabled={starting}>
         {starting ? "Starting…" : "Start innings"}
       </button>
+    </div>
+  );
+}
+
+function TossPanel({
+  match,
+  teams,
+  onToss,
+}: {
+  match: import("@/types").Match;
+  teams: Map<number, import("@/types").Team>;
+  onToss: (winnerId: number, decision: "BAT" | "BOWL") => Promise<void>;
+}) {
+  const [flipping, setFlipping] = useState(false);
+  const [face, setFace] = useState<"HEADS" | "TAILS" | null>(null);
+  const [winner, setWinner] = useState<number | "">("");
+  const [decision, setDecision] = useState<"BAT" | "BOWL">("BAT");
+  const [saving, setSaving] = useState(false);
+
+  const flip = () => {
+    if (flipping) return;
+    setFlipping(true);
+    setFace(null);
+    // Animate, then settle on a random face (~50/50).
+    setTimeout(() => {
+      setFace(Math.random() < 0.5 ? "HEADS" : "TAILS");
+      setFlipping(false);
+    }, 1100);
+  };
+
+  const confirm = async () => {
+    if (!winner) return;
+    setSaving(true);
+    try {
+      await onToss(Number(winner), decision);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="card-surface mb-5 p-5 text-center">
+      <h2 className="mb-1 font-bold">Toss</h2>
+      <p className="mb-4 text-sm muted">Flip the coin, then record who won and what they chose.</p>
+
+      {/* Coin */}
+      <div className="mb-4 flex justify-center">
+        <div
+          className={`grid h-24 w-24 place-items-center rounded-full text-lg font-extrabold text-white shadow-lg ${
+            flipping ? "coin-flip" : ""
+          } ${face === "TAILS" ? "bg-amber-500" : "bg-pitch-500"}`}
+        >
+          {flipping ? "…" : face ?? "🪙"}
+        </div>
+      </div>
+      <button className="btn-ghost mb-4" onClick={flip} disabled={flipping}>
+        {flipping ? "Flipping…" : face ? "Flip again" : "Flip coin"}
+      </button>
+
+      {/* Result entry — enabled once the coin has been flipped. */}
+      {face && (
+        <div className="space-y-3 text-left">
+          <div>
+            <span className="mb-1 block text-xs font-semibold muted">Toss won by</span>
+            <div className="grid grid-cols-2 gap-2">
+              {[match.team_a_id, match.team_b_id].map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setWinner(id)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                    winner === id ? "border-pitch-500 bg-pitch-500 text-white" : ""
+                  }`}
+                  style={{ borderColor: winner === id ? undefined : "var(--border)" }}
+                >
+                  {teamName(teams, id)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="mb-1 block text-xs font-semibold muted">Chose to</span>
+            <div className="grid grid-cols-2 gap-2">
+              {(["BAT", "BOWL"] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDecision(d)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                    decision === d ? "border-pitch-500 bg-pitch-500 text-white" : ""
+                  }`}
+                  style={{ borderColor: decision === d ? undefined : "var(--border)" }}
+                >
+                  {d === "BAT" ? "Bat first" : "Bowl first"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button className="btn-primary w-full" onClick={confirm} disabled={!winner || saving}>
+            {saving ? "Saving…" : "Confirm toss"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

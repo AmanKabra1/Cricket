@@ -243,6 +243,8 @@ function MatchList() {
               )}
               {m.status === "COMPLETED" || m.status === "ABANDONED" ? (
                 <Link to={`/matches/${m.id}`} className="btn-ghost text-sm">View</Link>
+              ) : m.approved === false ? (
+                <span className="text-xs muted">Approve to score</span>
               ) : (
                 <Link to={`/admin/matches/${m.id}/score`} className="btn-primary text-sm">Score</Link>
               )}

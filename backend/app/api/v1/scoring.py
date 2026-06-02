@@ -40,6 +40,8 @@ async def post_ball(
     user: User = Depends(require_admin),
 ) -> dict:
     match = await authorize_match_admin(match_id, db, user)
+    if not match.approved:
+        raise HTTPException(status_code=403, detail="This match isn't approved yet.")
     innings = _current_innings(match)
     if innings is None:
         raise HTTPException(status_code=400, detail="No open innings; start an innings first")

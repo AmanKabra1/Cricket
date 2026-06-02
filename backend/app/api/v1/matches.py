@@ -130,6 +130,11 @@ async def start_innings(
     user: User = Depends(require_admin),
 ) -> Match:
     match = await authorize_match_admin(match_id, db, user)
+    if not match.approved:
+        raise HTTPException(
+            status_code=403,
+            detail="This match isn't approved yet — a super admin must approve it before scoring.",
+        )
     teams = {match.team_a_id, match.team_b_id}
     if {payload.batting_team_id, payload.bowling_team_id} != teams:
         raise HTTPException(status_code=400, detail="Innings teams must match the two participating teams")
