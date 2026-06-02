@@ -4,6 +4,7 @@ import { useMatches, useTeams, useVenues, useTournaments } from "@/api/hooks";
 import { useCreateMatch, useCreateVenue, useDeleteMatch, useDeleteVenue, useUsers } from "@/api/admin";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { useAppSelector } from "@/store";
+import DateTimePicker from "@/components/DateTimePicker";
 
 export default function ManageMatches() {
   return (
@@ -119,8 +120,7 @@ function CreateMatchForm() {
       </div>
       <label className="block">
         <span className="mb-1 block text-xs font-semibold muted">Date &amp; time *</span>
-        <input className="input" type="datetime-local" value={when} required
-          onChange={(e) => setWhen(e.target.value)} />
+        <DateTimePicker value={when} onChange={setWhen} required />
       </label>
       <select className="input" value={tournament} onChange={(e) => setTournament(Number(e.target.value))}>
         <option value="">Tournament (optional)</option>
