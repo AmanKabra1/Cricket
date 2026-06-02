@@ -127,3 +127,56 @@ async def test_happy_path(client: AsyncClient):
         },
     )
     assert r401.status_code == 401
+
+
+async def test_tournament_standings_update_on_completion(client: AsyncClient):
+    """Completing a tournament match must update the points table."""
+    token = (await client.post("/api/v1/auth/login", json={"email": "boss@x.dev", "password": "password1"})).json()["access_token"]
+    auth = {"Authorization": f"Bearer {token}"}
+
+    team_ids = []
+    players = {}
+    for name in ("Aces", "Bolts"):
+        tid = (await client.post("/api/v1/teams", json={"name": name}, headers=auth)).json()["id"]
+        team_ids.append(tid)
+        for pname in ("P1", "P2", "P3"):
+            await client.post(f"/api/v1/teams/{tid}/players", json={"name": f"{name} {pname}"}, headers=auth)
+        players[tid] = (await client.get(f"/api/v1/teams/{tid}/players")).json()
+
+    # Tournament → approve → generate the single fixture.
+    tid_t = (await client.post("/api/v1/tournaments", json={"name": "Cup", "format": "LEAGUE", "team_ids": team_ids}, headers=auth)).json()["id"]
+    await client.post(f"/api/v1/tournaments/{tid_t}/approve", headers=auth)
+    fixtures = (await client.post(f"/api/v1/tournaments/{tid_t}/fixtures", json={"overs_limit": 5}, headers=auth)).json()
+    assert len(fixtures) == 1, fixtures
+    m = fixtures[0]
+    mid, bat, bowl = m["id"], m["team_a_id"], m["team_b_id"]
+    bat_p, bowl_p = players[bat], players[bowl]
+
+    async def ball(payload):
+        r = await client.post(f"/api/v1/matches/{mid}/scoring/ball", json=payload, headers=auth)
+        assert r.status_code == 201, r.text
+        return r.json()
+
+    # Innings 1: bat side all out for 0 (3 players → out at 2 wickets).
+    await client.post(f"/api/v1/matches/{mid}/innings", json={"batting_team_id": bat, "bowling_team_id": bowl}, headers=auth)
+    for i in (0, 1):
+        await ball({
+            "striker_id": bat_p[i]["id"], "non_striker_id": bat_p[2]["id"], "bowler_id": bowl_p[0]["id"],
+            "is_wicket": True, "wicket_type": "BOWLED", "dismissed_player_id": bat_p[i]["id"],
+        })
+
+    # Innings 2: chasing side scores the 1 run needed → match complete.
+    await client.post(f"/api/v1/matches/{mid}/innings", json={"batting_team_id": bowl, "bowling_team_id": bat}, headers=auth)
+    res = await ball({
+        "striker_id": bowl_p[0]["id"], "non_striker_id": bowl_p[1]["id"], "bowler_id": bat_p[0]["id"],
+        "runs_batsman": 1,
+    })
+    assert res["innings_closed"] is True
+
+    # The match is COMPLETED and the points table reflects it.
+    assert (await client.get(f"/api/v1/matches/{mid}", headers=auth)).json()["status"] == "COMPLETED"
+    standings = (await client.get(f"/api/v1/tournaments/{tid_t}/standings", headers=auth)).json()
+    rows = {r["team_id"]: r for r in standings}
+    assert rows[bowl]["points"] == 2 and rows[bowl]["won"] == 1, standings
+    assert rows[bat]["points"] == 0 and rows[bat]["lost"] == 1, standings
+    assert rows[bat]["played"] == 1 and rows[bowl]["played"] == 1

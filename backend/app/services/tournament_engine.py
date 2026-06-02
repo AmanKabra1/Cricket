@@ -106,6 +106,11 @@ def _innings_runs_overs(inn, overs_limit: int) -> tuple[int, float]:
 
 
 async def recompute_standings(db: AsyncSession, tournament_id: int) -> None:
+    # The session uses autoflush=False, so pending changes (e.g. a match just
+    # marked COMPLETED with its winner) aren't visible to the queries below until
+    # we flush — without this the table is recomputed from stale data.
+    await db.flush()
+
     rows = (
         await db.scalars(
             select(TournamentTeam).where(TournamentTeam.tournament_id == tournament_id)
