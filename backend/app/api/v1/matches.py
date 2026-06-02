@@ -9,8 +9,9 @@ from app.api.deps import (
     DbSession,
     authorize_match_admin,
     require_admin,
+    require_super_admin,
 )
-from app.models.enums import MatchStatus
+from app.models.enums import MatchStatus, UserRole
 from app.models.innings import Innings
 from app.models.match import Match
 from app.models.user import User
@@ -60,6 +61,8 @@ async def delete_match(
 async def create_match(
     payload: MatchCreate, db: DbSession, user: User = Depends(require_admin)
 ) -> Match:
+    # A super admin's match is public immediately; a match admin's needs approval.
+    is_super = user.role == UserRole.SUPER_ADMIN
     match = Match(
         team_a_id=payload.team_a_id,
         team_b_id=payload.team_b_id,
@@ -68,6 +71,7 @@ async def create_match(
         scheduled_at=payload.scheduled_at,
         overs_limit=payload.overs_limit,
         status=MatchStatus.SCHEDULED,
+        approved=is_super,
     )
     # Assign scoring admins (creator always included).
     admin_ids = set(payload.admin_ids) | {user.id}
@@ -76,6 +80,28 @@ async def create_match(
     db.add(match)
     await db.commit()
     await db.refresh(match)
+    # Drop the cached dashboard so an approved (super-admin) match shows at once.
+    if is_super:
+        from app.core.cache import DASHBOARD_KEY, cache
+
+        await cache.invalidate(DASHBOARD_KEY)
+    return match
+
+
+@router.post("/{match_id}/approve", response_model=MatchOut)
+async def approve_match(
+    match_id: int, db: DbSession, _: User = Depends(require_super_admin)
+) -> Match:
+    """Super admin approves a match created by a match admin, making it public."""
+    match = await db.get(Match, match_id)
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    match.approved = True
+    await db.commit()
+    await db.refresh(match)
+    from app.core.cache import DASHBOARD_KEY, cache
+
+    await cache.invalidate(DASHBOARD_KEY)
     return match
 
 

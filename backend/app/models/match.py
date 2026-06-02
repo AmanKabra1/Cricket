@@ -47,6 +47,10 @@ class Match(Base, TimestampMixin):
     result_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # True once a pre-match reminder email has been sent (avoids duplicates).
     reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Public visibility gate: a match-admin's match starts unapproved and is
+    # hidden from the public home page until a super admin approves it. Super
+    # admin matches (and tournament fixtures) are approved on creation.
+    approved: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     team_a = relationship("Team", foreign_keys=[team_a_id], lazy="selectin")
     team_b = relationship("Team", foreign_keys=[team_b_id], lazy="selectin")

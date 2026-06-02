@@ -15,7 +15,7 @@ from itertools import combinations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.enums import MatchStatus, TournamentFormat
+from app.models.enums import MatchStatus, TournamentFormat, TournamentStatus
 from app.models.match import Match
 from app.models.tournament import Tournament, TournamentTeam
 
@@ -46,6 +46,12 @@ async def generate_fixtures(db: AsyncSession, tournament: Tournament) -> list[Ma
             (team_ids[i], team_ids[i + 1]) for i in range(0, len(team_ids) - 1, 2)
         ]
 
+    # Fixtures are public only once the tournament has been approved.
+    approved = tournament.status in (
+        TournamentStatus.APPROVED,
+        TournamentStatus.ONGOING,
+        TournamentStatus.COMPLETED,
+    )
     created: list[Match] = []
     for a, b in pairings:
         match = Match(
@@ -54,6 +60,7 @@ async def generate_fixtures(db: AsyncSession, tournament: Tournament) -> list[Ma
             team_b_id=b,
             overs_limit=20,
             status=MatchStatus.SCHEDULED,
+            approved=approved,
         )
         db.add(match)
         created.append(match)

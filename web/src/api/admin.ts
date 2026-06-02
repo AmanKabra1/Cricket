@@ -170,6 +170,17 @@ export const useCreateMatch = () => {
   });
 };
 
+export const useApproveMatch = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (matchId: number) => api.post(`/matches/${matchId}/approve`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["matches"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+};
+
 export const useDeleteMatch = () => {
   const qc = useQueryClient();
   return useMutation({

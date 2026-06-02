@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMatches, useTeams, useVenues, useTournaments } from "@/api/hooks";
-import { useCreateMatch, useCreateVenue, useDeleteMatch, useDeleteVenue, useUsers } from "@/api/admin";
+import { useApproveMatch, useCreateMatch, useCreateVenue, useDeleteMatch, useDeleteVenue, useUsers } from "@/api/admin";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { useAppSelector } from "@/store";
 import DateTimePicker from "@/components/DateTimePicker";
@@ -201,6 +201,8 @@ function MatchList() {
   const { data: matches, isLoading, isError, refetch, isFetching } = useMatches();
   const teams = useTeamMap();
   const del = useDeleteMatch();
+  const approve = useApproveMatch();
+  const isSuper = useAppSelector((s) => s.auth.user?.role === "SUPER_ADMIN");
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -222,9 +224,23 @@ function MatchList() {
               <div className="truncate font-medium">
                 {teamName(teams, m.team_a_id)} vs {teamName(teams, m.team_b_id)}
               </div>
-              <div className="text-xs muted">{m.status.replace("_", " ")} · {m.overs_limit} ov</div>
+              <div className="text-xs muted">
+                {m.status.replace("_", " ")} · {m.overs_limit} ov
+                {m.approved === false && (
+                  <span className="ml-2 font-semibold text-amber-600">· Pending approval</span>
+                )}
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              {m.approved === false && isSuper && (
+                <button
+                  className="rounded-lg bg-pitch-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-pitch-600 disabled:opacity-50"
+                  disabled={approve.isPending && approve.variables === m.id}
+                  onClick={() => approve.mutate(m.id)}
+                >
+                  {approve.isPending && approve.variables === m.id ? "Approving…" : "Approve"}
+                </button>
+              )}
               <Link to={`/admin/matches/${m.id}/score`} className="btn-primary text-sm">Score</Link>
               <button
                 className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"

@@ -55,10 +55,13 @@ export default function ManageTeams() {
           {(teams ?? []).map((t) => (
             <div
               key={t.id}
-              className={`flex items-center gap-3 rounded-lg border p-2 ${
+              className={`flex items-center gap-3 rounded-lg border p-2 shadow-sm ${
                 selected === t.id ? "border-pitch-500" : ""
               }`}
-              style={{ borderColor: selected === t.id ? undefined : "var(--border)" }}
+              style={{
+                borderColor: selected === t.id ? undefined : "var(--border)",
+                background: "var(--surface)",
+              }}
             >
               <button onClick={() => setSelected(t.id)} className="flex flex-1 items-center gap-3 text-left">
                 {t.logo_url ? (

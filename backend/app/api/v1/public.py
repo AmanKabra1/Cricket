@@ -61,7 +61,7 @@ async def dashboard(db: DbSession) -> dict:
             (
                 await db.scalars(
                     select(Match)
-                    .where(Match.status.in_(statuses))
+                    .where(Match.status.in_(statuses), Match.approved.is_(True))
                     .order_by(Match.scheduled_at.is_(None), Match.scheduled_at.desc())
                     .limit(limit)
                 )
