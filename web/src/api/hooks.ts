@@ -173,6 +173,10 @@ export const usePostBall = (matchId: number) => {
       if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       qc.invalidateQueries({ queryKey: ["scorecard", matchId] });
       qc.invalidateQueries({ queryKey: ["commentary", matchId] });
+      // The ball may have ended the innings/match — refresh match status so the
+      // console flips to the result screen instead of a stale "innings break".
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 };
@@ -184,6 +188,8 @@ export const useUndoBall = (matchId: number) => {
     onSuccess: (data) => {
       if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       qc.invalidateQueries({ queryKey: ["scorecard", matchId] });
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 };

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useMatch } from "@/api/hooks";
+import { useLiveScore, useMatch } from "@/api/hooks";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useAppSelector } from "@/store";
@@ -21,12 +21,28 @@ export default function MatchCenter() {
   const matchId = Number(id);
   const [tab, setTab] = useState<Tab>("Live");
   const { data: match, isLoading, isError } = useMatch(matchId);
+  const { data: liveScore } = useLiveScore(matchId);
   const teams = useTeamMap();
   const user = useAppSelector((s) => s.auth.user);
   useLiveSocket(matchId);
 
   if (isLoading) return <Spinner />;
   if (isError || !match) return <ErrorState />;
+
+  // "Need R off B balls" for an in-progress chase (2nd-innings target set).
+  const chase = liveScore?.innings.find((i) => !i.is_closed && i.target != null);
+  const oversToBalls = (o: string) => {
+    const [a, b] = o.split(".").map(Number);
+    return (a || 0) * 6 + (b || 0);
+  };
+  const chaseInfo =
+    chase && chase.target != null
+      ? {
+          runs: Math.max(0, chase.target - chase.runs),
+          balls: Math.max(0, match.overs_limit * 6 - oversToBalls(chase.overs)),
+          team: teamName(teams, chase.batting_team_id),
+        }
+      : null;
 
   const live = match.status === "LIVE";
   const canScore = user && user.role !== "PUBLIC";
@@ -69,6 +85,14 @@ export default function MatchCenter() {
           )}
         </div>
       </div>
+
+      {/* Chase tracker — shown above every tab while a target is being chased. */}
+      {chaseInfo && (
+        <div className="mb-5 rounded-xl bg-pitch-500/10 p-3 text-center text-sm font-semibold text-pitch-700 dark:text-pitch-300">
+          {chaseInfo.team} need <b>{chaseInfo.runs}</b> run{chaseInfo.runs === 1 ? "" : "s"} from{" "}
+          <b>{chaseInfo.balls}</b> ball{chaseInfo.balls === 1 ? "" : "s"} to win
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="mb-5 flex gap-1 overflow-x-auto border-b" style={{ borderColor: "var(--border)" }}>

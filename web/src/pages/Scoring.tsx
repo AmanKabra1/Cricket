@@ -11,6 +11,12 @@ import type { Player } from "@/types";
 
 const WICKET_TYPES = ["BOWLED", "CAUGHT", "LBW", "RUN_OUT", "STUMPED", "HIT_WICKET"];
 
+// "o.b" overs string → total legal balls bowled.
+function oversToBalls(overs: string): number {
+  const [o, b] = overs.split(".").map(Number);
+  return (o || 0) * 6 + (b || 0);
+}
+
 // On-field positions captured before a ball, restored on undo.
 type Snapshot = {
   striker: number | "";
@@ -201,6 +207,14 @@ export default function Scoring() {
   const freeHit = !!live?.free_hit;
   // Coerce the dismissal type to run-out while a free hit is in effect.
   const effectiveWicket = freeHit ? "RUN_OUT" : wicketType;
+  // The match is over once both innings are done (covers a brief window where the
+  // match record's status hasn't refreshed to COMPLETED yet).
+  const bothInningsDone = !openInnings && (live?.innings.length ?? 0) >= 2;
+  const matchOver = match.status === "COMPLETED" || bothInningsDone;
+  // Balls left in the current chase (for "need R off B balls").
+  const ballsLeft = openInnings
+    ? match.overs_limit * 6 - oversToBalls(openInnings.overs)
+    : 0;
 
   async function send(partial: Partial<BallPayload>) {
     // Controls are disabled until ready, so this is just a defensive no-op.
@@ -301,8 +315,9 @@ export default function Scoring() {
           </div>
           {openInnings.target != null && (
             <div className="mt-1 text-sm font-semibold text-pitch-600">
-              Target {openInnings.target} (beat {openInnings.target - 1}) · need{" "}
-              {Math.max(0, openInnings.target - openInnings.runs)} to win
+              Target {openInnings.target} · need{" "}
+              {Math.max(0, openInnings.target - openInnings.runs)} off {Math.max(0, ballsLeft)} ball
+              {ballsLeft === 1 ? "" : "s"}
               {openInnings.required_run_rate != null && (
                 <span className="muted"> · RRR {openInnings.required_run_rate.toFixed(2)}</span>
               )}
@@ -314,11 +329,11 @@ export default function Scoring() {
             </div>
           )}
         </div>
-      ) : match.status === "COMPLETED" ? (
+      ) : matchOver ? (
         <div className="card-surface mb-5 p-5 text-center">
-          <div className="text-sm muted">Match complete</div>
+          <div className="text-sm muted">🏆 Match complete</div>
           <div className="mt-1 text-xl font-extrabold text-pitch-600">
-            {match.result_text ?? "Result recorded"}
+            {match.result_text ?? "Result recorded — refreshing…"}
           </div>
         </div>
       ) : (
@@ -396,11 +411,16 @@ export default function Scoring() {
 
           {msg && <p className="mb-3 text-sm text-red-500">{msg}</p>}
           {info && <p className="mb-3 text-sm font-medium text-pitch-600">{info}</p>}
-          {/* Gentle hint instead of an error — controls below stay disabled until ready. */}
+          {/* Until a striker, non-striker AND bowler are chosen (e.g. right after
+              an over completes or a wicket falls) the run / extra / wicket controls
+              are hidden — you must pick the new bowler/batter first. */}
           {!ready && (
-            <p className="mb-3 text-sm muted">Select striker, non-striker &amp; bowler above to start scoring.</p>
+            <p className="mb-3 rounded-lg bg-amber-500/10 p-3 text-sm font-medium text-amber-600">
+              Pick striker, non-striker &amp; bowler above to enable scoring.
+            </p>
           )}
 
+          {ready && (<>
           {/* Run buttons */}
           <div className="card-surface mb-4 p-4">
             <div className="mb-2 text-xs font-semibold muted">RUNS</div>
@@ -471,6 +491,7 @@ export default function Scoring() {
             </div>
             {freeHit && <p className="mt-2 text-xs text-amber-600">Free hit: only run-out counts.</p>}
           </div>
+          </>)}
 
           <button
             className="btn-ghost w-full"

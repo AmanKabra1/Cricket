@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "LocalScore <no-reply@localscore.app>"
     SMTP_TLS: bool = True
+    # Preferred on PaaS hosts that block/throttle SMTP ports (Render etc.): send
+    # via Brevo's HTTPS transactional API instead of SMTP. Set this to your
+    # Brevo API key (Settings → API Keys) and email goes out over HTTPS.
+    BREVO_API_KEY: str = ""
 
     # Maintenance / data retention (free-tier housekeeping)
     MAINTENANCE_TOKEN: str = ""  # shared secret for the cron to call the endpoint

@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 import smtplib
 from email.message import EmailMessage
+from email.utils import parseaddr
 
+import httpx
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import settings
@@ -14,7 +16,31 @@ logger = logging.getLogger("localscore.email")
 
 
 def email_enabled() -> bool:
-    return bool(settings.SMTP_HOST and settings.SMTP_USER)
+    # Either the Brevo HTTP API (preferred) or classic SMTP can be configured.
+    return bool(settings.BREVO_API_KEY or (settings.SMTP_HOST and settings.SMTP_USER))
+
+
+def _from_parts() -> tuple[str, str]:
+    """Split SMTP_FROM ("Name <email>") into (name, email)."""
+    name, addr = parseaddr(settings.SMTP_FROM)
+    return name or "LocalScore", addr or settings.SMTP_USER
+
+
+async def _send_via_brevo_api(to: str, subject: str, body: str) -> None:
+    """Send over Brevo's HTTPS API — works where outbound SMTP ports are blocked."""
+    name, addr = _from_parts()
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": settings.BREVO_API_KEY, "content-type": "application/json"},
+            json={
+                "sender": {"email": addr, "name": name},
+                "to": [{"email": to}],
+                "subject": subject,
+                "textContent": body,
+            },
+        )
+        resp.raise_for_status()
 
 
 def _send_sync(to: str, subject: str, body: str) -> None:
@@ -44,9 +70,12 @@ async def try_send_email(to: str, subject: str, body: str) -> tuple[bool, str | 
     """
     if not email_enabled():
         logger.info("email disabled — would send to %s: %s", to, subject)
-        return False, "SMTP not configured"
+        return False, "Email not configured (set BREVO_API_KEY, or SMTP_HOST/SMTP_USER)"
     try:
-        await run_in_threadpool(_send_sync, to, subject, body)
+        if settings.BREVO_API_KEY:
+            await _send_via_brevo_api(to, subject, body)  # HTTPS — preferred
+        else:
+            await run_in_threadpool(_send_sync, to, subject, body)  # SMTP fallback
         return True, None
     except Exception as exc:  # noqa: BLE001 — never let email break a request
         logger.warning("email send failed to %s: %s", to, exc)
