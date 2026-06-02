@@ -173,12 +173,20 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
   const gen = useGenerateFixtures(tournament.id);
   const { data: venues } = useVenues();
   const [open, setOpen] = useState(false);
+  const { data: standings } = useStandings(tournament.id, open); // team list, when open
   const [overs, setOvers] = useState(20);
   const [venueId, setVenueId] = useState<number | "">("");
   const [startAt, setStartAt] = useState("");
   const [interval, setInterval] = useState(180);
   const [perDay, setPerDay] = useState(2);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // How many matches this format will create, and how many days they span.
+  const nTeams = standings?.length ?? 0;
+  const isKnockout = tournament.format === "KNOCKOUT";
+  const nMatches = nTeams < 2 ? 0 : isKnockout ? Math.floor(nTeams / 2) : (nTeams * (nTeams - 1)) / 2;
+  const nDays = startAt && perDay > 0 ? Math.ceil(nMatches / perDay) : 0;
+  const oddKnockout = isKnockout && nTeams % 2 === 1;
 
   const run = async (e: FormEvent) => {
     e.preventDefault();
@@ -253,6 +261,16 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
             </select>
           </label>
         </div>
+      )}
+      {/* Edge-case-aware preview of what will be created. */}
+      {nMatches > 0 && (
+        <p className="rounded-lg bg-pitch-500/10 p-2 text-xs text-pitch-700 dark:text-pitch-300">
+          {nTeams} teams → <b>{nMatches}</b> match{nMatches === 1 ? "" : "es"}
+          {startAt && nDays > 0 && <> over <b>{nDays}</b> day{nDays === 1 ? "" : "s"} ({perDay}/day)</>}.
+        </p>
+      )}
+      {oddKnockout && (
+        <p className="text-xs text-amber-600">Odd number of teams — one team sits out the first round.</p>
       )}
       <div className="flex gap-2">
         <button type="submit" className="btn-primary flex-1 text-sm" disabled={gen.isPending}>

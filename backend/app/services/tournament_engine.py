@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.enums import MatchStatus, TournamentFormat, TournamentStatus
 from app.models.match import Match
 from app.models.tournament import Tournament, TournamentTeam
+from app.models.user import User
 
 WIN_POINTS = 2
 DRAW_POINTS = 1
@@ -68,6 +69,11 @@ async def generate_fixtures(
         TournamentStatus.ONGOING,
         TournamentStatus.COMPLETED,
     )
+    # The tournament's creator is auto-assigned to score its matches, so once a
+    # super admin approves the tournament that admin can score without being
+    # added to each match by hand.
+    creator = await db.get(User, tournament.created_by) if tournament.created_by else None
+
     created: list[Match] = []
     for i, (a, b) in enumerate(pairings):
         scheduled_at = None
@@ -85,6 +91,8 @@ async def generate_fixtures(
             status=MatchStatus.SCHEDULED,
             approved=approved,
         )
+        if creator:
+            match.admins = [creator]
         db.add(match)
         created.append(match)
     await db.flush()

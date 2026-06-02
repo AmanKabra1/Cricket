@@ -184,42 +184,45 @@ export default function DateTimePicker({ value, onChange, required }: Props) {
             )}
           </div>
 
-          {/* Time — 12-hour with AM/PM. */}
-          <div className="mt-3 flex items-center gap-1.5 border-t pt-3" style={{ borderColor: "var(--border)" }}>
-            <span className="text-xs font-semibold muted">Time</span>
-            <select
-              className="input flex-1 py-1"
-              value={h12}
-              onChange={(e) => pickTime(to24(Number(e.target.value), ampm), curMin)}
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((hh) => {
-                const h24 = to24(hh, ampm);
-                const gone = selDayIsToday && h24 < nowH;
-                return <option key={hh} value={hh} disabled={gone}>{hh}</option>;
-              })}
-            </select>
-            <span className="font-bold">:</span>
-            <select
-              className="input flex-1 py-1"
-              value={curMin}
-              onChange={(e) => pickTime(curHour, Number(e.target.value))}
-            >
-              {Array.from({ length: 60 }, (_, m) => m).map((m) => {
-                const gone = selDayIsToday && (curHour < nowH || (curHour === nowH && m < nowM));
-                return <option key={m} value={m} disabled={gone}>{pad(m)}</option>;
-              })}
-            </select>
-            <select
-              className="input py-1"
-              value={ampm}
-              onChange={(e) => pickTime(to24(h12, e.target.value), curMin)}
-            >
-              {["AM", "PM"].map((ap) => {
-                // For today, disable AM if the whole morning has passed.
-                const gone = selDayIsToday && ap === "AM" && nowH >= 12;
-                return <option key={ap} value={ap} disabled={gone}>{ap}</option>;
-              })}
-            </select>
+          {/* Time — 12-hour with AM/PM. Label on its own line so each box is
+              wide enough to show its value (e.g. "10 : 23 PM"). */}
+          <div className="mt-3 border-t pt-3" style={{ borderColor: "var(--border)" }}>
+            <span className="mb-1 block text-xs font-semibold muted">Time</span>
+            <div className="flex items-center gap-2">
+              <select
+                className="input w-16 px-2 py-1 text-center"
+                value={h12}
+                onChange={(e) => pickTime(to24(Number(e.target.value), ampm), curMin)}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((hh) => {
+                  const h24 = to24(hh, ampm);
+                  const gone = selDayIsToday && h24 < nowH;
+                  return <option key={hh} value={hh} disabled={gone}>{hh}</option>;
+                })}
+              </select>
+              <span className="font-bold">:</span>
+              <select
+                className="input w-16 px-2 py-1 text-center"
+                value={curMin}
+                onChange={(e) => pickTime(curHour, Number(e.target.value))}
+              >
+                {Array.from({ length: 60 }, (_, m) => m).map((m) => {
+                  const gone = selDayIsToday && (curHour < nowH || (curHour === nowH && m < nowM));
+                  return <option key={m} value={m} disabled={gone}>{pad(m)}</option>;
+                })}
+              </select>
+              <select
+                className="input w-20 px-2 py-1 text-center"
+                value={ampm}
+                onChange={(e) => pickTime(to24(h12, e.target.value), curMin)}
+              >
+                {["AM", "PM"].map((ap) => {
+                  // For today, disable AM if the whole morning has passed.
+                  const gone = selDayIsToday && ap === "AM" && nowH >= 12;
+                  return <option key={ap} value={ap} disabled={gone}>{ap}</option>;
+                })}
+              </select>
+            </div>
           </div>
 
           <button type="button" className="btn-primary mt-3 w-full py-1.5 text-sm" onClick={() => setOpen(false)}>
