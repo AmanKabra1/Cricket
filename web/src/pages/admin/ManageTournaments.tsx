@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useTeams, useTournaments, useVenues } from "@/api/hooks";
-import { useApproveTournament, useCreateTournament, useGenerateFixtures } from "@/api/admin";
+import { useApproveTournament, useCreateTournament, useDeleteTournament, useGenerateFixtures } from "@/api/admin";
 import { useAppSelector } from "@/store";
 import DateTimePicker from "@/components/DateTimePicker";
 import type { Tournament } from "@/types";
@@ -96,6 +96,8 @@ function TournamentList() {
   const { data: tournaments } = useTournaments();
   const user = useAppSelector((s) => s.auth.user);
   const approve = useApproveTournament();
+  const del = useDeleteTournament();
+  const isSuper = user?.role === "SUPER_ADMIN";
 
   return (
     <div>
@@ -103,9 +105,25 @@ function TournamentList() {
       <div className="space-y-2">
         {(tournaments ?? []).map((t) => (
           <div key={t.id} className="card-surface p-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <Link to={`/tournaments/${t.id}`} className="font-medium hover:text-pitch-600">{t.name}</Link>
-              <span className="text-xs muted">{t.format.replace("_", " ")} · {t.status}</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-xs muted">{t.format.replace("_", " ")} · {t.status}</span>
+                {isSuper && (
+                  <button
+                    className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                    title="Delete tournament + its matches"
+                    disabled={del.isPending && del.variables === t.id}
+                    onClick={() => {
+                      if (confirm(`Delete "${t.name}"? This removes its fixtures and all their match data.`)) {
+                        del.mutate(t.id);
+                      }
+                    }}
+                  >
+                    {del.isPending && del.variables === t.id ? "Deleting…" : "Delete"}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {user?.role === "SUPER_ADMIN" && t.status === "PENDING" && (

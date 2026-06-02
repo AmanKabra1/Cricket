@@ -238,6 +238,18 @@ export const useGenerateFixtures = (tournamentId: number) => {
   });
 };
 
+export const useDeleteTournament = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tournamentId: number) => api.delete(`/tournaments/${tournamentId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tournaments"] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+};
+
 export const useApproveTournament = () => {
   const qc = useQueryClient();
   return useMutation({

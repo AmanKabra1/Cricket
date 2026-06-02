@@ -48,6 +48,27 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+async def get_current_user_optional(
+    db: DbSession,
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+) -> User | None:
+    """Like get_current_user but returns None instead of 401 for anonymous users
+    — used by public endpoints that show more to a signed-in admin."""
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        if payload.get("type") != ACCESS_TOKEN:
+            return None
+        user = await db.get(User, int(payload["sub"]))
+    except (jwt.PyJWTError, KeyError, ValueError):
+        return None
+    return user if (user and user.is_active) else None
+
+
+OptionalUser = Annotated[User | None, Depends(get_current_user_optional)]
+
+
 def require_roles(*roles: UserRole):
     """Dependency factory enforcing that the caller holds one of `roles`."""
 

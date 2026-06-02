@@ -10,10 +10,11 @@ from sqlalchemy import select
 from app.api.deps import (
     CurrentUser,
     DbSession,
+    OptionalUser,
     require_admin,
     require_super_admin,
 )
-from app.models.enums import TournamentStatus
+from app.models.enums import TournamentStatus, UserRole
 from app.models.match import Match
 from app.models.tournament import Tournament, TournamentTeam
 from app.schemas.catalog import StandingRow, TournamentCreate, TournamentOut
@@ -26,10 +27,22 @@ router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
 
 @router.get("", response_model=list[TournamentOut])
-async def list_tournaments(db: DbSession) -> list[Tournament]:
-    return list(
-        (await db.scalars(select(Tournament).order_by(Tournament.start_date.desc()))).all()
-    )
+async def list_tournaments(db: DbSession, user: OptionalUser = None) -> list[Tournament]:
+    """Admins see every tournament; the public only sees approved ones (so a
+    pending/rejected tournament isn't visible until a super admin approves it)."""
+    stmt = select(Tournament).order_by(Tournament.start_date.desc())
+    is_admin = user is not None and user.role != UserRole.PUBLIC
+    if not is_admin:
+        stmt = stmt.where(
+            Tournament.status.in_(
+                [
+                    TournamentStatus.APPROVED,
+                    TournamentStatus.ONGOING,
+                    TournamentStatus.COMPLETED,
+                ]
+            )
+        )
+    return list((await db.scalars(stmt)).all())
 
 
 @router.post("", response_model=TournamentOut, status_code=status.HTTP_201_CREATED)
@@ -113,8 +126,48 @@ async def create_fixtures(
     return matches
 
 
+@router.delete("/{tournament_id}")
+async def delete_tournament(
+    tournament_id: int, db: DbSession, _: User = Depends(require_super_admin)
+) -> dict:
+    """Delete a tournament, its team links, and all of its matches + data."""
+    tournament = await db.get(Tournament, tournament_id)
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    from sqlalchemy import delete as sa_delete
+
+    from app.services.maintenance import _delete_matches
+
+    match_ids = list(
+        (await db.scalars(select(Match.id).where(Match.tournament_id == tournament_id))).all()
+    )
+    await _delete_matches(db, match_ids)
+    await db.execute(sa_delete(TournamentTeam).where(TournamentTeam.tournament_id == tournament_id))
+    await db.delete(tournament)
+    await db.commit()
+    return {"ok": True, "deleted_matches": len(match_ids)}
+
+
+async def _ensure_visible(tournament_id: int, db: DbSession, user: User | None) -> None:
+    """404 a non-admin trying to open a tournament that isn't approved yet."""
+    is_admin = user is not None and user.role != UserRole.PUBLIC
+    if is_admin:
+        return
+    t = await db.get(Tournament, tournament_id)
+    public = t and t.status in (
+        TournamentStatus.APPROVED,
+        TournamentStatus.ONGOING,
+        TournamentStatus.COMPLETED,
+    )
+    if not public:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+
+
 @router.get("/{tournament_id}/matches", response_model=list[MatchOut])
-async def tournament_matches(tournament_id: int, db: DbSession) -> list[Match]:
+async def tournament_matches(
+    tournament_id: int, db: DbSession, user: OptionalUser = None
+) -> list[Match]:
+    await _ensure_visible(tournament_id, db, user)
     return list(
         (
             await db.scalars(
@@ -127,7 +180,10 @@ async def tournament_matches(tournament_id: int, db: DbSession) -> list[Match]:
 
 
 @router.get("/{tournament_id}/standings", response_model=list[StandingRow])
-async def standings(tournament_id: int, db: DbSession) -> list[StandingRow]:
+async def standings(
+    tournament_id: int, db: DbSession, user: OptionalUser = None
+) -> list[StandingRow]:
+    await _ensure_visible(tournament_id, db, user)
     rows = (
         await db.scalars(
             select(TournamentTeam)
