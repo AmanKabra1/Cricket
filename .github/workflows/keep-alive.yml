@@ -22,4 +22,4 @@ jobs:
       - name: Ping backend
         run: curl -fsS --max-time 90 https://localscore-backend-l3ws.onrender.com/health || echo "backend waking…"
       - name: Ping AI service
-        run: curl -fsS --max-time 90 https://localscore-ai-l3ws.onrender.com/health || echo "ai waking or not deployed…"
+        run: curl -fsS --max-time 90 https://localscore-ai.onrender.com/health || echo "ai waking or not deployed…"

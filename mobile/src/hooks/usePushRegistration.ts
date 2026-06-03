@@ -1,30 +1,34 @@
 import { useEffect } from "react";
 import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
-import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { api } from "@/lib/api";
 
-// Show notifications while the app is foregrounded too.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// Expo Go (SDK 53+) can't do remote push and even *importing* expo-notifications
+// there throws. So we detect Expo Go and skip push entirely, and we import
+// expo-notifications/expo-device dynamically (only in a dev/standalone build).
+const isExpoGo = Constants.executionEnvironment === "storeClient";
 
 /**
- * Asks for notification permission, gets the Expo push token, and registers it
- * with the backend so this device receives match-live / result alerts.
- * No-ops on simulators and in Expo Go (remote push needs a dev/standalone build).
+ * Registers this device's Expo push token with the backend so it receives
+ * match-live / result alerts. No-ops in Expo Go and on simulators.
  */
 export function usePushRegistration() {
   useEffect(() => {
+    if (isExpoGo) return; // push needs a development or production build
     (async () => {
       try {
-        if (!Device.isDevice) return; // push only works on physical devices
+        const Device = await import("expo-device");
+        if (!Device.isDevice) return;
+        const Notifications = await import("expo-notifications");
+
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowBanner: true,
+            shouldShowList: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+          }),
+        });
         if (Platform.OS === "android") {
           await Notifications.setNotificationChannelAsync("default", {
             name: "Match alerts",
@@ -33,13 +37,11 @@ export function usePushRegistration() {
         }
         const { status: existing } = await Notifications.getPermissionsAsync();
         let status = existing;
-        if (existing !== "granted") {
-          status = (await Notifications.requestPermissionsAsync()).status;
-        }
+        if (existing !== "granted") status = (await Notifications.requestPermissionsAsync()).status;
         if (status !== "granted") return;
 
         const projectId =
-          Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+          (Constants.expoConfig?.extra as any)?.eas?.projectId ?? (Constants as any).easConfig?.projectId;
         const token = (
           await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)
         ).data;
