@@ -101,6 +101,51 @@ def _key_moments(f: MatchFeatures) -> list[str]:
     return out or ["Match evenly poised."]
 
 
+def _insight(f: MatchFeatures, batting_prob: float, projected: int | None) -> str:
+    """One-line natural-language read — Gemini/OpenAI if a key is set, else a
+    deterministic template. No team names (the AI service only has ids)."""
+    bp = int(round(batting_prob * 100))
+    if f.is_chase and f.runs_needed is not None:
+        facts = (
+            f"Run chase: the batting side need {f.runs_needed} from {f.balls_left} balls, "
+            f"{f.wickets_in_hand} wickets in hand, required run rate "
+            f"{(f.required_run_rate or 0):.1f}; their win probability is {bp}%."
+        )
+    else:
+        facts = (
+            f"First innings: the batting side are {f.runs}/{f.wickets}, projected ~{projected}, "
+            f"run rate {f.current_run_rate:.1f}; their win probability is {bp}%."
+        )
+
+    try:
+        from app.services.llm import complete as _complete  # noqa: PLC0415
+
+        text = _complete(
+            "You are a punchy cricket analyst. In ONE sentence (max 25 words) give an "
+            "insight on this situation. Say 'the batting side' / 'the bowling side' (no "
+            "team names). Situation: " + facts
+        )
+        if text:
+            return text.split("\n")[0].strip()
+    except Exception:  # noqa: BLE001 — never let the insight break a prediction
+        pass
+
+    # Template fallback.
+    if bp >= 65:
+        mood = "the batting side are well on top"
+    elif bp >= 53:
+        mood = "the batting side hold a slight edge"
+    elif bp >= 47:
+        mood = "it's evenly poised"
+    elif bp >= 35:
+        mood = "the bowling side have the upper hand"
+    else:
+        mood = "the bowling side are firmly in control"
+    if f.is_chase and f.runs_needed is not None:
+        return f"Need {f.runs_needed} off {f.balls_left} with {f.wickets_in_hand} in hand — {mood}."
+    return f"Projected around {projected}; {mood}."
+
+
 def predict(state: LiveScoreState) -> WinProbability:
     f = extract_features(state)
     if f is None:
@@ -144,4 +189,5 @@ def predict(state: LiveScoreState) -> WinProbability:
         bowling_win_probability=round(1.0 - batting_prob, 3),
         projected_score=projected,
         key_moments=_key_moments(f),
+        insight=_insight(f, batting_prob, projected),
     )

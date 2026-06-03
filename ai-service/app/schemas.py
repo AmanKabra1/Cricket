@@ -42,6 +42,7 @@ class WinProbability(BaseModel):
     bowling_win_probability: float
     projected_score: int | None = None
     key_moments: list[str] = Field(default_factory=list)
+    insight: str | None = None  # one-line natural-language read (LLM or template)
 
 
 # ---- Best player ----
