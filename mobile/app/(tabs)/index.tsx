@@ -32,6 +32,7 @@ export default function Dashboard() {
     >
       {/* Hero — mirrors the web dashboard. */}
       <View style={[styles.hero, { backgroundColor: palette.pitch }]}>
+        <Text style={styles.heroWatermark}>🏏</Text>
         <Text style={styles.heroTitle}>Local cricket, live.</Text>
         <Text style={styles.heroSub}>Ball-by-ball scores, full scorecards, commentary and AI insights for your local tournaments and grounds.</Text>
         <View style={styles.stats}>
@@ -71,7 +72,8 @@ function Stat({ n, label }: { n: number; label: string }) {
 const styles = StyleSheet.create({
   content: { padding: 16 },
   heading: { fontSize: 18, fontWeight: "800", marginBottom: 10 },
-  hero: { borderRadius: 16, padding: 18, marginBottom: 16 },
+  hero: { borderRadius: 16, padding: 18, marginBottom: 16, overflow: "hidden" },
+  heroWatermark: { position: "absolute", right: -10, top: -18, fontSize: 110, opacity: 0.1 },
   heroTitle: { color: "#fff", fontSize: 24, fontWeight: "900" },
   heroSub: { color: "rgba(255,255,255,0.85)", marginTop: 4 },
   stats: { flexDirection: "row", gap: 24, marginTop: 16 },
