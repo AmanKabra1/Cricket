@@ -54,6 +54,7 @@ export interface Match {
   toss_decision: "BAT" | "BOWL" | null;
   winner_team_id: number | null;
   result_text: string | null;
+  admin_ids?: number[];
 }
 
 export interface InningsScore {
@@ -78,6 +79,7 @@ export interface LiveScore {
   match_id: number;
   status: MatchStatus;
   overs_limit: number;
+  free_hit?: boolean;
   innings: InningsScore[];
 }
 
