@@ -1,4 +1,4 @@
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { useTheme } from "@/theme";
 import { tap } from "@/lib/haptics";
 
@@ -80,7 +80,7 @@ export function Btn({ label, onPress, disabled, loading, tone = "primary", style
   const blocked = disabled || loading;
   return (
     <Pressable
-      onPress={() => { tap(); onPress(); }}
+      onPress={() => { Keyboard.dismiss(); tap(); onPress(); }}
       disabled={blocked}
       android_ripple={tone === "ghost" ? undefined : { color: "rgba(255,255,255,0.25)", borderless: false }}
       style={({ pressed }) => ({
@@ -111,7 +111,7 @@ export function Chip({ label, selected, onPress, loading }: {
   const t = useTheme();
   return (
     <Pressable
-      onPress={() => { tap(); onPress(); }}
+      onPress={() => { Keyboard.dismiss(); tap(); onPress(); }}
       disabled={loading}
       style={({ pressed }) => ({
         backgroundColor: selected ? t.primary : t.surface,

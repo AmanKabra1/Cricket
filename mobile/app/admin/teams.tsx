@@ -102,7 +102,9 @@ function Squad({ teamId }: { teamId: number }) {
       jersey_number: jersey ? Number(jersey) : undefined,
       photo_url: photoUrl || undefined,
     });
+    // Clear the whole form so the next player starts blank (no carried-over info).
     setPname(""); setJersey(""); setPhotoUrl(null);
+    setRole("BATSMAN"); setBatting("RIGHT_HAND"); setBowling(BOWLING[0]);
   };
 
   return (
@@ -137,6 +139,8 @@ function Squad({ teamId }: { teamId: number }) {
           const isVC = viceId === p.id;
           const isWK = wkId === p.id;
           const hasRole = isC || isVC || isWK;
+          const uv = update.variables as any;
+          const busyRole = (key: string, val: number | null) => update.isPending && uv && key in uv && uv[key] === val;
           return (
             <View key={p.id} style={{ borderTopColor: t.border, borderTopWidth: 1, paddingVertical: 8 }}>
               <Text style={{ color: t.text, fontWeight: "600" }}>
@@ -145,13 +149,13 @@ function Squad({ teamId }: { teamId: number }) {
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 4 }}>
                 {/* Same rule as web: a player can hold only one role; each role goes to one player. */}
-                {!captainId && !hasRole && <Chip label="Make C" selected={false} onPress={() => update.mutate({ captain_id: p.id })} />}
-                {!viceId && !hasRole && <Chip label="Make VC" selected={false} onPress={() => update.mutate({ vice_captain_id: p.id })} />}
-                {!wkId && !hasRole && <Chip label="Make WK" selected={false} onPress={() => update.mutate({ wicket_keeper_id: p.id })} />}
-                {isC && <Chip label="Clear C" selected onPress={() => update.mutate({ captain_id: null })} />}
-                {isVC && <Chip label="Clear VC" selected onPress={() => update.mutate({ vice_captain_id: null })} />}
-                {isWK && <Chip label="Clear WK" selected onPress={() => update.mutate({ wicket_keeper_id: null })} />}
-                <Chip label="Remove" selected={false} onPress={() => delPlayer.mutate(p.id)} />
+                {!captainId && !hasRole && <Chip label="Make C" selected={false} loading={busyRole("captain_id", p.id)} onPress={() => update.mutate({ captain_id: p.id })} />}
+                {!viceId && !hasRole && <Chip label="Make VC" selected={false} loading={busyRole("vice_captain_id", p.id)} onPress={() => update.mutate({ vice_captain_id: p.id })} />}
+                {!wkId && !hasRole && <Chip label="Make WK" selected={false} loading={busyRole("wicket_keeper_id", p.id)} onPress={() => update.mutate({ wicket_keeper_id: p.id })} />}
+                {isC && <Chip label="Clear C" selected loading={busyRole("captain_id", null)} onPress={() => update.mutate({ captain_id: null })} />}
+                {isVC && <Chip label="Clear VC" selected loading={busyRole("vice_captain_id", null)} onPress={() => update.mutate({ vice_captain_id: null })} />}
+                {isWK && <Chip label="Clear WK" selected loading={busyRole("wicket_keeper_id", null)} onPress={() => update.mutate({ wicket_keeper_id: null })} />}
+                <Chip label="Remove" selected={false} loading={delPlayer.isPending && delPlayer.variables === p.id} onPress={() => delPlayer.mutate(p.id)} />
               </View>
             </View>
           );
