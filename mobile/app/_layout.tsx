@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { tokenStore } from "@/lib/api";
+import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { useTheme } from "@/theme";
 
 const queryClient = new QueryClient({
@@ -16,6 +17,7 @@ export default function RootLayout() {
   useEffect(() => {
     tokenStore.load();
   }, []);
+  usePushRegistration();
 
   return (
     <SafeAreaProvider>

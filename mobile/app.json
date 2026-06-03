@@ -27,7 +27,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-asset"
+      "expo-asset",
+      "expo-notifications"
     ],
     "extra": {
       "apiBaseUrl": "https://localscore-backend.onrender.com/api/v1",

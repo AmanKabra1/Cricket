@@ -3,6 +3,7 @@ from app.models.ball import Ball
 from app.models.innings import Innings
 from app.models.match import Match
 from app.models.player import Player
+from app.models.push import PushToken
 from app.models.setting import AppSetting
 from app.models.stats import PlayerMatchStats
 from app.models.team import Team
@@ -17,6 +18,7 @@ __all__ = [
     "Match",
     "Player",
     "PlayerMatchStats",
+    "PushToken",
     "Team",
     "Tournament",
     "TournamentTeam",

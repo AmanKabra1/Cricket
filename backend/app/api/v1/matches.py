@@ -1,7 +1,7 @@
 """Match lifecycle: create, assign admins, toss, start innings, read."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import select
 
 from app.api.deps import (
@@ -127,6 +127,7 @@ async def start_innings(
     match_id: int,
     payload: StartInningsRequest,
     db: DbSession,
+    background: BackgroundTasks,
     user: User = Depends(require_admin),
 ) -> Match:
     match = await authorize_match_admin(match_id, db, user)
@@ -163,4 +164,11 @@ async def start_innings(
     match.status = MatchStatus.LIVE
     await db.commit()
     await db.refresh(match)
+    # Notify subscribers when the match goes live (first innings only).
+    if innings_number == 1:
+        from app.services.push import broadcast_bg
+
+        a = match.team_a.name if match.team_a else "Team A"
+        b = match.team_b.name if match.team_b else "Team B"
+        background.add_task(broadcast_bg, "🔴 Match live", f"{a} vs {b} is underway", {"matchId": match.id})
     return match

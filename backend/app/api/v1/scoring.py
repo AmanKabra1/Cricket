@@ -161,6 +161,14 @@ async def post_ball(
     if settings.AI_COMMENTARY_ENABLED:
         background.add_task(_enrich_commentary, match_id, outcome.ball.id)
 
+    # Notify subscribers of the result when the match finishes.
+    if match.status == MatchStatus.COMPLETED:
+        from app.services.push import broadcast_bg
+
+        background.add_task(
+            broadcast_bg, "🏆 Match result", match.result_text or "Match completed", {"matchId": match_id}
+        )
+
     return {
         "ball_id": outcome.ball.id,
         "innings_closed": outcome.innings_closed,

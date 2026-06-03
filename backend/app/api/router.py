@@ -7,6 +7,7 @@ from app.api.v1 import (
     maintenance,
     matches,
     public,
+    push,
     scoring,
     teams,
     tournaments,
@@ -22,6 +23,7 @@ api_router.include_router(tournaments.router)
 api_router.include_router(matches.router)
 api_router.include_router(scoring.router)
 api_router.include_router(public.router)
+api_router.include_router(push.router)
 api_router.include_router(uploads.router)
 api_router.include_router(admin.router)
 api_router.include_router(maintenance.router)
