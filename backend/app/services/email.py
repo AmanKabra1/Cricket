@@ -36,7 +36,9 @@ async def _send_via_brevo_api(to: str, subject: str, body: str) -> None:
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.post(
             "https://api.brevo.com/v3/smtp/email",
-            headers={"api-key": settings.BREVO_API_KEY, "content-type": "application/json"},
+            # .strip() guards against a stray space/newline pasted into the env var
+            # (a frequent cause of a 401 with an otherwise-valid key).
+            headers={"api-key": settings.BREVO_API_KEY.strip(), "content-type": "application/json"},
             json={
                 "sender": {"email": addr, "name": name},
                 "to": [{"email": to}],
@@ -53,7 +55,7 @@ async def _send_via_resend(to: str, subject: str, body: str) -> None:
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.post(
             "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
+            headers={"Authorization": f"Bearer {settings.RESEND_API_KEY.strip()}"},
             json={"from": sender, "to": [to], "subject": subject, "text": body},
         )
         resp.raise_for_status()
