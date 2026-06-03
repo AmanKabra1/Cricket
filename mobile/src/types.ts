@@ -55,6 +55,7 @@ export interface Match {
   winner_team_id: number | null;
   result_text: string | null;
   admin_ids?: number[];
+  starting_soon?: boolean;
 }
 
 export interface InningsScore {

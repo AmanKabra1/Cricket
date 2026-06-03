@@ -6,6 +6,7 @@ import { useMe } from "@/api/auth";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { Loading, Empty } from "@/components/States";
+import Celebration from "@/components/Celebration";
 import { Btn } from "@/components/ui";
 import { palette, useTheme } from "@/theme";
 import type { BatterCard, BowlerCard, CommentaryItem, InningsCard, InningsScore, OverPoint, Team } from "@/types";
@@ -26,16 +27,26 @@ export default function MatchCentre() {
 
   if (isLoading || !match) return <Loading />;
 
-  const canScore = me && me.role !== "PUBLIC" && match.status !== "COMPLETED" && match.status !== "ABANDONED";
+  const completed = match.status === "COMPLETED" || match.status === "ABANDONED";
+  const winnerId = match.winner_team_id;
+  const canScore = me && me.role !== "PUBLIC" && !completed;
 
   return (
     <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={{ padding: 16 }}>
+      {/* Confetti + flowers when a finished match with a winner is opened. */}
+      <Celebration run={match.status === "COMPLETED" && !!winnerId} />
+
       <Text style={[styles.title, { color: t.text }]}>
-        {teamName(teams, match.team_a_id)} vs {teamName(teams, match.team_b_id)}
+        {teamName(teams, match.team_a_id)}{winnerId === match.team_a_id ? " 🏆" : ""}
+        <Text style={{ color: t.muted }}> vs </Text>
+        {teamName(teams, match.team_b_id)}{winnerId === match.team_b_id ? " 🏆" : ""}
       </Text>
-      <Text style={{ color: t.muted, marginBottom: 14 }}>
+      <Text style={{ color: t.muted, marginBottom: match.result_text ? 4 : 14 }}>
         {match.overs_limit} overs · {match.status.replace("_", " ")}
       </Text>
+      {match.result_text && (
+        <Text style={{ color: t.primary, fontWeight: "800", marginBottom: 14 }}>🏆 {match.result_text}</Text>
+      )}
 
       {canScore && (
         <View style={{ marginBottom: 14 }}>
@@ -51,7 +62,9 @@ export default function MatchCentre() {
       >
         {TABS.map((x) => (
           <Pressable key={x} onPress={() => setTab(x)} style={styles.tabBtn}>
-            <Text style={{ color: tab === x ? t.primary : t.muted, fontWeight: "700" }}>{x}</Text>
+            <Text style={{ color: tab === x ? t.primary : t.muted, fontWeight: "700" }}>
+              {x === "Live" && completed ? "Summary" : x}
+            </Text>
             {tab === x && <View style={[styles.underline, { backgroundColor: t.primary }]} />}
           </Pressable>
         ))}
