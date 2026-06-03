@@ -14,7 +14,7 @@ export default function Teams() {
 
   return (
     <FlatList
-      style={{ backgroundColor: t.bg }}
+      style={{ backgroundColor: "transparent" }}
       contentContainerStyle={{ padding: 16 }}
       data={data}
       keyExtractor={(item) => String(item.id)}

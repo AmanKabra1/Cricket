@@ -277,7 +277,7 @@ export default function Score() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 80 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: "transparent" }} contentContainerStyle={{ padding: 16, paddingBottom: 80 }}>
       <Text style={{ color: t.text, fontSize: 20, fontWeight: "800" }}>Scoring console</Text>
       <Text style={{ color: t.muted, marginBottom: 14 }}>
         {teamName(teams, match.team_a_id)} vs {teamName(teams, match.team_b_id)} · {match.overs_limit} overs

@@ -16,6 +16,7 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: t.surface, borderTopColor: t.border },
         headerStyle: { backgroundColor: t.surface },
         headerTitleStyle: { color: t.text },
+        sceneStyle: { backgroundColor: "transparent" },
       }}
     >
       <Tabs.Screen name="index" options={{ title: "LocalScore", tabBarLabel: "Home", tabBarIcon: icon("🏏") }} />

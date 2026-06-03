@@ -24,6 +24,8 @@ export interface Team {
   coach: string | null;
   logo_url: string | null;
   captain_id: number | null;
+  vice_captain_id?: number | null;
+  wicket_keeper_id?: number | null;
 }
 
 export interface Player {
@@ -87,6 +89,7 @@ export interface LiveScore {
 export interface BatterCard {
   player_id: number;
   name: string;
+  photo_url?: string | null;
   runs: number;
   balls: number;
   fours: number;
@@ -98,6 +101,7 @@ export interface BatterCard {
 export interface BowlerCard {
   player_id: number;
   name: string;
+  photo_url?: string | null;
   overs: string;
   runs_conceded: number;
   wickets: number;

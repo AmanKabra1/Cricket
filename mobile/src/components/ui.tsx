@@ -10,7 +10,7 @@ export function Screen({ children, onRefresh, refreshing }: {
   const t = useTheme();
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: t.bg }}
+      style={{ flex: 1, backgroundColor: "transparent" }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView

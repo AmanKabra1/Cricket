@@ -17,7 +17,7 @@ export default function Account() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 20 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: "transparent" }} contentContainerStyle={{ padding: 20 }}>
       {isLoading ? (
         <Text style={{ color: t.muted }}>Loading…</Text>
       ) : me ? (

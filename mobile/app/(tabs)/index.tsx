@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   return (
     <ScrollView
-      style={{ backgroundColor: t.bg }}
+      style={{ backgroundColor: "transparent" }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={t.primary} />}
     >

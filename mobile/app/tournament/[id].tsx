@@ -33,7 +33,7 @@ export default function TournamentDetail() {
     ) : null;
 
   return (
-    <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={{ backgroundColor: "transparent" }} contentContainerStyle={{ padding: 16 }}>
       <Text style={[styles.h1, { color: t.text }]}>{tournament?.name ?? "Tournament"}</Text>
       <Text style={{ color: t.muted, marginBottom: 16 }}>
         {tournament?.format.replace("_", " ")}{tournament ? ` · ${tournament.status}` : ""}

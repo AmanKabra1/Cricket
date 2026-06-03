@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { View } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -6,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { tokenStore } from "@/lib/api";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import TopProgressBar from "@/components/TopProgressBar";
+import ScreenBackground from "@/components/ScreenBackground";
 import { useTheme } from "@/theme";
 
 const queryClient = new QueryClient({
@@ -23,13 +25,15 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
+        <View style={{ flex: 1, backgroundColor: t.bg }}>
+        <ScreenBackground />
         <StatusBar style="auto" />
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: t.surface },
             headerTitleStyle: { color: t.text },
             headerTintColor: t.primary,
-            contentStyle: { backgroundColor: t.bg },
+            contentStyle: { backgroundColor: "transparent" },
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -45,6 +49,7 @@ export default function RootLayout() {
           <Stack.Screen name="admin/appearance" options={{ title: "Appearance" }} />
         </Stack>
         <TopProgressBar />
+        </View>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
