@@ -34,6 +34,7 @@ export default function RootLayout() {
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="match/[id]" options={{ title: "Match Centre" }} />
+          <Stack.Screen name="tournament/[id]" options={{ title: "Tournament" }} />
           <Stack.Screen name="score/[id]" options={{ title: "Score" }} />
           <Stack.Screen name="login" options={{ title: "Sign in", presentation: "modal" }} />
           <Stack.Screen name="admin/index" options={{ title: "Manage" }} />

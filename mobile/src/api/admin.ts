@@ -32,6 +32,8 @@ export const useTournamentsAdmin = () =>
   useQuery({ queryKey: ["tournaments", true], queryFn: () => get<Tournament[]>("/tournaments?mine=true") });
 export const useStandings = (id: number, enabled = true) =>
   useQuery({ queryKey: ["standings", id], queryFn: () => get<StandingRow[]>(`/tournaments/${id}/standings`), enabled });
+export const useTournamentMatches = (id: number) =>
+  useQuery({ queryKey: ["tournament-matches", id], queryFn: () => get<Match[]>(`/tournaments/${id}/matches`) });
 
 // ---------- Teams & players ----------
 export const useCreateTeam = () => {

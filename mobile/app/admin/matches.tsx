@@ -14,7 +14,8 @@ import { useTheme } from "@/theme";
 import type { Match } from "@/types";
 
 function defaultWhen() {
-  const d = new Date(Date.now() + 24 * 3600 * 1000);
+  // Default to the current date & time; the picker hides anything earlier.
+  const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
@@ -121,8 +122,10 @@ export default function ManageMatches() {
             <Text style={{ color: t.muted, fontSize: 12 }}>
               {m.status.replace("_", " ")} · {m.overs_limit} ov{(m as any).approved === false ? " · Pending approval" : ""}
             </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
-              {(m as any).approved === false && <Chip label="Approve" selected={false} loading={approve.isPending && approve.variables === m.id} onPress={() => approve.mutate(m.id)} />}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
+              {/* Only a super admin can approve. A match admin sees a hint instead. */}
+              {(m as any).approved === false && isSuper && <Chip label="Approve" selected={false} loading={approve.isPending && approve.variables === m.id} onPress={() => approve.mutate(m.id)} />}
+              {(m as any).approved === false && !isSuper && <Text style={{ color: t.muted, fontSize: 12, marginRight: 8 }}>Awaiting super-admin approval to score</Text>}
               {!done && (m as any).approved !== false && <Chip label="Score" selected onPress={() => router.push(`/score/${m.id}`)} />}
               {done && <Chip label="View" selected={false} onPress={() => router.push(`/match/${m.id}`)} />}
               <Chip label="Delete" selected={false} loading={del.isPending && del.variables === m.id} onPress={() => del.mutate(m.id)} />

@@ -1,4 +1,5 @@
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useTournaments } from "@/api/hooks";
 import { Loading, Empty } from "@/components/States";
 import { useTheme } from "@/theme";
@@ -6,6 +7,7 @@ import { useTheme } from "@/theme";
 export default function Tournaments() {
   const { data, isLoading } = useTournaments();
   const t = useTheme();
+  const router = useRouter();
 
   if (isLoading) return <Loading />;
   if (!data?.length) return <Empty message="No tournaments yet." />;
@@ -17,15 +19,18 @@ export default function Tournaments() {
       data={data}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => (
-        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+        <Pressable
+          onPress={() => router.push(`/tournament/${item.id}`)}
+          style={({ pressed }) => [styles.card, { backgroundColor: t.surface, borderColor: t.border, opacity: pressed ? 0.9 : 1 }]}
+        >
           <View style={styles.row}>
             <Text style={[styles.name, { color: t.text }]}>{item.name}</Text>
             <View style={[styles.tag, { backgroundColor: t.primary }]}>
               <Text style={styles.tagText}>{item.format.replace("_", " ")}</Text>
             </View>
           </View>
-          <Text style={{ color: t.muted, marginTop: 4 }}>Status: {item.status}</Text>
-        </View>
+          <Text style={{ color: t.muted, marginTop: 4 }}>Status: {item.status} ›</Text>
+        </Pressable>
       )}
     />
   );
