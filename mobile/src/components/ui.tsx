@@ -1,12 +1,21 @@
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useTheme } from "@/theme";
 
 export function Screen({ children }: { children: React.ReactNode }) {
   const t = useTheme();
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
-      {children}
-    </ScrollView>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: t.bg }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

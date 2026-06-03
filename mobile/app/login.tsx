@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { login } from "@/api/auth";
@@ -44,7 +44,8 @@ export default function Login() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg, padding: 20, justifyContent: "center" }}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, justifyContent: "center" }} keyboardShouldPersistTaps="handled">
       <Text style={{ color: t.text, fontSize: 24, fontWeight: "800", marginBottom: 4 }}>Admin sign in</Text>
       <Text style={{ color: t.muted, marginBottom: 20 }}>Sign in to score your matches.</Text>
 
@@ -83,6 +84,7 @@ export default function Login() {
       >
         <Text style={{ color: "#fff", fontWeight: "700" }}>{busy ? "Signing in…" : "Sign in"}</Text>
       </TouchableOpacity>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
