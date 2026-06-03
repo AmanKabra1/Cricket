@@ -9,6 +9,7 @@ import {
   useDeleteVenue, useMatches, useTournamentsAdmin, useUsers, useVenues,
 } from "@/api/admin";
 import { Screen, H1, Card, Btn, Field, Chip, Note, Muted } from "@/components/ui";
+import DateTimePicker from "@/components/DateTimePicker";
 import { useTheme } from "@/theme";
 import type { Match } from "@/types";
 
@@ -76,7 +77,10 @@ export default function ManageMatches() {
           {(teams ?? []).map((tm) => <Chip key={tm.id} label={tm.name} selected={b === tm.id} onPress={() => setB(tm.id)} />)}
         </View>
         <Field label="Overs" value={overs} onChangeText={setOvers} keyboardType="numeric" />
-        <Field label="Date & time (YYYY-MM-DDTHH:MM)" value={when} onChangeText={setWhen} placeholder="2026-06-10T10:00" />
+        <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginBottom: 4 }}>Date & time</Text>
+        <View style={{ marginBottom: 10 }}>
+          <DateTimePicker value={when} onChange={setWhen} />
+        </View>
         {!!venues?.length && (
           <>
             <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Venue (optional)</Text>
