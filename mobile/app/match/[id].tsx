@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAnalytics, useCommentary, useLiveScore, useMatch, usePrediction, useScorecard } from "@/api/hooks";
 import { useMe } from "@/api/auth";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { Loading, Empty } from "@/components/States";
+import { Btn } from "@/components/ui";
 import { palette, useTheme } from "@/theme";
 import type { BatterCard, BowlerCard, CommentaryItem, InningsCard, InningsScore, OverPoint, Team } from "@/types";
 
@@ -37,12 +38,9 @@ export default function MatchCentre() {
       </Text>
 
       {canScore && (
-        <TouchableOpacity
-          onPress={() => router.push(`/score/${matchId}`)}
-          style={{ backgroundColor: t.primary, padding: 12, borderRadius: 10, alignItems: "center", marginBottom: 14 }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "700" }}>Score this match</Text>
-        </TouchableOpacity>
+        <View style={{ marginBottom: 14 }}>
+          <Btn label="Score this match" onPress={() => router.push(`/score/${matchId}`)} />
+        </View>
       )}
 
       <View style={[styles.tabs, { borderColor: t.border }]}>

@@ -1,5 +1,6 @@
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { useTheme } from "@/theme";
+import { tap } from "@/lib/haptics";
 
 export function Screen({ children, onRefresh, refreshing }: {
   children: React.ReactNode;
@@ -67,32 +68,68 @@ export function Field({ label, value, onChangeText, placeholder, keyboardType, s
   );
 }
 
-export function Btn({ label, onPress, disabled, tone = "primary", style }: {
-  label: string; onPress: () => void; disabled?: boolean; tone?: "primary" | "ghost" | "danger"; style?: object;
+export function Btn({ label, onPress, disabled, loading, tone = "primary", style }: {
+  label: string; onPress: () => void; disabled?: boolean; loading?: boolean;
+  tone?: "primary" | "ghost" | "danger"; style?: object;
 }) {
   const t = useTheme();
   const bg = tone === "danger" ? "#ef4444" : tone === "ghost" ? "transparent" : t.primary;
   const fg = tone === "ghost" ? t.text : "#fff";
+  const blocked = disabled || loading;
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      style={{ backgroundColor: bg, borderColor: t.border, borderWidth: tone === "ghost" ? 1 : 0, paddingVertical: 11, paddingHorizontal: 14, borderRadius: 10, alignItems: "center", opacity: disabled ? 0.6 : 1, ...style }}
+    <Pressable
+      onPress={() => { tap(); onPress(); }}
+      disabled={blocked}
+      android_ripple={tone === "ghost" ? undefined : { color: "rgba(255,255,255,0.25)", borderless: false }}
+      style={({ pressed }) => ({
+        backgroundColor: bg,
+        borderColor: t.border,
+        borderWidth: tone === "ghost" ? 1 : 0,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        flexDirection: "row",
+        gap: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: blocked ? 0.55 : pressed ? 0.9 : 1,
+        transform: [{ scale: pressed && !blocked ? 0.98 : 1 }],
+        ...style,
+      })}
     >
+      {loading && <ActivityIndicator size="small" color={fg} />}
       <Text style={{ color: fg, fontWeight: "700" }}>{label}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
-export function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+export function Chip({ label, selected, onPress, loading }: {
+  label: string; selected: boolean; onPress: () => void; loading?: boolean;
+}) {
   const t = useTheme();
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{ backgroundColor: selected ? t.primary : t.surface, borderColor: selected ? t.primary : t.border, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, marginRight: 6, marginBottom: 6 }}
+    <Pressable
+      onPress={() => { tap(); onPress(); }}
+      disabled={loading}
+      style={({ pressed }) => ({
+        backgroundColor: selected ? t.primary : t.surface,
+        borderColor: selected ? t.primary : t.border,
+        borderWidth: 1,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        marginRight: 6,
+        marginBottom: 6,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        opacity: loading ? 0.6 : pressed ? 0.85 : 1,
+        transform: [{ scale: pressed ? 0.96 : 1 }],
+      })}
     >
+      {loading && <ActivityIndicator size="small" color={selected ? "#fff" : t.primary} />}
       <Text style={{ color: selected ? "#fff" : t.text, fontSize: 13 }}>{label}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 

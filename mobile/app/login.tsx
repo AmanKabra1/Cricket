@@ -3,6 +3,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableO
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { login } from "@/api/auth";
+import { Btn } from "@/components/ui";
+import { success, warn } from "@/lib/haptics";
 import { useTheme } from "@/theme";
 
 export default function Login() {
@@ -20,10 +22,12 @@ export default function Login() {
     setError(null);
     try {
       await login(email.trim(), password);
+      success();
       await qc.invalidateQueries({ queryKey: ["me"] });
       if (router.canGoBack()) router.back();
       else router.replace("/");
     } catch (e: any) {
+      warn();
       // Distinguish wrong credentials from a network/server-asleep problem.
       if (e?.response?.status === 401) setError("Incorrect email or password.");
       else if (e?.response) setError(e.response.data?.detail ?? "Sign-in failed. Try again.");
@@ -77,13 +81,12 @@ export default function Login() {
       </View>
       {error && <Text style={{ color: t.text, backgroundColor: "#ef444422", padding: 8, borderRadius: 8, marginBottom: 12 }}>{error}</Text>}
 
-      <TouchableOpacity
+      <Btn
+        label={busy ? "Signing in…" : "Sign in"}
         onPress={submit}
-        disabled={busy || !email || !password}
-        style={{ backgroundColor: t.primary, padding: 14, borderRadius: 10, alignItems: "center", opacity: busy || !email || !password ? 0.6 : 1 }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "700" }}>{busy ? "Signing in…" : "Sign in"}</Text>
-      </TouchableOpacity>
+        loading={busy}
+        disabled={!email || !password}
+      />
       </ScrollView>
     </KeyboardAvoidingView>
   );

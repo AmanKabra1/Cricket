@@ -53,7 +53,7 @@ export default function ManageTournaments() {
         <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
           {(teams ?? []).map((tm) => <Chip key={tm.id} label={tm.name} selected={picked.includes(tm.id)} onPress={() => toggle(tm.id)} />)}
         </View>
-        <Btn label={create.isPending ? "Creating…" : "Create tournament"} onPress={submit} disabled={create.isPending} />
+        <Btn label={create.isPending ? "Creating…" : "Create tournament"} onPress={submit} loading={create.isPending} />
         {msg && <Note tone={msg.includes("✓") ? "ok" : "error"}>{msg}</Note>}
       </Card>
 
@@ -65,8 +65,8 @@ export default function ManageTournaments() {
             <Text style={{ color: t.muted, fontSize: 12 }}>{tn.format.replace("_", " ")} · {tn.status}</Text>
           </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
-            {isSuper && tn.status === "PENDING" && <Chip label="Approve" selected={false} onPress={() => approve.mutate(tn.id)} />}
-            {isSuper && <Chip label="Delete" selected={false} onPress={() => del.mutate(tn.id)} />}
+            {isSuper && tn.status === "PENDING" && <Chip label="Approve" selected={false} loading={approve.isPending && approve.variables === tn.id} onPress={() => approve.mutate(tn.id)} />}
+            {isSuper && <Chip label="Delete" selected={false} loading={del.isPending && del.variables === tn.id} onPress={() => del.mutate(tn.id)} />}
           </View>
           {(tn.status === "APPROVED" || tn.status === "ONGOING") ? (
             <GenerateFixtures tournament={tn} />
@@ -138,7 +138,7 @@ function GenerateFixtures({ tournament }: { tournament: Tournament }) {
           </View>
         </>
       )}
-      <Btn label={gen.isPending ? "Generating…" : "Generate"} onPress={run} disabled={gen.isPending} />
+      <Btn label={gen.isPending ? "Generating…" : "Generate"} onPress={run} loading={gen.isPending} />
       {msg && <Note tone={msg.includes("✓") ? "ok" : "error"}>{msg}</Note>}
     </View>
   );

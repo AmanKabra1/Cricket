@@ -1,7 +1,8 @@
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { logout, useMe } from "@/api/auth";
+import { Btn } from "@/components/ui";
 import { useTheme } from "@/theme";
 
 export default function Account() {
@@ -31,26 +32,24 @@ export default function Account() {
 
           {me.role !== "PUBLIC" && (
             <>
-              <TouchableOpacity onPress={() => router.push("/admin")} style={{ marginTop: 20, backgroundColor: t.primary, padding: 14, borderRadius: 10, alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontWeight: "700" }}>Manage (teams, matches, tournaments…)</Text>
-              </TouchableOpacity>
+              <View style={{ marginTop: 20 }}>
+                <Btn label="Manage (teams, matches, tournaments…)" onPress={() => router.push("/admin")} />
+              </View>
               <Text style={{ color: t.muted, marginTop: 12 }}>
                 Or open a live match from Home and tap “Score this match”.
               </Text>
             </>
           )}
 
-          <TouchableOpacity onPress={doLogout} style={{ marginTop: 24, borderColor: t.border, borderWidth: 1, padding: 14, borderRadius: 10, alignItems: "center" }}>
-            <Text style={{ color: t.text, fontWeight: "700" }}>Log out</Text>
-          </TouchableOpacity>
+          <View style={{ marginTop: 24 }}>
+            <Btn label="Log out" tone="ghost" onPress={doLogout} />
+          </View>
         </View>
       ) : (
         <View>
           <Text style={{ color: t.text, fontSize: 22, fontWeight: "800", marginBottom: 4 }}>Admin</Text>
           <Text style={{ color: t.muted, marginBottom: 20 }}>Sign in to score matches. Spectators don’t need an account.</Text>
-          <TouchableOpacity onPress={() => router.push("/login")} style={{ backgroundColor: t.primary, padding: 14, borderRadius: 10, alignItems: "center" }}>
-            <Text style={{ color: "#fff", fontWeight: "700" }}>Sign in</Text>
-          </TouchableOpacity>
+          <Btn label="Sign in" onPress={() => router.push("/login")} />
         </View>
       )}
     </ScrollView>

@@ -101,7 +101,7 @@ export default function ManageMatches() {
             </View>
           </>
         )}
-        <Btn label={create.isPending ? "Creating…" : "Create match"} onPress={submit} disabled={create.isPending} />
+        <Btn label={create.isPending ? "Creating…" : "Create match"} onPress={submit} loading={create.isPending} />
         {msg && <Note tone={msg.endsWith("✓") ? "ok" : "error"}>{msg}</Note>}
       </Card>
 
@@ -118,10 +118,10 @@ export default function ManageMatches() {
               {m.status.replace("_", " ")} · {m.overs_limit} ov{(m as any).approved === false ? " · Pending approval" : ""}
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
-              {(m as any).approved === false && <Chip label="Approve" selected={false} onPress={() => approve.mutate(m.id)} />}
+              {(m as any).approved === false && <Chip label="Approve" selected={false} loading={approve.isPending && approve.variables === m.id} onPress={() => approve.mutate(m.id)} />}
               {!done && (m as any).approved !== false && <Chip label="Score" selected onPress={() => router.push(`/score/${m.id}`)} />}
               {done && <Chip label="View" selected={false} onPress={() => router.push(`/match/${m.id}`)} />}
-              <Chip label="Delete" selected={false} onPress={() => del.mutate(m.id)} />
+              <Chip label="Delete" selected={false} loading={del.isPending && del.variables === m.id} onPress={() => del.mutate(m.id)} />
             </View>
           </Card>
         );
@@ -143,7 +143,7 @@ function VenueManager() {
       <Muted>Venues</Muted>
       <Field label="Venue name" value={name} onChangeText={setName} />
       <Field label="City" value={city} onChangeText={setCity} />
-      <Btn label={create.isPending ? "Adding…" : "Add venue"} onPress={async () => { if (name.trim() && city.trim()) { await create.mutateAsync({ name: name.trim(), city: city.trim() }); setName(""); setCity(""); } }} disabled={create.isPending} />
+      <Btn label={create.isPending ? "Adding…" : "Add venue"} onPress={async () => { if (name.trim() && city.trim()) { await create.mutateAsync({ name: name.trim(), city: city.trim() }); setName(""); setCity(""); } }} loading={create.isPending} />
       <View style={{ marginTop: 8 }}>
         {(venues ?? []).map((v) => (
           <View key={v.id} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 }}>

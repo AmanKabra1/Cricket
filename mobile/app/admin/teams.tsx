@@ -50,7 +50,7 @@ export default function ManageTeams() {
         <Field label="City" value={city} onChangeText={setCity} placeholder="e.g. Springfield" />
         <Field label="Coach" value={coach} onChangeText={setCoach} placeholder="e.g. A. Coach" />
         <ImageField label="Team logo" value={logoUrl} onChange={setLogoUrl} category="team_logo" />
-        <Btn label={create.isPending ? "Creating…" : "Create team"} onPress={addTeam} disabled={create.isPending} />
+        <Btn label={create.isPending ? "Creating…" : "Create team"} onPress={addTeam} loading={create.isPending} />
         {msg && <Note tone="error">{msg}</Note>}
       </Card>
 
@@ -126,7 +126,7 @@ function Squad({ teamId }: { teamId: number }) {
         </>
       )}
       <ImageField label="Player photo" value={photoUrl} onChange={setPhotoUrl} category="player_photo" />
-      <Btn label={addPlayer.isPending ? "Adding…" : "Add player"} onPress={submitPlayer} disabled={addPlayer.isPending} />
+      <Btn label={addPlayer.isPending ? "Adding…" : "Add player"} onPress={submitPlayer} loading={addPlayer.isPending} />
 
       <View style={{ marginTop: 10 }}>
         {team.players.map((p) => {

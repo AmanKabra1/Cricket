@@ -50,10 +50,10 @@ export default function ManageUsers() {
         <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
           {["MATCH_ADMIN", "SUPER_ADMIN"].map((r) => <Chip key={r} label={r.replace("_", " ")} selected={form.role === r} onPress={() => setForm({ ...form, role: r })} />)}
         </View>
-        <Btn label={create.isPending ? "Creating…" : "Create admin"} onPress={submit} disabled={create.isPending} />
+        <Btn label={create.isPending ? "Creating…" : "Create admin"} onPress={submit} loading={create.isPending} />
         {msg && <Note tone={msg.includes("✓") ? "ok" : "error"}>{msg}</Note>}
         <View style={{ marginTop: 10 }}>
-          <Btn tone="ghost" label={testEmail.isPending ? "Sending…" : "Send test email to me"} onPress={async () => { try { const r = await testEmail.mutateAsync(); setMsg(r.detail); } catch (e) { setMsg(errorDetail(e)); } }} />
+          <Btn tone="ghost" loading={testEmail.isPending} label={testEmail.isPending ? "Sending…" : "Send test email to me"} onPress={async () => { try { const r = await testEmail.mutateAsync(); setMsg(r.detail); } catch (e) { setMsg(errorDetail(e)); } }} />
         </View>
       </Card>
 
@@ -64,9 +64,9 @@ export default function ManageUsers() {
           <Text style={{ color: t.text, fontWeight: "700" }}>{u.full_name} {!u.is_active && <Text style={{ color: "#ef4444", fontSize: 12 }}>(disabled)</Text>}</Text>
           <Text style={{ color: t.muted, fontSize: 12 }}>{u.email} · {u.role.replace("_", " ")}</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
-            {ROLES.filter((r) => r !== u.role).map((r) => <Chip key={r} label={`→ ${r.replace("_", " ")}`} selected={false} onPress={() => setRole.mutate({ id: u.id, role: r })} />)}
-            <Chip label={u.is_active ? "Disable" : "Enable"} selected={false} onPress={() => setActive.mutate({ id: u.id, is_active: !u.is_active })} />
-            {u.id !== me?.id && <Chip label="Delete" selected={false} onPress={() => del.mutate(u.id)} />}
+            {ROLES.filter((r) => r !== u.role).map((r) => <Chip key={r} label={`→ ${r.replace("_", " ")}`} selected={false} loading={setRole.isPending && setRole.variables?.id === u.id && setRole.variables?.role === r} onPress={() => setRole.mutate({ id: u.id, role: r })} />)}
+            <Chip label={u.is_active ? "Disable" : "Enable"} selected={false} loading={setActive.isPending && setActive.variables?.id === u.id} onPress={() => setActive.mutate({ id: u.id, is_active: !u.is_active })} />
+            {u.id !== me?.id && <Chip label="Delete" selected={false} loading={del.isPending && del.variables === u.id} onPress={() => del.mutate(u.id)} />}
           </View>
         </Card>
       ))}

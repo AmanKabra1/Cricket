@@ -42,7 +42,7 @@ export default function ManageAppearance() {
           <Field label="Dark-mode image URL" value={bg[p]?.dark ?? ""} onChangeText={(v) => setUrl(p, "dark", v)} placeholder="https://…" />
         </Card>
       ))}
-      <Btn label={update.isPending ? "Saving…" : "Save backgrounds"} onPress={save} disabled={update.isPending} />
+      <Btn label={update.isPending ? "Saving…" : "Save backgrounds"} onPress={save} loading={update.isPending} />
       {msg && <Note tone={msg.includes("✓") ? "ok" : "error"}>{msg}</Note>}
     </Screen>
   );

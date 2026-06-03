@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { tap } from "@/lib/haptics";
 import { useMe } from "@/api/auth";
 import { useLiveScore, useMatch, useTeam } from "@/api/hooks";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
@@ -203,13 +204,24 @@ function Btn({
   const bg = tone === "amber" ? "#f59e0b" : tone === "red" ? "#ef4444" : tone === "ghost" ? "transparent" : t.primary;
   const fg = tone === "ghost" ? t.text : "#fff";
   return (
-    <TouchableOpacity
-      onPress={onPress}
+    <Pressable
+      onPress={() => { tap(); onPress(); }}
       disabled={disabled}
-      style={{ backgroundColor: bg, borderColor: t.border, borderWidth: tone === "ghost" ? 1 : 0, padding: 12, borderRadius: 10, alignItems: "center", opacity: disabled ? 0.6 : 1, ...style }}
+      android_ripple={tone === "ghost" ? undefined : { color: "rgba(255,255,255,0.25)" }}
+      style={({ pressed }) => ({
+        backgroundColor: bg,
+        borderColor: t.border,
+        borderWidth: tone === "ghost" ? 1 : 0,
+        padding: 12,
+        borderRadius: 12,
+        alignItems: "center",
+        opacity: disabled ? 0.5 : pressed ? 0.9 : 1,
+        transform: [{ scale: pressed && !disabled ? 0.97 : 1 }],
+        ...style,
+      })}
     >
-      <Text style={{ color: fg, fontWeight: "700" }}>{label}</Text>
-    </TouchableOpacity>
+      <Text style={{ color: fg, fontWeight: "800", fontSize: 15 }}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -225,13 +237,24 @@ function Picker({
         {players.map((p) => {
           const sel = p.id === value;
           return (
-            <TouchableOpacity
+            <Pressable
               key={p.id}
-              onPress={() => onPick(p.id)}
-              style={{ backgroundColor: sel ? t.primary : t.surface, borderColor: sel ? t.primary : t.border, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, marginRight: 6, marginBottom: 6 }}
+              onPress={() => { tap(); onPick(p.id); }}
+              style={({ pressed }) => ({
+                backgroundColor: sel ? t.primary : t.surface,
+                borderColor: sel ? t.primary : t.border,
+                borderWidth: 1,
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                borderRadius: 999,
+                marginRight: 6,
+                marginBottom: 6,
+                opacity: pressed ? 0.85 : 1,
+                transform: [{ scale: pressed ? 0.96 : 1 }],
+              })}
             >
               <Text style={{ color: sel ? "#fff" : t.text, fontSize: 12 }}>{p.name}</Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
         {!players.length && <Text style={{ color: t.muted }}>No players.</Text>}
