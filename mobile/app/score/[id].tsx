@@ -359,7 +359,14 @@ export default function Score() {
           {info && <Text style={{ color: t.primary, fontWeight: "600", marginVertical: 8 }}>{info}</Text>}
           {!ready && (
             <Text style={{ color: "#b45309", backgroundColor: "#f59e0b22", padding: 10, borderRadius: 8, marginVertical: 8, fontWeight: "600" }}>
-              Pick striker, non-striker & bowler above to enable scoring.
+              {(() => {
+                const need: string[] = [];
+                if (!striker) need.push("striker");
+                if (!nonStriker) need.push("non-striker");
+                if (!bowler) need.push("bowler");
+                if (striker && striker === nonStriker) return "Striker and non-striker must be different.";
+                return `Select ${need.join(" & ")} above to ${need.length === 3 ? "enable" : "resume"} scoring.`;
+              })()}
             </Text>
           )}
 
