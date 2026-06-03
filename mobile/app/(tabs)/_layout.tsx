@@ -21,6 +21,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: "LocalScore", tabBarLabel: "Home", tabBarIcon: icon("🏏") }} />
       <Tabs.Screen name="teams" options={{ title: "Teams", tabBarIcon: icon("👥") }} />
       <Tabs.Screen name="tournaments" options={{ title: "Tournaments", tabBarIcon: icon("🏆") }} />
+      <Tabs.Screen name="account" options={{ title: "Account", tabBarIcon: icon("👤") }} />
     </Tabs>
   );
 }
