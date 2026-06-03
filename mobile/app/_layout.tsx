@@ -33,6 +33,11 @@ export default function RootLayout() {
           <Stack.Screen name="match/[id]" options={{ title: "Match Centre" }} />
           <Stack.Screen name="score/[id]" options={{ title: "Score" }} />
           <Stack.Screen name="login" options={{ title: "Sign in", presentation: "modal" }} />
+          <Stack.Screen name="admin/index" options={{ title: "Manage" }} />
+          <Stack.Screen name="admin/teams" options={{ title: "Teams & players" }} />
+          <Stack.Screen name="admin/matches" options={{ title: "Matches" }} />
+          <Stack.Screen name="admin/tournaments" options={{ title: "Tournaments" }} />
+          <Stack.Screen name="admin/users" options={{ title: "Admins" }} />
         </Stack>
       </QueryClientProvider>
     </SafeAreaProvider>

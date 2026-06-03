@@ -30,9 +30,14 @@ export default function Account() {
           </View>
 
           {me.role !== "PUBLIC" && (
-            <Text style={{ color: t.muted, marginTop: 16 }}>
-              Open a live or upcoming match from Home, then tap “Score this match”.
-            </Text>
+            <>
+              <TouchableOpacity onPress={() => router.push("/admin")} style={{ marginTop: 20, backgroundColor: t.primary, padding: 14, borderRadius: 10, alignItems: "center" }}>
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Manage (teams, matches, tournaments…)</Text>
+              </TouchableOpacity>
+              <Text style={{ color: t.muted, marginTop: 12 }}>
+                Or open a live match from Home and tap “Score this match”.
+              </Text>
+            </>
           )}
 
           <TouchableOpacity onPress={doLogout} style={{ marginTop: 24, borderColor: t.border, borderWidth: 1, padding: 14, borderRadius: 10, alignItems: "center" }}>
