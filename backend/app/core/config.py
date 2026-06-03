@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     # AI service
     AI_SERVICE_URL: str = "http://localhost:8100"
     OPENAI_API_KEY: str = ""
+    # When true, each scored ball is enriched with an AI commentary line (one
+    # call to the AI service per ball, in the background). Turn on once the AI
+    # service has an LLM key (GEMINI_API_KEY) so it isn't called for templates.
+    AI_COMMENTARY_ENABLED: bool = False
 
     # Public site URL (used in emails so admins get a working link)
     FRONTEND_URL: str = "http://localhost:5173"

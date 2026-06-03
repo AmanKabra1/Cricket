@@ -5,12 +5,19 @@ Socket.IO to every spectator in the match room.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import logging
+
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, DbSession, authorize_match_admin, require_admin
 from app.core.cache import DASHBOARD_KEY, cache, live_key, scorecard_key
-from app.models.enums import MatchStatus
+from app.core.config import settings
+from app.core.database import AsyncSessionLocal
+from app.models.ball import Ball
+from app.models.enums import ExtraType, MatchStatus
+from app.models.player import Player
 from app.realtime.socket import emit_commentary, emit_match_status, emit_score_update
 from app.schemas.match import BallEvent, MatchResultUpdate
 from app.services import scoreboard
@@ -23,6 +30,7 @@ from app.services.scoring_engine import (
 
 from app.models.user import User
 
+logger = logging.getLogger("localscore.scoring")
 router = APIRouter(prefix="/matches/{match_id}/scoring", tags=["scoring"])
 
 
@@ -33,11 +41,54 @@ def _current_innings(match):
     return None if last.is_closed else last
 
 
+async def _enrich_commentary(match_id: int, ball_id: int) -> None:
+    """Background: replace a ball's template commentary with an AI line from the
+    AI service, then push it to spectators. Best-effort — failures are ignored
+    and the existing template stays."""
+    try:
+        async with AsyncSessionLocal() as db:
+            ball = await db.get(Ball, ball_id)
+            if ball is None:
+                return
+            striker = await db.get(Player, ball.striker_id)
+            bowler = await db.get(Player, ball.bowler_id)
+            payload = {
+                "over": ball.over_number,
+                "ball": ball.ball_in_over,
+                "runs": ball.runs_batsman,
+                "is_wicket": ball.is_wicket,
+                "extra_type": ball.extra_type.value if ball.extra_type else "NONE",
+                "striker": striker.name if striker else "the batter",
+                "bowler": bowler.name if bowler else "the bowler",
+            }
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                resp = await client.post(f"{settings.AI_SERVICE_URL}/commentary", json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+            # Only overwrite when the AI service actually used the LLM.
+            if data.get("source") == "llm" and data.get("text"):
+                ball.commentary = data["text"]
+                await db.commit()
+                await emit_commentary(
+                    match_id,
+                    {
+                        "match_id": match_id,
+                        "over": ball.over_number,
+                        "ball": ball.ball_in_over,
+                        "text": ball.commentary,
+                        "is_wicket": ball.is_wicket,
+                    },
+                )
+    except Exception as exc:  # noqa: BLE001 — never let enrichment affect scoring
+        logger.info("AI commentary enrich skipped: %s", exc)
+
+
 @router.post("/ball", status_code=status.HTTP_201_CREATED)
 async def post_ball(
     match_id: int,
     event: BallEvent,
     db: DbSession,
+    background: BackgroundTasks,
     user: User = Depends(require_admin),
 ) -> dict:
     match = await authorize_match_admin(match_id, db, user)
@@ -105,6 +156,10 @@ async def post_ball(
     )
     if outcome.innings_closed:
         await emit_match_status(match_id, {"match_id": match_id, "status": match.status.value})
+
+    # After responding, upgrade the commentary to an AI line (if enabled).
+    if settings.AI_COMMENTARY_ENABLED:
+        background.add_task(_enrich_commentary, match_id, outcome.ball.id)
 
     return {
         "ball_id": outcome.ball.id,
