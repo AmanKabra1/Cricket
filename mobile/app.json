@@ -28,7 +28,13 @@
     "plugins": [
       "expo-router",
       "expo-asset",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LocalScore needs photo access so admins can upload team logos and player photos."
+        }
+      ]
     ],
     "extra": {
       "apiBaseUrl": "https://localscore-backend-l3ws.onrender.com/api/v1",

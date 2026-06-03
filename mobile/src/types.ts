@@ -117,6 +117,29 @@ export interface CommentaryItem {
   text: string;
 }
 
+export interface OverPoint {
+  over: number;
+  runs: number;
+  wickets: number;
+  cumulative: number;
+}
+export interface Analytics {
+  match_id: number;
+  innings: { innings_number: number; batting_team_id: number; overs: OverPoint[] }[];
+}
+export interface Prediction {
+  available?: boolean;
+  message?: string;
+  model?: string;
+  batting_team_id?: number | null;
+  bowling_team_id?: number | null;
+  batting_win_probability?: number;
+  bowling_win_probability?: number;
+  projected_score?: number | null;
+  insight?: string | null;
+  key_moments?: string[];
+}
+
 export interface DashboardData {
   live: Match[];
   upcoming: Match[];

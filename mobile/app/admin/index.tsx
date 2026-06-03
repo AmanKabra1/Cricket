@@ -30,6 +30,7 @@ export default function AdminHub() {
       <Card><Btn label="📅 Matches" onPress={() => router.push("/admin/matches")} /></Card>
       <Card><Btn label="🏆 Tournaments" onPress={() => router.push("/admin/tournaments")} /></Card>
       {isSuper && <Card><Btn label="👤 Admins (users)" onPress={() => router.push("/admin/users")} /></Card>}
+      {isSuper && <Card><Btn label="🎨 Appearance (backgrounds)" onPress={() => router.push("/admin/appearance")} /></Card>}
 
       <Text style={{ color: t.muted, fontSize: 12, marginTop: 8 }}>
         Tip: to score a match, open it from Home and tap “Score this match”.

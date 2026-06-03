@@ -4,7 +4,8 @@ import { useTeam, useTeams } from "@/api/hooks";
 import {
   errorDetail, useAddPlayer, useCreateTeam, useDeletePlayer, useDeleteTeam, useUpdateTeam,
 } from "@/api/admin";
-import { Screen, H1, Muted, Card, Btn, Field, Chip, Note } from "@/components/ui";
+import { Screen, H1, Card, Btn, Field, Chip, Note } from "@/components/ui";
+import { ImageField } from "@/components/ImageField";
 import { useTheme } from "@/theme";
 import type { Team } from "@/types";
 
@@ -21,6 +22,7 @@ export default function ManageTeams() {
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [coach, setCoach] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -31,8 +33,9 @@ export default function ManageTeams() {
         name: name.trim(),
         city: city.trim() || undefined,
         coach: coach.trim() || undefined,
+        logo_url: logoUrl || undefined,
       });
-      setName(""); setCity(""); setCoach("");
+      setName(""); setCity(""); setCoach(""); setLogoUrl(null);
       setSelected(tm.id);
     } catch (e) {
       setMsg(errorDetail(e));
@@ -46,6 +49,7 @@ export default function ManageTeams() {
         <Field label="New team name *" value={name} onChangeText={setName} placeholder="e.g. Springfield Strikers" />
         <Field label="City" value={city} onChangeText={setCity} placeholder="e.g. Springfield" />
         <Field label="Coach" value={coach} onChangeText={setCoach} placeholder="e.g. A. Coach" />
+        <ImageField label="Team logo" value={logoUrl} onChange={setLogoUrl} category="team_logo" />
         <Btn label={create.isPending ? "Creating…" : "Create team"} onPress={addTeam} disabled={create.isPending} />
         {msg && <Note tone="error">{msg}</Note>}
       </Card>
@@ -84,6 +88,7 @@ function Squad({ teamId }: { teamId: number }) {
   const [jersey, setJersey] = useState("");
   const [batting, setBatting] = useState("RIGHT_HAND");
   const [bowling, setBowling] = useState(BOWLING[0]);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   if (!team) return <Note>Loading squad…</Note>;
 
@@ -95,8 +100,9 @@ function Squad({ teamId }: { teamId: number }) {
       batting_style: batting,
       bowling_style: bowls(role) ? bowling : "None",
       jersey_number: jersey ? Number(jersey) : undefined,
+      photo_url: photoUrl || undefined,
     });
-    setPname(""); setJersey("");
+    setPname(""); setJersey(""); setPhotoUrl(null);
   };
 
   return (
@@ -119,6 +125,7 @@ function Squad({ teamId }: { teamId: number }) {
           </View>
         </>
       )}
+      <ImageField label="Player photo" value={photoUrl} onChange={setPhotoUrl} category="player_photo" />
       <Btn label={addPlayer.isPending ? "Adding…" : "Add player"} onPress={submitPlayer} disabled={addPlayer.isPending} />
 
       <View style={{ marginTop: 10 }}>

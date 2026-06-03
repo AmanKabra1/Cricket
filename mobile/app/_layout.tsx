@@ -41,6 +41,7 @@ export default function RootLayout() {
           <Stack.Screen name="admin/matches" options={{ title: "Matches" }} />
           <Stack.Screen name="admin/tournaments" options={{ title: "Tournaments" }} />
           <Stack.Screen name="admin/users" options={{ title: "Admins" }} />
+          <Stack.Screen name="admin/appearance" options={{ title: "Appearance" }} />
         </Stack>
         <TopProgressBar />
       </QueryClientProvider>

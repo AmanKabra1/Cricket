@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCommentary, useLiveScore, useMatch, useScorecard } from "@/api/hooks";
+import { useAnalytics, useCommentary, useLiveScore, useMatch, usePrediction, useScorecard } from "@/api/hooks";
 import { useMe } from "@/api/auth";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { Loading, Empty } from "@/components/States";
 import { palette, useTheme } from "@/theme";
-import type { BatterCard, BowlerCard, CommentaryItem, InningsCard, InningsScore, Team } from "@/types";
+import type { BatterCard, BowlerCard, CommentaryItem, InningsCard, InningsScore, OverPoint, Team } from "@/types";
 
-const TABS = ["Live", "Scorecard", "Commentary"] as const;
+const TABS = ["Live", "Scorecard", "Commentary", "Prediction", "Analytics"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function MatchCentre() {
@@ -57,6 +57,8 @@ export default function MatchCentre() {
       {tab === "Live" && <LiveTab matchId={matchId} teams={teams} />}
       {tab === "Scorecard" && <ScorecardTab matchId={matchId} teams={teams} />}
       {tab === "Commentary" && <CommentaryTab matchId={matchId} />}
+      {tab === "Prediction" && <PredictionTab matchId={matchId} teams={teams} />}
+      {tab === "Analytics" && <AnalyticsTab matchId={matchId} teams={teams} />}
     </ScrollView>
   );
 }
@@ -146,6 +148,84 @@ function CommentaryTab({ matchId }: { matchId: number }) {
   );
 }
 
+function PredictionTab({ matchId, teams }: { matchId: number; teams: Map<number, Team> }) {
+  const { data, isLoading } = usePrediction(matchId);
+  const t = useTheme();
+  if (isLoading) return <Loading />;
+  if (!data || data.available === false)
+    return <Empty message={data?.message || "Prediction available once the match is live."} />;
+
+  const batPct = Math.round((data.batting_win_probability ?? 0.5) * 100);
+  const bowlPct = 100 - batPct;
+  const batName = data.batting_team_id ? teamName(teams, data.batting_team_id) : "Batting";
+  const bowlName = data.bowling_team_id ? teamName(teams, data.bowling_team_id) : "Bowling";
+
+  return (
+    <View>
+      <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+        <Text style={[styles.cardTitle, { color: t.text }]}>Win probability</Text>
+        <View style={styles.probBar}>
+          <View style={{ width: `${batPct}%`, backgroundColor: t.primary }} />
+          <View style={{ width: `${bowlPct}%`, backgroundColor: palette.amber }} />
+        </View>
+        <View style={styles.metaRow}>
+          <Text style={{ color: t.primary, fontWeight: "800" }}>{batName} {batPct}%</Text>
+          <Text style={{ color: palette.amber, fontWeight: "800" }}>{bowlName} {bowlPct}%</Text>
+        </View>
+        {data.projected_score != null && (
+          <Text style={{ color: t.muted, marginTop: 10 }}>Projected score: <Text style={{ color: t.text, fontWeight: "800" }}>{data.projected_score}</Text></Text>
+        )}
+      </View>
+
+      {!!data.insight && (
+        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <Text style={[styles.cardTitle, { color: t.text }]}>🤖 AI insight</Text>
+          <Text style={{ color: t.text, lineHeight: 20 }}>{data.insight}</Text>
+        </View>
+      )}
+
+      {!!data.key_moments?.length && (
+        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <Text style={[styles.cardTitle, { color: t.text }]}>Key moments</Text>
+          {data.key_moments.map((m, i) => (
+            <Text key={i} style={{ color: t.muted, paddingVertical: 2 }}>• {m}</Text>
+          ))}
+        </View>
+      )}
+      {!!data.model && <Text style={{ color: t.muted, fontSize: 11, textAlign: "center" }}>Model: {data.model}</Text>}
+    </View>
+  );
+}
+
+function AnalyticsTab({ matchId, teams }: { matchId: number; teams: Map<number, Team> }) {
+  const { data, isLoading } = useAnalytics(matchId);
+  const t = useTheme();
+  if (isLoading) return <Loading />;
+  if (!data?.innings.length) return <Empty message="No analytics yet." />;
+
+  return (
+    <View>
+      {data.innings.map((inn) => {
+        const max = Math.max(1, ...inn.overs.map((o) => o.runs));
+        return (
+          <View key={inn.innings_number} style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+            <Text style={[styles.cardTitle, { color: t.text }]}>{teamName(teams, inn.batting_team_id)} — runs per over</Text>
+            <View style={styles.manhattan}>
+              {inn.overs.map((o: OverPoint) => (
+                <View key={o.over} style={styles.barCol}>
+                  <View style={[styles.bar, { height: 8 + (o.runs / max) * 100, backgroundColor: o.wickets ? palette.red : t.primary }]} />
+                  <Text style={{ color: t.muted, fontSize: 9 }}>{o.over}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={{ color: t.muted, fontSize: 11, marginTop: 6 }}>Red bars = a wicket fell that over.</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "800" },
   tabs: { flexDirection: "row", borderBottomWidth: 1, marginBottom: 14 },
@@ -160,4 +240,8 @@ const styles = StyleSheet.create({
   subhead: { marginTop: 10, marginBottom: 4, fontWeight: "700", textTransform: "uppercase", fontSize: 12 },
   commentRow: { flexDirection: "row", gap: 12, paddingVertical: 10, borderBottomWidth: 1 },
   over: { fontWeight: "800", width: 44 },
+  probBar: { flexDirection: "row", height: 18, borderRadius: 9, overflow: "hidden", marginVertical: 8 },
+  manhattan: { flexDirection: "row", alignItems: "flex-end", flexWrap: "wrap", gap: 3, minHeight: 120, marginTop: 8 },
+  barCol: { alignItems: "center", width: 18 },
+  bar: { width: 12, borderRadius: 3 },
 });

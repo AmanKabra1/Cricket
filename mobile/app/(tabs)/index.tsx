@@ -33,7 +33,7 @@ export default function Dashboard() {
       {/* Hero — mirrors the web dashboard. */}
       <View style={[styles.hero, { backgroundColor: palette.pitch }]}>
         <Text style={styles.heroTitle}>Local cricket, live.</Text>
-        <Text style={styles.heroSub}>Ball-by-ball scores, scorecards & commentary for your local matches.</Text>
+        <Text style={styles.heroSub}>Ball-by-ball scores, full scorecards, commentary and AI insights for your local tournaments and grounds.</Text>
         <View style={styles.stats}>
           <Stat n={data.live.length} label="LIVE" />
           <Stat n={data.upcoming.length} label="UPCOMING" />
@@ -42,7 +42,7 @@ export default function Dashboard() {
       </View>
 
       {empty ? (
-        <Empty message="No matches yet. Live scores will appear here." />
+        <Empty message="No matches yet. Once an admin creates and scores a match, it shows up here live." />
       ) : (
         <>
           <Section title="🔴 Live now" matches={data.live} />
@@ -50,6 +50,11 @@ export default function Dashboard() {
           <Section title="Recent results" matches={data.recent} />
         </>
       )}
+
+      <View style={{ marginTop: 8, alignItems: "center" }}>
+        <Text style={{ color: t.muted, fontSize: 12 }}>LocalScore · Local cricket, live · Built for community grounds</Text>
+        <Text style={{ color: t.muted, fontSize: 11, marginTop: 2 }}>© {new Date().getFullYear()} LocalScore. All rights reserved.</Text>
+      </View>
     </ScrollView>
   );
 }

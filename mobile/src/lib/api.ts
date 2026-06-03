@@ -62,3 +62,20 @@ api.interceptors.response.use(
 );
 
 export const get = async <T>(url: string): Promise<T> => (await api.get<T>(url)).data;
+
+/** Upload a local image (file:// uri) to /uploads/{category}; returns its public URL. */
+export const uploadImage = async (
+  uri: string,
+  category: "team_logo" | "player_photo" | "match_image",
+): Promise<string> => {
+  const name = uri.split("/").pop() || "image.jpg";
+  const ext = (name.split(".").pop() || "jpg").toLowerCase();
+  const type = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+  const form = new FormData();
+  // RN's FormData accepts this {uri,name,type} shape for file parts.
+  form.append("file", { uri, name, type } as any);
+  const { data } = await api.post<{ url: string }>(`/uploads/${category}`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.url;
+};

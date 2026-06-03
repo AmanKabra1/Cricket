@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { get } from "@/lib/api";
 import type {
+  Analytics,
   CommentaryItem,
   DashboardData,
   LiveScore,
   Match,
+  Prediction,
   Scorecard,
   Team,
   TeamDetail,
@@ -29,6 +31,12 @@ export const useScorecard = (id: number) =>
 
 export const useCommentary = (id: number) =>
   useQuery({ queryKey: ["commentary", id], queryFn: () => get<CommentaryItem[]>(`/public/matches/${id}/commentary`) });
+
+export const usePrediction = (id: number) =>
+  useQuery({ queryKey: ["prediction", id], queryFn: () => get<Prediction>(`/public/matches/${id}/prediction`), refetchInterval: 10_000 });
+
+export const useAnalytics = (id: number) =>
+  useQuery({ queryKey: ["analytics", id], queryFn: () => get<Analytics>(`/public/matches/${id}/analytics`), refetchInterval: 10_000 });
 
 export const useTeams = () =>
   useQuery({ queryKey: ["teams"], queryFn: () => get<Team[]>("/teams") });

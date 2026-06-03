@@ -66,6 +66,7 @@ export interface PlayerInput {
   batting_style?: string;
   bowling_style?: string;
   jersey_number?: number;
+  photo_url?: string;
 }
 export const useAddPlayer = (teamId: number) => {
   const qc = useQueryClient();
@@ -209,5 +210,17 @@ export const useDeleteUser = () => {
 };
 export const useTestEmail = () =>
   useMutation({ mutationFn: () => api.post<{ detail: string }>("/admin/test-email").then((r) => r.data) });
+
+// ---------- Backgrounds (super admin) ----------
+export type Backgrounds = Record<string, { light?: string | null; dark?: string | null }>;
+export const useBackgrounds = () =>
+  useQuery({ queryKey: ["backgrounds"], queryFn: () => get<Backgrounds>("/public/settings/backgrounds") });
+export const useUpdateBackgrounds = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pages: Backgrounds) => api.put("/admin/settings/backgrounds", { pages }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["backgrounds"] }),
+  });
+};
 
 export { detail as errorDetail };
