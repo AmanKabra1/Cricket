@@ -9,6 +9,7 @@ export default function Login() {
   const { status, error } = useAppSelector((s) => s.auth);
   const [email, setEmail] = useState("admin@localscore.dev");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -28,7 +29,24 @@ export default function Login() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Password</label>
-            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <div className="relative">
+              <input
+                className="input pr-10"
+                type={showPw ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((s) => !s)}
+                className="absolute inset-y-0 right-0 grid w-10 place-items-center text-sm muted"
+                aria-label={showPw ? "Hide password" : "Show password"}
+                title={showPw ? "Hide password" : "Show password"}
+              >
+                {showPw ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <button className="btn-primary w-full" disabled={status === "loading"}>

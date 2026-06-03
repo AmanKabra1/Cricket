@@ -11,6 +11,7 @@ export default function Login() {
   const qc = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,8 +23,11 @@ export default function Login() {
       await qc.invalidateQueries({ queryKey: ["me"] });
       if (router.canGoBack()) router.back();
       else router.replace("/");
-    } catch {
-      setError("Incorrect email or password.");
+    } catch (e: any) {
+      // Distinguish wrong credentials from a network/server-asleep problem.
+      if (e?.response?.status === 401) setError("Incorrect email or password.");
+      else if (e?.response) setError(e.response.data?.detail ?? "Sign-in failed. Try again.");
+      else setError("Can't reach the server (it may be waking up). Try again in a moment.");
     } finally {
       setBusy(false);
     }
@@ -53,14 +57,23 @@ export default function Login() {
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={inputStyle}
-        placeholder="Password"
-        placeholderTextColor={t.muted}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View style={{ position: "relative", justifyContent: "center" }}>
+        <TextInput
+          style={[inputStyle, { paddingRight: 44 }]}
+          placeholder="Password"
+          placeholderTextColor={t.muted}
+          secureTextEntry={!showPw}
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TouchableOpacity
+          onPress={() => setShowPw((s) => !s)}
+          style={{ position: "absolute", right: 12, top: 12 }}
+          accessibilityLabel={showPw ? "Hide password" : "Show password"}
+        >
+          <Text style={{ fontSize: 18 }}>{showPw ? "🙈" : "👁️"}</Text>
+        </TouchableOpacity>
+      </View>
       {error && <Text style={{ color: t.text, backgroundColor: "#ef444422", padding: 8, borderRadius: 8, marginBottom: 12 }}>{error}</Text>}
 
       <TouchableOpacity

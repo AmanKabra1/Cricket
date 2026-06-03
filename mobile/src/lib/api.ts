@@ -28,7 +28,9 @@ export const tokenStore = {
   },
 };
 
-export const api = axios.create({ baseURL: API_BASE_URL, timeout: 10_000 });
+// 35s: the free-tier backend can take ~30s to wake from idle (cold start); a
+// 10s timeout would fail every first request after the server has slept.
+export const api = axios.create({ baseURL: API_BASE_URL, timeout: 35_000 });
 
 api.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
