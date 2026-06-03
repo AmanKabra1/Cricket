@@ -43,14 +43,19 @@ export default function MatchCentre() {
         </View>
       )}
 
-      <View style={[styles.tabs, { borderColor: t.border }]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[styles.tabs, { borderColor: t.border }]}
+        contentContainerStyle={{ alignItems: "center" }}
+      >
         {TABS.map((x) => (
           <Pressable key={x} onPress={() => setTab(x)} style={styles.tabBtn}>
             <Text style={{ color: tab === x ? t.primary : t.muted, fontWeight: "700" }}>{x}</Text>
             {tab === x && <View style={[styles.underline, { backgroundColor: t.primary }]} />}
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
 
       {tab === "Live" && <LiveTab matchId={matchId} teams={teams} />}
       {tab === "Scorecard" && <ScorecardTab matchId={matchId} teams={teams} />}
@@ -226,7 +231,7 @@ function AnalyticsTab({ matchId, teams }: { matchId: number; teams: Map<number, 
 
 const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "800" },
-  tabs: { flexDirection: "row", borderBottomWidth: 1, marginBottom: 14 },
+  tabs: { flexGrow: 0, borderBottomWidth: 1, marginBottom: 14 },
   tabBtn: { paddingVertical: 10, paddingHorizontal: 14, alignItems: "center" },
   underline: { height: 2, width: "100%", marginTop: 8 },
   card: { padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 12 },
