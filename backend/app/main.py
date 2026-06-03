@@ -10,9 +10,12 @@ import contextlib
 import logging
 from contextlib import asynccontextmanager
 
+import os
+
 import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.config import settings
@@ -72,6 +75,11 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
+# Serve locally-stored uploads (when STORAGE_BACKEND="local") from /media.
+if settings.STORAGE_BACKEND.lower() != "s3":
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=settings.UPLOAD_DIR), name="media")
 
 
 # GET + HEAD so uptime monitors (which often use HEAD) get 200, not 405.

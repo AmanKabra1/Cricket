@@ -2,7 +2,7 @@
 relevant entity (team.logo_url, player.photo_url, etc.)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 
 from app.api.deps import require_admin
 from app.models.user import User
@@ -16,6 +16,7 @@ _CATEGORIES = {"team_logo", "player_photo", "match_image"}
 @router.post("/{category}")
 async def upload(
     category: str,
+    request: Request,
     file: UploadFile = File(...),
     _: User = Depends(require_admin),
 ) -> dict:
@@ -25,7 +26,7 @@ async def upload(
     if len(data) > MAX_BYTES:
         raise HTTPException(status_code=413, detail="File exceeds the 5 MB limit")
     try:
-        url = await upload_image(data, file.content_type or "", category)
+        url = await upload_image(data, file.content_type or "", category, base_url=str(request.base_url))
     except StorageError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return {"url": url, "category": category}

@@ -47,7 +47,15 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_PER_MINUTE: int = 120
 
-    # Object storage
+    # Object storage.
+    #   STORAGE_BACKEND="local" (default) — save uploads to disk and serve them
+    #     from /media on this backend. Zero setup, works anywhere. NOTE: on hosts
+    #     with an ephemeral filesystem (Render free tier) files are lost on
+    #     redeploy/restart — fine for testing; set a persistent disk for durability.
+    #   STORAGE_BACKEND="s3" — store in any S3-compatible bucket (AWS S3, Cloudflare
+    #     R2, Backblaze B2, MinIO). Durable; set the S3_* vars below.
+    STORAGE_BACKEND: str = "local"
+    UPLOAD_DIR: str = "uploads"  # local-backend storage directory
     S3_ENDPOINT_URL: str = "http://localhost:9000"
     S3_PUBLIC_URL: str = "http://localhost:9000"
     S3_ACCESS_KEY: str = "minioadmin"
