@@ -42,12 +42,21 @@ jobs:
 
           # 1) Wake the (free-tier) backend — cold start can take ~60s.
           echo "Waking backend at $BACKEND_URL …"
+          ready=""
           for i in $(seq 1 12); do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BACKEND_URL/health" || true)
             echo "  health attempt $i → HTTP $code"
-            [ "$code" = "200" ] && break
+            if [ "$code" = "200" ]; then ready=1; break; fi
+            # 404 means this host isn't the API at all — don't waste time retrying.
+            if [ "$code" = "404" ]; then
+              echo "✗ $BACKEND_URL/health returned 404 — BACKEND_URL is not the backend API."
+              echo "  Set it to your Render backend URL (open <url>/docs to verify FastAPI),"
+              echo "  e.g. https://localscore-backend.onrender.com  (no trailing slash)."
+              exit 1
+            fi
             sleep 10
           done
+          if [ -z "$ready" ]; then echo "Backend never returned 200 on /health."; exit 1; fi
 
           # 2) Log in (retry a couple of times), capturing status + body for debug.
           # Build the JSON with jq so special characters in the password are escaped.
