@@ -60,6 +60,12 @@ def innings_score(inn: Innings, overs_limit: int) -> dict:
             inn.target, inn.total_runs, inn.legal_balls, overs_limit
         ),
         "is_closed": inn.is_closed,
+        # Who's at the crease right now (last submitted via a ball or the
+        # at-crease endpoint), so any client — web or app — can restore the
+        # scorer's on-field picks instead of re-asking for them.
+        "current_striker_id": inn.current_striker_id,
+        "current_non_striker_id": inn.current_non_striker_id,
+        "current_bowler_id": inn.current_bowler_id,
     }
 
 

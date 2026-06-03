@@ -144,9 +144,15 @@ export default function Scoring() {
       return;
     }
     const saved = loadScoring(matchId, innId);
-    setStriker(saved?.striker ?? "");
-    setNonStriker(saved?.nonStriker ?? "");
-    setBowler(saved?.bowler ?? "");
+    // Prefer the server's on-field state (synced across web & app) so picks made
+    // on another device carry over; otherwise restore this browser's last picks.
+    const srvS = openInnings?.current_striker_id ?? null;
+    const srvN = openInnings?.current_non_striker_id ?? null;
+    const srvB = openInnings?.current_bowler_id ?? null;
+    const useServer = !!(srvS || srvN || srvB);
+    setStriker(useServer ? srvS ?? "" : saved?.striker ?? "");
+    setNonStriker(useServer ? srvN ?? "" : saved?.nonStriker ?? "");
+    setBowler(useServer ? srvB ?? "" : saved?.bowler ?? "");
     setLastOverBowler(saved?.lastOverBowler ?? "");
     setDismissed(new Set(saved?.dismissed ?? []));
   }, [openInnings?.innings_id, matchId]);

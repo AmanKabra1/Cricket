@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { tap } from "@/lib/haptics";
 import { useMe } from "@/api/auth";
-import { useLiveScore, useMatch, useTeam } from "@/api/hooks";
+import { useLiveScore, useMatch, useScorecard, useTeam } from "@/api/hooks";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { useTheme, type Theme } from "@/theme";
-import type { InningsScore, Player } from "@/types";
+import type { BatterCard, InningsCard, InningsScore, Player } from "@/types";
+
+const scoringKey = (matchId: number, inningsId: number) => `localscore:scoring:${matchId}:${inningsId}`;
 
 export default function Score() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,21 +24,67 @@ export default function Score() {
   const { data: me, isLoading: meLoading } = useMe();
   const { data: match } = useMatch(matchId);
   const { data: live } = useLiveScore(matchId);
+  const { data: scorecard } = useScorecard(matchId);
   const { data: teamA } = useTeam(match?.team_a_id ?? 0);
   const { data: teamB } = useTeam(match?.team_b_id ?? 0);
 
   const open = live?.innings.find((i: InningsScore) => !i.is_closed) ?? null;
+  const openId = open?.innings_id ?? null;
   const [striker, setStriker] = useState<number | null>(null);
   const [nonStriker, setNonStriker] = useState<number | null>(null);
   const [bowler, setBowler] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // On (re)entering an open innings, restore who's at the crease. Prefer the
+  // server's on-field state (kept in sync by both web and app via the ball /
+  // at-crease endpoints) so reopening the match — on any device — doesn't make
+  // the scorer pick the same players again; fall back to this device's last
+  // local picks. Runs once per innings (deps = innings id), not on every poll.
   useEffect(() => {
-    setStriker(null);
-    setNonStriker(null);
-    setBowler(null);
-  }, [open?.innings_id]);
+    if (!openId) { setStriker(null); setNonStriker(null); setBowler(null); return; }
+    const srvS = open?.current_striker_id ?? null;
+    const srvN = open?.current_non_striker_id ?? null;
+    const srvB = open?.current_bowler_id ?? null;
+    if (srvS || srvN || srvB) {
+      setStriker(srvS); setNonStriker(srvN); setBowler(srvB);
+      return;
+    }
+    let cancelled = false;
+    AsyncStorage.getItem(scoringKey(matchId, openId))
+      .then((raw) => {
+        if (cancelled || !raw) return;
+        const s = JSON.parse(raw);
+        setStriker(s.striker ?? null);
+        setNonStriker(s.nonStriker ?? null);
+        setBowler(s.bowler ?? null);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId, matchId]);
+
+  // Persist this device's picks so they survive an app reload even before the
+  // server has them (e.g. mid-selection, offline).
+  useEffect(() => {
+    if (!openId) return;
+    AsyncStorage.setItem(scoringKey(matchId, openId), JSON.stringify({ striker, nonStriker, bowler })).catch(() => {});
+  }, [striker, nonStriker, bowler, openId, matchId]);
+
+  // Tell the server who's at the crease so the scorecard shows a freshly sent-in
+  // batter at 0* and the other client (web) stays in sync.
+  useEffect(() => {
+    const mayScore = !!me && me.role !== "PUBLIC";
+    if (!mayScore || !openId || !striker || !nonStriker || striker === nonStriker) return;
+    api
+      .post(`/matches/${matchId}/scoring/at-crease`, {
+        striker_id: striker,
+        non_striker_id: nonStriker,
+        bowler_id: bowler ?? null,
+      })
+      .then(() => qc.invalidateQueries({ queryKey: ["scorecard", matchId] }))
+      .catch(() => {});
+  }, [striker, nonStriker, bowler, openId, matchId, me, qc]);
 
   if (meLoading) return <Center t={t}>Loading…</Center>;
   if (!me || me.role === "PUBLIC") {
@@ -105,9 +154,21 @@ export default function Score() {
     }
   };
 
-  const batPlayers: Player[] = open
+  // Batters already out this innings are hidden from the batter selectors.
+  const outIds = useMemo(() => {
+    const s = new Set<number>();
+    scorecard?.innings.forEach((inn: InningsCard) => {
+      if (open && inn.innings_id === open.innings_id) {
+        inn.batting.forEach((b: BatterCard) => { if (b.is_out) s.add(b.player_id); });
+      }
+    });
+    return s;
+  }, [scorecard, open?.innings_id]);
+
+  const allBat: Player[] = open
     ? (teamA?.id === open.batting_team_id ? teamA?.players : teamB?.players) ?? []
     : [];
+  const batPlayers: Player[] = allBat.filter((p) => !outIds.has(p.id));
   const bowlPlayers: Player[] = open
     ? (teamA?.id === open.bowling_team_id ? teamA?.players : teamB?.players) ?? []
     : [];

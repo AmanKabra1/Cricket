@@ -77,6 +77,9 @@ export interface InningsScore {
   target: number | null;
   required_run_rate: number | null;
   is_closed: boolean;
+  current_striker_id?: number | null;
+  current_non_striker_id?: number | null;
+  current_bowler_id?: number | null;
 }
 
 export interface LiveScore {
