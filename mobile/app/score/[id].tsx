@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Easing, Pressable, ScrollView, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -588,27 +588,64 @@ function TossPanel({
 }) {
   const [winner, setWinner] = useState<number | null>(null);
   const [decision, setDecision] = useState<"BAT" | "BOWL">("BAT");
+  const [flipping, setFlipping] = useState(false);
+  const [face, setFace] = useState<"HEADS" | "TAILS" | null>(null);
+  const spin = useRef(new Animated.Value(0)).current;
+
+  const flip = () => {
+    if (flipping) return;
+    tap();
+    setFlipping(true);
+    setFace(null);
+    spin.setValue(0);
+    Animated.timing(spin, { toValue: 1, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => {
+      // The coin is for show — the admin records who actually won below.
+      setFace(Math.random() < 0.5 ? "HEADS" : "TAILS");
+      setFlipping(false);
+    });
+  };
+
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "1980deg"] });
 
   return (
     <Card t={t}>
       <Text style={{ color: t.text, fontWeight: "800", marginBottom: 2 }}>Toss</Text>
-      <Text style={{ color: t.muted, fontSize: 13, marginBottom: 10 }}>Record who won the toss and what they chose.</Text>
+      <Text style={{ color: t.muted, fontSize: 13, marginBottom: 12 }}>Flip the coin, then record who won and what they chose.</Text>
 
-      <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginBottom: 6 }}>Toss won by</Text>
-      <Row>
-        {[match.team_a_id, match.team_b_id].map((id) => (
-          <Seg key={id} t={t} label={teamName(teams, id)} selected={winner === id} onPress={() => setWinner(id)} />
-        ))}
-      </Row>
+      {/* Coin */}
+      <View style={{ alignItems: "center", marginBottom: 12 }}>
+        <Animated.View
+          style={{
+            width: 84, height: 84, borderRadius: 42, alignItems: "center", justifyContent: "center",
+            backgroundColor: face === "TAILS" ? "#f59e0b" : t.primary,
+            transform: [{ rotateY: rotate }],
+          }}
+        >
+          <Text style={{ fontSize: 28, fontWeight: "900", color: "#fff" }}>{flipping ? "…" : face ?? "🪙"}</Text>
+        </Animated.View>
+      </View>
+      <Btn t={t} tone="ghost" label={flipping ? "Flipping…" : face ? "Flip again" : "Flip coin"} disabled={flipping} onPress={flip} />
 
-      <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginTop: 8, marginBottom: 6 }}>Chose to</Text>
-      <Row>
-        <Seg t={t} label="Bat first" selected={decision === "BAT"} onPress={() => setDecision("BAT")} />
-        <Seg t={t} label="Bowl first" selected={decision === "BOWL"} onPress={() => setDecision("BOWL")} />
-      </Row>
+      {/* Result entry — enabled once the coin has been flipped (web parity). */}
+      {face && (
+        <View style={{ marginTop: 12 }}>
+          <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginBottom: 6 }}>Toss won by</Text>
+          <Row>
+            {[match.team_a_id, match.team_b_id].map((id) => (
+              <Seg key={id} t={t} label={teamName(teams, id)} selected={winner === id} onPress={() => setWinner(id)} />
+            ))}
+          </Row>
 
-      <Btn t={t} label={busy ? "Saving…" : "Confirm toss"} disabled={!winner || busy} style={{ marginTop: 10 }}
-        onPress={() => winner && onToss(winner, decision)} />
+          <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginTop: 8, marginBottom: 6 }}>Chose to</Text>
+          <Row>
+            <Seg t={t} label="Bat first" selected={decision === "BAT"} onPress={() => setDecision("BAT")} />
+            <Seg t={t} label="Bowl first" selected={decision === "BOWL"} onPress={() => setDecision("BOWL")} />
+          </Row>
+
+          <Btn t={t} label={busy ? "Saving…" : "Confirm toss"} disabled={!winner || busy} style={{ marginTop: 10 }}
+            onPress={() => winner && onToss(winner, decision)} />
+        </View>
+      )}
     </Card>
   );
 }
