@@ -15,6 +15,7 @@ from app.models.user import User
 from app.schemas.auth import UserOut
 from app.services.email import email_enabled, send_email, try_send_email, welcome_admin_body
 from app.services.maintenance import delete_user_and_matches, run_maintenance
+from app.services.training_data import FEATURE_KEYS, export_training_rows
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -145,6 +146,15 @@ async def delete_user(
     removed = await delete_user_and_matches(db, user)
     await db.commit()
     return {"ok": True, "deleted_matches": removed}
+
+
+@router.get("/ai/training-data")
+async def ai_training_data(
+    db: DbSession, _: User = Depends(require_super_admin)
+) -> dict:
+    """Labelled ball-by-ball rows from completed matches, for model training."""
+    rows = await export_training_rows(db)
+    return {"count": len(rows), "feature_keys": FEATURE_KEYS, "rows": rows}
 
 
 @router.post("/maintenance/run")

@@ -34,6 +34,9 @@ Thumbs.db
 /data/
 ai-service/models/*.pkl
 ai-service/models/*.joblib
+# …but DO track the served win-probability model so it ships with the AI image
+# (the nightly training workflow commits it).
+!ai-service/models/win_probability.joblib
 
 # Docker volumes (if mounted locally)
 docker/volumes/

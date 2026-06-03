@@ -180,3 +180,8 @@ async def test_tournament_standings_update_on_completion(client: AsyncClient):
     assert rows[bowl]["points"] == 2 and rows[bowl]["won"] == 1, standings
     assert rows[bat]["points"] == 0 and rows[bat]["lost"] == 1, standings
     assert rows[bat]["played"] == 1 and rows[bowl]["played"] == 1
+
+    # AI training-data export yields labelled feature rows from the completed match.
+    td = (await client.get("/api/v1/admin/ai/training-data", headers=auth)).json()
+    assert td["count"] > 0 and "label" in td["rows"][0]
+    assert set(td["feature_keys"]).issubset(td["rows"][0].keys())

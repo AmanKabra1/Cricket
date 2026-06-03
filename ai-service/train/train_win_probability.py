@@ -6,11 +6,14 @@ label each in-progress state with the eventual match result. Until that data
 exists, this script SYNTHESISES a labelled dataset from the same heuristic so
 the end-to-end pipeline (train → persist → serve) is runnable and verifiable.
 
-Run:  python -m train.train_win_probability
+Run (synthetic):  python -m train.train_win_probability
+Run (real data):  TRAINING_DATA_FILE=data.json python -m train.train_win_probability
+  where data.json is the backend export GET /api/v1/admin/ai/training-data.
 Output:  models/win_probability.joblib  (auto-detected by app.models.win_probability)
 """
 from __future__ import annotations
 
+import json
 import os
 import random
 
@@ -18,6 +21,18 @@ FEATURES = [
     "is_chase", "runs", "wickets", "balls_bowled", "balls_left",
     "wickets_in_hand", "current_run_rate", "required_run_rate", "runs_needed",
 ]
+
+
+def _load_real(path: str):
+    """Load the backend export ({rows:[{feature..., label}]}) into (X, y)."""
+    import numpy as np
+
+    with open(path, encoding="utf-8") as fh:
+        payload = json.load(fh)
+    rows = payload.get("rows", payload) if isinstance(payload, dict) else payload
+    X = [[float(r[k]) for k in FEATURES] for r in rows]
+    y = [int(r["label"]) for r in rows]
+    return np.array(X, dtype=float), np.array(y)
 
 
 def _synthesise(n: int = 20000):
@@ -54,8 +69,23 @@ def main() -> None:
     from sklearn.metrics import accuracy_score, roc_auc_score
     from sklearn.model_selection import train_test_split
 
-    print("Synthesising training data… (replace with real historical data in prod)")
-    X, y = _synthesise()
+    data_file = os.environ.get("TRAINING_DATA_FILE")
+    if data_file and os.path.exists(data_file):
+        Xr, yr = _load_real(data_file)
+        print(f"Loaded {len(yr)} real labelled rows from {data_file}.")
+        # Real local-cricket data is often sparse — augment with synthetic so the
+        # model still generalises across game states.
+        if len(yr) < 2000:
+            Xs, ys = _synthesise()
+            X = np.vstack([Xr, Xs]) if len(yr) else Xs
+            y = np.concatenate([yr, ys]) if len(yr) else ys
+            print(f"Augmented with synthetic → {len(y)} total rows.")
+        else:
+            X, y = Xr, yr
+    else:
+        print("No TRAINING_DATA_FILE — synthesising data (heuristic-labelled).")
+        X, y = _synthesise()
+
     X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=1)
 
     # Prefer XGBoost; fall back to LightGBM, then sklearn.

@@ -1,0 +1,66 @@
+name: Train AI win-probability model
+
+# Nightly retrain: pull labelled ball-by-ball data from the live backend, train
+# the win-probability model, and commit the artifact so the AI service picks it
+# up on its next deploy. Also runnable on demand.
+#
+# Required repo secrets:
+#   BACKEND_URL        e.g. https://localscore-backend.onrender.com
+#   AI_TRAIN_EMAIL     a SUPER_ADMIN login (to read the training export)
+#   AI_TRAIN_PASSWORD  that account's password
+
+on:
+  schedule:
+    - cron: "30 2 * * *"   # 02:30 UTC nightly
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install training deps
+        working-directory: ai-service
+        run: pip install -r requirements.txt -r requirements-ml.txt
+
+      - name: Fetch labelled training data from the backend
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          EMAIL: ${{ secrets.AI_TRAIN_EMAIL }}
+          PASSWORD: ${{ secrets.AI_TRAIN_PASSWORD }}
+        run: |
+          set -e
+          TOKEN=$(curl -s -X POST "$BACKEND_URL/api/v1/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" | jq -r .access_token)
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then echo "Login failed"; exit 1; fi
+          curl -s "$BACKEND_URL/api/v1/admin/ai/training-data" \
+            -H "Authorization: Bearer $TOKEN" -o ai-service/training_data.json
+          echo "Rows: $(jq -r '.count' ai-service/training_data.json)"
+
+      - name: Train model
+        working-directory: ai-service
+        env:
+          TRAINING_DATA_FILE: training_data.json
+        run: python -m train.train_win_probability
+
+      - name: Commit model if changed
+        run: |
+          rm -f ai-service/training_data.json
+          if git -c core.filemode=false status --porcelain ai-service/models/win_probability.joblib | grep -q .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -f ai-service/models/win_probability.joblib
+            git commit -m "chore(ai): nightly retrain win-probability model"
+            git push
+          else
+            echo "No model change."
+          fi
