@@ -130,9 +130,13 @@ function Squad({ teamId }: { teamId: number }) {
 
       <View style={{ marginTop: 10 }}>
         {team.players.map((p) => {
-          const isC = team.captain_id === p.id;
-          const isVC = (team as any).vice_captain_id === p.id;
-          const isWK = (team as any).wicket_keeper_id === p.id;
+          const captainId = team.captain_id;
+          const viceId = (team as any).vice_captain_id as number | null | undefined;
+          const wkId = (team as any).wicket_keeper_id as number | null | undefined;
+          const isC = captainId === p.id;
+          const isVC = viceId === p.id;
+          const isWK = wkId === p.id;
+          const hasRole = isC || isVC || isWK;
           return (
             <View key={p.id} style={{ borderTopColor: t.border, borderTopWidth: 1, paddingVertical: 8 }}>
               <Text style={{ color: t.text, fontWeight: "600" }}>
@@ -140,9 +144,13 @@ function Squad({ teamId }: { teamId: number }) {
                 <Text style={{ color: t.muted, fontSize: 12 }}>  · {p.role.replace("_", " ")}</Text>
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 4 }}>
-                <Chip label="Make C" selected={isC} onPress={() => update.mutate({ captain_id: isC ? null : p.id })} />
-                <Chip label="Make VC" selected={isVC} onPress={() => update.mutate({ vice_captain_id: isVC ? null : p.id })} />
-                <Chip label="Make WK" selected={isWK} onPress={() => update.mutate({ wicket_keeper_id: isWK ? null : p.id })} />
+                {/* Same rule as web: a player can hold only one role; each role goes to one player. */}
+                {!captainId && !hasRole && <Chip label="Make C" selected={false} onPress={() => update.mutate({ captain_id: p.id })} />}
+                {!viceId && !hasRole && <Chip label="Make VC" selected={false} onPress={() => update.mutate({ vice_captain_id: p.id })} />}
+                {!wkId && !hasRole && <Chip label="Make WK" selected={false} onPress={() => update.mutate({ wicket_keeper_id: p.id })} />}
+                {isC && <Chip label="Clear C" selected onPress={() => update.mutate({ captain_id: null })} />}
+                {isVC && <Chip label="Clear VC" selected onPress={() => update.mutate({ vice_captain_id: null })} />}
+                {isWK && <Chip label="Clear WK" selected onPress={() => update.mutate({ wicket_keeper_id: null })} />}
                 <Chip label="Remove" selected={false} onPress={() => delPlayer.mutate(p.id)} />
               </View>
             </View>
