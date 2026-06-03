@@ -7,6 +7,16 @@ export type MatchStatus =
   | "COMPLETED"
   | "ABANDONED";
 
+export type UserRole = "PUBLIC" | "MATCH_ADMIN" | "SUPER_ADMIN";
+
+export interface User {
+  id: number;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  is_active: boolean;
+}
+
 export interface Team {
   id: number;
   name: string;

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCommentary, useLiveScore, useMatch, useScorecard } from "@/api/hooks";
+import { useMe } from "@/api/auth";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { Loading, Empty } from "@/components/States";
@@ -16,11 +17,15 @@ export default function MatchCentre() {
   const matchId = Number(id);
   const [tab, setTab] = useState<Tab>("Live");
   const t = useTheme();
+  const router = useRouter();
   const teams = useTeamMap();
   const { data: match, isLoading } = useMatch(matchId);
+  const { data: me } = useMe();
   useLiveSocket(matchId);
 
   if (isLoading || !match) return <Loading />;
+
+  const canScore = me && me.role !== "PUBLIC" && match.status !== "COMPLETED" && match.status !== "ABANDONED";
 
   return (
     <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={{ padding: 16 }}>
@@ -30,6 +35,15 @@ export default function MatchCentre() {
       <Text style={{ color: t.muted, marginBottom: 14 }}>
         {match.overs_limit} overs · {match.status.replace("_", " ")}
       </Text>
+
+      {canScore && (
+        <TouchableOpacity
+          onPress={() => router.push(`/score/${matchId}`)}
+          style={{ backgroundColor: t.primary, padding: 12, borderRadius: 10, alignItems: "center", marginBottom: 14 }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700" }}>Score this match</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={[styles.tabs, { borderColor: t.border }]}>
         {TABS.map((x) => (
