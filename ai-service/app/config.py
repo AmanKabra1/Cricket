@@ -12,7 +12,12 @@ class Settings(BaseSettings):
     SERVICE_NAME: str = "LocalScore AI"
     DEBUG: bool = True
 
-    # LLM (optional). When unset, commentary/summary fall back to templates.
+    # LLM (optional). When none set, commentary/summary fall back to templates.
+    # Gemini is preferred (generous free tier, no card) and used over HTTP, so no
+    # extra packages are needed. Get a key at https://aistudio.google.com/apikey
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+    # OpenAI is an optional alternative (requires the langchain-openai extra).
     OPENAI_API_KEY: str = ""
     LLM_MODEL: str = "gpt-4o-mini"
 
