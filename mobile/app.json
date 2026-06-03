@@ -32,7 +32,12 @@
     ],
     "extra": {
       "apiBaseUrl": "https://localscore-backend.onrender.com/api/v1",
-      "socketUrl": "https://localscore-backend.onrender.com"
-    }
+      "socketUrl": "https://localscore-backend.onrender.com",
+      "router": {},
+      "eas": {
+        "projectId": "35cc4269-f9a0-4708-b255-a521a2b2edea"
+      }
+    },
+    "owner": "amankabra"
   }
 }
