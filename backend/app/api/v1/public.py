@@ -191,11 +191,27 @@ async def analytics(match_id: int, db: DbSession) -> dict:
 
 @router.get("/matches/{match_id}/prediction")
 async def ai_prediction(match_id: int, db: DbSession) -> dict:
-    """Proxy to the AI service; degrades gracefully if it's unavailable."""
+    """Proxy to the AI service; degrades gracefully if it's unavailable.
+
+    Cached by the current score state, so every spectator viewing the same moment
+    shares one AI call — this shields the (free-tier) AI service and keeps any LLM
+    usage well within free quotas. The key changes as soon as the score does, so
+    the prediction still updates ball-by-ball.
+    """
     match = await db.get(Match, match_id)
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
     live = await scoreboard.build_live_score(db, match)
+
+    # Signature of the live state → identical states reuse the cached prediction.
+    sig = ";".join(
+        f"{i['innings_number']}:{i['runs']}/{i['wickets']}:{i['overs']}" for i in live["innings"]
+    )
+    key = f"prediction:{match_id}:{live['status']}:{sig}"
+    cached = await cache.get_json(key)
+    if cached is not None:
+        return cached
+
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.post(
@@ -203,7 +219,9 @@ async def ai_prediction(match_id: int, db: DbSession) -> dict:
                 json={"match_id": match_id, "live_score": live},
             )
             resp.raise_for_status()
-            return resp.json()
+            result = resp.json()
+        await cache.set_json(key, result, ttl=30)  # short TTL; key already score-scoped
+        return result
     except (httpx.HTTPError, Exception):  # noqa: BLE001
         return {
             "match_id": match_id,
