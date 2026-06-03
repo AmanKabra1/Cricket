@@ -5,6 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { tokenStore } from "@/lib/api";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
+import TopProgressBar from "@/components/TopProgressBar";
 import { useTheme } from "@/theme";
 
 const queryClient = new QueryClient({
@@ -41,6 +42,7 @@ export default function RootLayout() {
           <Stack.Screen name="admin/tournaments" options={{ title: "Tournaments" }} />
           <Stack.Screen name="admin/users" options={{ title: "Admins" }} />
         </Stack>
+        <TopProgressBar />
       </QueryClientProvider>
     </SafeAreaProvider>
   );

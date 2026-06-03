@@ -13,7 +13,7 @@ const ROLES = ["MATCH_ADMIN", "SUPER_ADMIN", "PUBLIC"];
 export default function ManageUsers() {
   const t = useTheme();
   const { data: me } = useMe();
-  const { data: users, isLoading } = useUsers();
+  const { data: users, isLoading, refetch, isFetching } = useUsers();
   const create = useCreateUser();
   const setRole = useSetUserRole();
   const setActive = useSetUserActive();
@@ -37,7 +37,7 @@ export default function ManageUsers() {
   };
 
   return (
-    <Screen>
+    <Screen onRefresh={refetch} refreshing={isFetching}>
       <H1>Admins</H1>
       <Card>
         <Muted>Create admin</Muted>

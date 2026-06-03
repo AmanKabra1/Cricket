@@ -15,7 +15,7 @@ const FORMATS = ["LEAGUE", "ROUND_ROBIN", "GROUP_STAGE", "KNOCKOUT"];
 export default function ManageTournaments() {
   const t = useTheme();
   const { data: teams } = useTeams();
-  const { data: tournaments, isLoading } = useTournamentsAdmin();
+  const { data: tournaments, isLoading, refetch, isFetching } = useTournamentsAdmin();
   const { data: me } = useMe();
   const create = useCreateTournament();
   const approve = useApproveTournament();
@@ -40,7 +40,7 @@ export default function ManageTournaments() {
   };
 
   return (
-    <Screen>
+    <Screen onRefresh={refetch} refreshing={isFetching}>
       <H1>Tournaments</H1>
       <Card>
         <Muted>Create tournament</Muted>

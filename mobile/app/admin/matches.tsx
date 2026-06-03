@@ -23,7 +23,7 @@ export default function ManageMatches() {
   const router = useRouter();
   const teamsMap = useTeamMap();
   const { data: teams } = useTeams();
-  const { data: matches, isLoading } = useMatches();
+  const { data: matches, isLoading, refetch, isFetching } = useMatches();
   const { data: venues } = useVenues();
   const { data: tournaments } = useTournamentsAdmin();
   const { data: users } = useUsers();
@@ -63,7 +63,7 @@ export default function ManageMatches() {
   };
 
   return (
-    <Screen>
+    <Screen onRefresh={refetch} refreshing={isFetching}>
       <H1>Matches</H1>
       <Card>
         <Muted>Create match</Muted>

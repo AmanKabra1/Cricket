@@ -1,7 +1,11 @@
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useTheme } from "@/theme";
 
-export function Screen({ children }: { children: React.ReactNode }) {
+export function Screen({ children, onRefresh, refreshing }: {
+  children: React.ReactNode;
+  onRefresh?: () => void;
+  refreshing?: boolean;
+}) {
   const t = useTheme();
   return (
     <KeyboardAvoidingView
@@ -12,6 +16,9 @@ export function Screen({ children }: { children: React.ReactNode }) {
         contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        refreshControl={
+          onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={t.primary} /> : undefined
+        }
       >
         {children}
       </ScrollView>

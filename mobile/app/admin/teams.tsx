@@ -15,7 +15,7 @@ const bowls = (r: string) => r === "BOWLER" || r === "ALL_ROUNDER";
 
 export default function ManageTeams() {
   const t = useTheme();
-  const { data: teams, isLoading } = useTeams();
+  const { data: teams, isLoading, refetch, isFetching } = useTeams();
   const create = useCreateTeam();
   const del = useDeleteTeam();
   const [name, setName] = useState("");
@@ -40,7 +40,7 @@ export default function ManageTeams() {
   };
 
   return (
-    <Screen>
+    <Screen onRefresh={refetch} refreshing={isFetching}>
       <H1>Teams & players</H1>
       <Card>
         <Field label="New team name *" value={name} onChangeText={setName} placeholder="e.g. Springfield Strikers" />
