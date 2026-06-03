@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTeams } from "@/api/hooks";
+import { useMe } from "@/api/auth";
 import { teamName, useTeamMap } from "@/hooks/useTeamMap";
 import {
   errorDetail, useApproveMatch, useCreateMatch, useCreateVenue, useDeleteMatch,
-  useDeleteVenue, useMatches, useVenues,
+  useDeleteVenue, useMatches, useTournamentsAdmin, useUsers, useVenues,
 } from "@/api/admin";
 import { Screen, H1, Card, Btn, Field, Chip, Note, Muted } from "@/components/ui";
 import { useTheme } from "@/theme";
@@ -24,6 +25,10 @@ export default function ManageMatches() {
   const { data: teams } = useTeams();
   const { data: matches, isLoading } = useMatches();
   const { data: venues } = useVenues();
+  const { data: tournaments } = useTournamentsAdmin();
+  const { data: users } = useUsers();
+  const { data: me } = useMe();
+  const isSuper = me?.role === "SUPER_ADMIN";
   const create = useCreateMatch();
   const approve = useApproveMatch();
   const del = useDeleteMatch();
@@ -32,8 +37,13 @@ export default function ManageMatches() {
   const [b, setB] = useState<number | null>(null);
   const [overs, setOvers] = useState("20");
   const [venue, setVenue] = useState<number | null>(null);
+  const [tournament, setTournament] = useState<number | null>(null);
+  const [admins, setAdmins] = useState<number[]>([]);
   const [when, setWhen] = useState(defaultWhen());
   const [msg, setMsg] = useState<string | null>(null);
+
+  const matchAdmins = (users ?? []).filter((u) => u.role === "MATCH_ADMIN" && u.is_active);
+  const toggleAdmin = (id: number) => setAdmins((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const submit = async () => {
     setMsg(null);
@@ -42,11 +52,13 @@ export default function ManageMatches() {
       await create.mutateAsync({
         team_a_id: a, team_b_id: b,
         venue_id: venue ?? undefined,
+        tournament_id: tournament ?? undefined,
+        admin_ids: admins.length ? admins : undefined,
         overs_limit: Math.max(1, Number(overs) || 20),
         scheduled_at: when ? (when.length === 16 ? `${when}:00` : when) : undefined,
       });
       setMsg("Match created ✓");
-      setA(null); setB(null);
+      setA(null); setB(null); setTournament(null); setAdmins([]);
     } catch (e) { setMsg(errorDetail(e)); }
   };
 
@@ -70,6 +82,22 @@ export default function ManageMatches() {
             <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Venue (optional)</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
               {venues.map((v) => <Chip key={v.id} label={v.name} selected={venue === v.id} onPress={() => setVenue(venue === v.id ? null : v.id)} />)}
+            </View>
+          </>
+        )}
+        {!!tournaments?.length && (
+          <>
+            <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Tournament (optional)</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+              {tournaments.map((tn) => <Chip key={tn.id} label={tn.name} selected={tournament === tn.id} onPress={() => setTournament(tournament === tn.id ? null : tn.id)} />)}
+            </View>
+          </>
+        )}
+        {isSuper && !!matchAdmins.length && (
+          <>
+            <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Assign scorers (optional)</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+              {matchAdmins.map((u) => <Chip key={u.id} label={u.full_name} selected={admins.includes(u.id)} onPress={() => toggleAdmin(u.id)} />)}
             </View>
           </>
         )}

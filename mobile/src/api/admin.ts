@@ -37,7 +37,8 @@ export const useStandings = (id: number, enabled = true) =>
 export const useCreateTeam = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; city?: string; coach?: string }) => api.post<Team>("/teams", body).then((r) => r.data),
+    mutationFn: (body: { name: string; city?: string; coach?: string; logo_url?: string }) =>
+      api.post<Team>("/teams", body).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
   });
 };
@@ -58,10 +59,18 @@ export const useUpdateTeam = (teamId: number) => {
     },
   });
 };
+export interface PlayerInput {
+  name: string;
+  role?: string;
+  age?: number;
+  batting_style?: string;
+  bowling_style?: string;
+  jersey_number?: number;
+}
 export const useAddPlayer = (teamId: number) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; role?: string }) => api.post<Player>(`/teams/${teamId}/players`, body).then((r) => r.data),
+    mutationFn: (body: PlayerInput) => api.post<Player>(`/teams/${teamId}/players`, body).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["team", teamId] }),
   });
 };
@@ -97,6 +106,7 @@ export interface MatchInput {
   tournament_id?: number;
   scheduled_at?: string;
   overs_limit: number;
+  admin_ids?: number[];
 }
 export const useCreateMatch = () => {
   const qc = useQueryClient();

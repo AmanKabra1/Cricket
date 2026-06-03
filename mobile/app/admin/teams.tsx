@@ -9,6 +9,9 @@ import { useTheme } from "@/theme";
 import type { Team } from "@/types";
 
 const ROLES = ["BATSMAN", "BOWLER", "ALL_ROUNDER", "WICKET_KEEPER"];
+const BATTING = ["RIGHT_HAND", "LEFT_HAND"];
+const BOWLING = ["Right-arm fast", "Right-arm medium", "Right-arm off-break", "Right-arm leg-break", "Left-arm fast", "Left-arm medium", "Left-arm orthodox"];
+const bowls = (r: string) => r === "BOWLER" || r === "ALL_ROUNDER";
 
 export default function ManageTeams() {
   const t = useTheme();
@@ -16,14 +19,20 @@ export default function ManageTeams() {
   const create = useCreateTeam();
   const del = useDeleteTeam();
   const [name, setName] = useState("");
+  const [city, setCity] = useState("");
+  const [coach, setCoach] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   const addTeam = async () => {
     if (!name.trim()) return;
     try {
-      const tm = await create.mutateAsync({ name: name.trim() });
-      setName("");
+      const tm = await create.mutateAsync({
+        name: name.trim(),
+        city: city.trim() || undefined,
+        coach: coach.trim() || undefined,
+      });
+      setName(""); setCity(""); setCoach("");
       setSelected(tm.id);
     } catch (e) {
       setMsg(errorDetail(e));
@@ -34,7 +43,9 @@ export default function ManageTeams() {
     <Screen>
       <H1>Teams & players</H1>
       <Card>
-        <Field label="New team name" value={name} onChangeText={setName} placeholder="e.g. Springfield Strikers" />
+        <Field label="New team name *" value={name} onChangeText={setName} placeholder="e.g. Springfield Strikers" />
+        <Field label="City" value={city} onChangeText={setCity} placeholder="e.g. Springfield" />
+        <Field label="Coach" value={coach} onChangeText={setCoach} placeholder="e.g. A. Coach" />
         <Btn label={create.isPending ? "Creating…" : "Create team"} onPress={addTeam} disabled={create.isPending} />
         {msg && <Note tone="error">{msg}</Note>}
       </Card>
@@ -70,16 +81,45 @@ function Squad({ teamId }: { teamId: number }) {
   const update = useUpdateTeam(teamId);
   const [pname, setPname] = useState("");
   const [role, setRole] = useState("BATSMAN");
+  const [jersey, setJersey] = useState("");
+  const [batting, setBatting] = useState("RIGHT_HAND");
+  const [bowling, setBowling] = useState(BOWLING[0]);
 
   if (!team) return <Note>Loading squad…</Note>;
+
+  const submitPlayer = async () => {
+    if (!pname.trim()) return;
+    await addPlayer.mutateAsync({
+      name: pname.trim(),
+      role,
+      batting_style: batting,
+      bowling_style: bowls(role) ? bowling : "None",
+      jersey_number: jersey ? Number(jersey) : undefined,
+    });
+    setPname(""); setJersey("");
+  };
 
   return (
     <View style={{ marginTop: 10 }}>
       <Field label="Player name" value={pname} onChangeText={setPname} placeholder="e.g. Rohit" />
-      <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 6 }}>
+      <Field label="Jersey number" value={jersey} onChangeText={setJersey} keyboardType="numeric" placeholder="e.g. 7" />
+      <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Role</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
         {ROLES.map((r) => <Chip key={r} label={r.replace("_", " ")} selected={role === r} onPress={() => setRole(r)} />)}
       </View>
-      <Btn label={addPlayer.isPending ? "Adding…" : "Add player"} onPress={async () => { if (pname.trim()) { await addPlayer.mutateAsync({ name: pname.trim(), role }); setPname(""); } }} disabled={addPlayer.isPending} />
+      <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Batting</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+        {BATTING.map((bt) => <Chip key={bt} label={bt.replace("_", " ")} selected={batting === bt} onPress={() => setBatting(bt)} />)}
+      </View>
+      {bowls(role) && (
+        <>
+          <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Bowling</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+            {BOWLING.map((bw) => <Chip key={bw} label={bw} selected={bowling === bw} onPress={() => setBowling(bw)} />)}
+          </View>
+        </>
+      )}
+      <Btn label={addPlayer.isPending ? "Adding…" : "Add player"} onPress={submitPlayer} disabled={addPlayer.isPending} />
 
       <View style={{ marginTop: 10 }}>
         {team.players.map((p) => {

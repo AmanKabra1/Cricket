@@ -4,7 +4,7 @@ import { useTeams } from "@/api/hooks";
 import { useMe } from "@/api/auth";
 import {
   errorDetail, useApproveTournament, useCreateTournament, useDeleteTournament,
-  useGenerateFixtures, useTournamentsAdmin,
+  useGenerateFixtures, useTournamentsAdmin, useVenues,
 } from "@/api/admin";
 import { Screen, H1, Card, Btn, Field, Chip, Note, Muted } from "@/components/ui";
 import { useTheme } from "@/theme";
@@ -80,12 +80,21 @@ export default function ManageTournaments() {
   );
 }
 
+const GAPS = [
+  { label: "2h apart", min: 120 },
+  { label: "3h apart", min: 180 },
+  { label: "1 day apart", min: 1440 },
+];
+
 function GenerateFixtures({ tournament }: { tournament: Tournament }) {
   const t = useTheme();
   const gen = useGenerateFixtures(tournament.id);
+  const { data: venues } = useVenues();
   const [open, setOpen] = useState(false);
   const [overs, setOvers] = useState("20");
   const [perDay, setPerDay] = useState("2");
+  const [gap, setGap] = useState(180);
+  const [venue, setVenue] = useState<number | null>(null);
   const [start, setStart] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const hasFixtures = ((tournament as any).match_count ?? 0) > 0;
@@ -99,6 +108,8 @@ function GenerateFixtures({ tournament }: { tournament: Tournament }) {
       await gen.mutateAsync({
         overs_limit: Math.max(1, Number(overs) || 20),
         matches_per_day: Math.max(1, Number(perDay) || 2),
+        interval_minutes: gap,
+        venue_id: venue,
         start_at: start ? (start.length === 16 ? `${start}:00` : start) : null,
       });
       setMsg("Fixtures generated ✓");
@@ -109,8 +120,24 @@ function GenerateFixtures({ tournament }: { tournament: Tournament }) {
   return (
     <View style={{ marginTop: 8 }}>
       <Field label="Overs / match" value={overs} onChangeText={setOvers} keyboardType="numeric" />
+      {!!venues?.length && (
+        <>
+          <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Venue (optional)</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+            {venues.map((v) => <Chip key={v.id} label={v.name} selected={venue === v.id} onPress={() => setVenue(venue === v.id ? null : v.id)} />)}
+          </View>
+        </>
+      )}
       <Field label="First match date & time (optional, YYYY-MM-DDTHH:MM)" value={start} onChangeText={setStart} />
       <Field label="Matches per day" value={perDay} onChangeText={setPerDay} keyboardType="numeric" />
+      {Number(perDay) > 1 && (
+        <>
+          <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Gap between same-day matches</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+            {GAPS.map((g) => <Chip key={g.min} label={g.label} selected={gap === g.min} onPress={() => setGap(g.min)} />)}
+          </View>
+        </>
+      )}
       <Btn label={gen.isPending ? "Generating…" : "Generate"} onPress={run} disabled={gen.isPending} />
       {msg && <Note tone={msg.includes("✓") ? "ok" : "error"}>{msg}</Note>}
     </View>
