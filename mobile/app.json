@@ -17,6 +17,7 @@
     },
     "android": {
       "package": "dev.localscore.app",
+      "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "backgroundColor": "#16a34a"
       }

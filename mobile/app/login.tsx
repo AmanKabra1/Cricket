@@ -49,7 +49,7 @@ export default function Login() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "transparent" }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, justifyContent: "center" }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 220, justifyContent: "center" }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Text style={{ color: t.text, fontSize: 24, fontWeight: "800", marginBottom: 4 }}>Admin sign in</Text>
       <Text style={{ color: t.muted, marginBottom: 20 }}>Sign in to score your matches.</Text>
 
