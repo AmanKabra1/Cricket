@@ -175,6 +175,15 @@ async def test_email(current: User = Depends(require_super_admin)) -> dict:
     )
     if ok:
         detail = "Sent — check your inbox/spam."
+    elif error and "401" in error:
+        detail = (
+            f"Send failed: {error}. 401 = bad API key. BREVO_API_KEY must be a v3 "
+            "API key (starts 'xkeysib-', from Brevo → SMTP & API → API Keys), NOT "
+            "the SMTP key ('xsmtpsib-')."
+        )
     else:
-        detail = f"Send failed: {error}. Tip: the SMTP_FROM address must be a sender VERIFIED in Brevo (free webmail like gmail.com is usually rejected)."
+        detail = (
+            f"Send failed: {error}. Tip: SMTP_FROM must be a sender VERIFIED in Brevo "
+            "(free webmail like gmail.com is often rejected)."
+        )
     return {"configured": True, "sent": ok, "detail": detail}
