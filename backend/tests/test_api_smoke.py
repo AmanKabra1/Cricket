@@ -185,3 +185,10 @@ async def test_tournament_standings_update_on_completion(client: AsyncClient):
     td = (await client.get("/api/v1/admin/ai/training-data", headers=auth)).json()
     assert td["count"] > 0 and "label" in td["rows"][0]
     assert set(td["feature_keys"]).issubset(td["rows"][0].keys())
+
+    # Undo the final ball → match un-completes and the points table resets.
+    und = await client.post(f"/api/v1/matches/{mid}/scoring/undo", headers=auth)
+    assert und.status_code == 200, und.text
+    assert (await client.get(f"/api/v1/matches/{mid}", headers=auth)).json()["status"] != "COMPLETED"
+    standings2 = (await client.get(f"/api/v1/tournaments/{tid_t}/standings", headers=auth)).json()
+    assert all(r["played"] == 0 and r["points"] == 0 for r in standings2), standings2

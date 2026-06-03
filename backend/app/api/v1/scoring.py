@@ -209,9 +209,19 @@ async def undo_ball(
     ok = await undo_last_ball(db, match_id, innings)
     if not ok:
         raise HTTPException(status_code=400, detail="No deliveries to undo")
-    if match.status == MatchStatus.COMPLETED:
+    # Reverting the final ball un-completes the match: clear its result and, if
+    # it's in a tournament, recompute the points table so the win is removed.
+    was_completed = match.status == MatchStatus.COMPLETED
+    if was_completed:
         match.status = MatchStatus.LIVE
+        match.winner_team_id = None
+        match.result_text = None
     await db.commit()
+    if was_completed and match.tournament_id:
+        from app.services.tournament_engine import apply_match_result
+
+        await apply_match_result(db, match)
+        await db.commit()
     await db.refresh(match)
     live = await scoreboard.build_live_score(db, match)
     await cache.set_json(live_key(match_id), live, ttl=5)
