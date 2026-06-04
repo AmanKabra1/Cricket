@@ -53,5 +53,16 @@ next begins. **Phase 1 is complete** (this commit).
 - Deploy targets: web → Vercel, backend + AI → Render, DB → TiDB Cloud, media → S3 + CloudFront. See [DEPLOYMENT.md](DEPLOYMENT.md) for one-time setup.
 - Remaining for later: observability (Prometheus/Grafana, Sentry), autoscaling policies, load testing to the 10k-concurrent target.
 
+## ✅ Phase 7 — Player statistics & leaderboards (DONE)
+- ✅ Career aggregation service rolling up `player_match_stats` across all matches:
+  batting (matches, innings, runs, HS, NO, 4s/6s, 50s/100s, average, SR), bowling
+  (overs, runs, wickets, best, economy, average, SR), fielding (catches).
+- ✅ Public API: `GET /public/players/{id}/stats` and `GET /public/leaderboards`
+  (top run-scorers + wicket-takers).
+- ✅ Web: **Stats** nav → Leaderboards page + player career page (`/players/:id`);
+  team-detail player names link through.
+- ✅ Mobile: **Stats** tab (leaderboards) + player career screen (`/player/[id]`);
+  squad rows link through.
+
 ## Multi-sport (post-cricket)
 - Implement additional `ScoringEngine` strategies (football, kabaddi, volleyball, basketball) behind the existing interface; teams/players/tournaments/venues already sport-agnostic.
