@@ -7,7 +7,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { tokenStore } from "@/lib/api";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import TopProgressBar from "@/components/TopProgressBar";
-import ScreenBackground from "@/components/ScreenBackground";
 import { ThemeProvider, useTheme } from "@/theme";
 
 const queryClient = new QueryClient({
@@ -37,14 +36,15 @@ function RootInner() {
   return (
     <SafeAreaProvider>
         <View style={{ flex: 1, backgroundColor: t.bg }}>
-        <ScreenBackground />
         <StatusBar style="auto" />
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: t.surface },
             headerTitleStyle: { color: t.text },
             headerTintColor: t.primary,
-            contentStyle: { backgroundColor: "transparent" },
+            // Opaque screen background so the previous screen never bleeds
+            // through during navigation transitions.
+            contentStyle: { backgroundColor: t.bg },
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

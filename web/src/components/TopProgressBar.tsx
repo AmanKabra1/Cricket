@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { useIsFetching, useIsMutating } from "@tanstack/react-query";
+import { useIsMutating } from "@tanstack/react-query";
 
 /**
- * A thin progress bar pinned to the very top of the viewport that animates
- * whenever ANY React Query request is in flight — every fetch (loading lists,
- * live score polling on first load) and every mutation (create/delete/update).
- * This gives a single, consistent "something is happening" signal across the
- * whole app, on top of each button's own pending state.
+ * A thin progress bar pinned to the top that animates only while a MUTATION
+ * (create/delete/update/score) is in flight. It previously also tracked every
+ * fetch, but live-score polling and list refetches made it flash on its own
+ * constantly; now it shows only when the user actually triggers an action.
  */
 export default function TopProgressBar() {
-  const fetching = useIsFetching();
-  const mutating = useIsMutating();
-  const active = fetching + mutating > 0;
+  const active = useIsMutating() > 0;
 
   const [visible, setVisible] = useState(false);
   const [progress, setProgress] = useState(0);

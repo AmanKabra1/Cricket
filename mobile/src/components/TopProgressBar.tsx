@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, useWindowDimensions, View } from "react-native";
-import { useIsFetching, useIsMutating } from "@tanstack/react-query";
+import { useIsMutating } from "@tanstack/react-query";
 import { palette } from "@/theme";
 
 /**
- * A thin indeterminate bar pinned to the top that animates whenever ANY React
- * Query request is in flight (fetches + mutations) — the same "something is
- * happening" signal the web app shows, so the app feels responsive on slow
- * (free-tier) networks.
+ * A thin indeterminate bar pinned to the top that animates only while a
+ * MUTATION (a write action — create/score/delete/etc.) is in flight. It used to
+ * also track every fetch, but background polling made it flash constantly; now
+ * it appears only when you actually do something.
  */
 export default function TopProgressBar() {
-  const active = useIsFetching() + useIsMutating() > 0;
+  const active = useIsMutating() > 0;
   const { width } = useWindowDimensions();
   const seg = Math.max(80, width * 0.35);
   const x = useRef(new Animated.Value(0)).current;
