@@ -7,6 +7,7 @@ import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { Loading, Empty } from "@/components/States";
 import Celebration from "@/components/Celebration";
+import { Manhattan, Worm } from "@/components/Charts";
 import { Btn } from "@/components/ui";
 import { palette, useTheme } from "@/theme";
 import type { BatterCard, BowlerCard, CommentaryItem, InningsCard, InningsScore, Match, OverPoint, Team } from "@/types";
@@ -326,7 +327,6 @@ function AnalyticsTab({ matchId, teams }: { matchId: number; teams: Map<number, 
   return (
     <View>
       {data.innings.map((inn) => {
-        const max = Math.max(1, ...inn.overs.map((o) => o.runs));
         const total = inn.overs.length ? inn.overs[inn.overs.length - 1].cumulative : 0;
         const wkts = inn.overs.reduce((s, o) => s + o.wickets, 0);
         const oversBowled = inn.overs.length;
@@ -336,42 +336,18 @@ function AnalyticsTab({ matchId, teams }: { matchId: number; teams: Map<number, 
             <Text style={[styles.cardTitle, { color: t.text }]}>{teamName(teams, inn.batting_team_id)}</Text>
             {/* Score strip so the charts have context. */}
             <View style={styles.metaRow}>
-              <Text style={{ color: t.text, fontWeight: "900", fontSize: 20 }}>{total}/{wkts}</Text>
+              <Text style={{ color: t.text, fontWeight: "900", fontSize: 22 }}>{total}/{wkts}</Text>
               <Text style={{ color: t.muted }}>{oversBowled} ov</Text>
               <Text style={{ color: t.muted }}>RR {(total / Math.max(1, oversBowled)).toFixed(1)}</Text>
-              {best.runs > 0 && <Text style={{ color: t.primary }}>Best over: {best.runs} (#{best.over})</Text>}
+              {best.runs > 0 && <Text style={{ color: t.primary }}>Best over {best.runs} (#{best.over})</Text>}
             </View>
 
-            <Text style={{ color: t.muted, fontSize: 12, marginTop: 10, marginBottom: 4 }}>Manhattan (runs per over)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.manhattan}>
-                {inn.overs.map((o: OverPoint) => (
-                  <View key={o.over} style={styles.barCol}>
-                    <View style={[styles.bar, { height: 8 + (o.runs / max) * 100, backgroundColor: o.wickets ? palette.red : t.primary }]} />
-                    <Text style={{ color: t.muted, fontSize: 9 }}>{o.over}</Text>
-                  </View>
-                ))}
-              </View>
-            </ScrollView>
-            <Text style={{ color: t.muted, fontSize: 11, marginTop: 4 }}>Red bars = a wicket fell that over.</Text>
+            <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginTop: 12, marginBottom: 2 }}>Manhattan · runs per over</Text>
+            <Manhattan overs={inn.overs} />
+            <Text style={{ color: t.muted, fontSize: 11 }}>🟥 a wicket fell that over · 🟩 runs only</Text>
 
-            {/* Worm — cumulative runs as a stepped area of dots/segments. */}
-            <Text style={{ color: t.muted, fontSize: 12, marginTop: 14, marginBottom: 4 }}>Worm (cumulative runs)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.worm}>
-                {inn.overs.map((o: OverPoint) => {
-                  const maxCum = Math.max(1, inn.overs[inn.overs.length - 1]?.cumulative ?? 1);
-                  return (
-                    <View key={o.over} style={styles.barCol}>
-                      <View style={{ flex: 1, justifyContent: "flex-end", alignItems: "center" }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: palette.pitchDark, marginBottom: (o.cumulative / maxCum) * 90 }} />
-                      </View>
-                      <Text style={{ color: t.muted, fontSize: 9 }}>{o.over}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </ScrollView>
+            <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginTop: 14, marginBottom: 2 }}>Worm · cumulative runs</Text>
+            <Worm overs={inn.overs} />
           </View>
         );
       })}
