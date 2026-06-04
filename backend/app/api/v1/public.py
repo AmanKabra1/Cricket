@@ -16,7 +16,7 @@ from app.models.enums import MatchStatus
 from app.models.match import Match
 from app.models.setting import AppSetting
 from app.schemas.match import MatchOut
-from app.services import scoreboard
+from app.services import player_stats, scoreboard
 from app.services.match_timing import is_due_live, is_noshow, local_now
 
 router = APIRouter(prefix="/public", tags=["public"])
@@ -230,3 +230,18 @@ async def ai_prediction(match_id: int, db: DbSession) -> dict:
             "available": False,
             "message": "AI prediction service is warming up. Check back shortly.",
         }
+
+
+@router.get("/players/{player_id}/stats")
+async def player_stats_endpoint(player_id: int, db: DbSession) -> dict:
+    """Career batting/bowling/fielding aggregate for one player."""
+    data = await player_stats.player_career(db, player_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    return data
+
+
+@router.get("/leaderboards")
+async def leaderboards_endpoint(db: DbSession, limit: int = 10) -> dict:
+    """Top run-scorers and wicket-takers across all matches."""
+    return await player_stats.leaderboards(db, limit=min(50, max(1, limit)))
