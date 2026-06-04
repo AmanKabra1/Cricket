@@ -173,17 +173,33 @@ async def test_email(current: User = Depends(require_super_admin)) -> dict:
         "LocalScore test email",
         "This is a test email from LocalScore. If you received it, email is working.",
     )
+    # Which provider actually ran, so the tip matches reality.
+    using_resend = not settings.BREVO_API_KEY and bool(settings.RESEND_API_KEY)
+    using_brevo = bool(settings.BREVO_API_KEY)
+    err = error or ""
     if ok:
         detail = "Sent — check your inbox/spam."
-    elif error and "401" in error:
+    elif "401" in err and using_brevo:
         detail = (
-            f"Send failed: {error}. 401 = bad API key. BREVO_API_KEY must be a v3 "
-            "API key (starts 'xkeysib-', from Brevo → SMTP & API → API Keys), NOT "
-            "the SMTP key ('xsmtpsib-')."
+            f"Send failed: {err}. 401 = bad Brevo key. BREVO_API_KEY must be a v3 API "
+            "key (starts 'xkeysib-', from Brevo → SMTP & API → API Keys), NOT the SMTP "
+            "key ('xsmtpsib-')."
+        )
+    elif ("403" in err or "401" in err) and using_resend:
+        detail = (
+            f"Send failed: {err}. Resend rejected the sender (403/401). Fix: verify a "
+            "DOMAIN in Resend → Domains and set RESEND_FROM to an address on it "
+            "(e.g. noreply@yourdomain.com). No domain? Easier: clear RESEND_API_KEY, set "
+            "BREVO_API_KEY + verify your email as a single sender in Brevo → Senders."
+        )
+    elif using_brevo:
+        detail = (
+            f"Send failed: {err}. Tip: SMTP_FROM must be a sender VERIFIED in Brevo "
+            "(Brevo → Senders → add & confirm the address)."
         )
     else:
         detail = (
-            f"Send failed: {error}. Tip: SMTP_FROM must be a sender VERIFIED in Brevo "
-            "(free webmail like gmail.com is often rejected)."
+            f"Send failed: {err}. Verify your sender/domain with your email provider, "
+            "then set the matching FROM address."
         )
     return {"configured": True, "sent": ok, "detail": detail}
