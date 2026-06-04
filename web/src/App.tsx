@@ -7,6 +7,8 @@ import Teams from "@/pages/Teams";
 import TeamDetail from "@/pages/TeamDetail";
 import Tournaments from "@/pages/Tournaments";
 import TournamentDetail from "@/pages/TournamentDetail";
+import Leaderboards from "@/pages/Leaderboards";
+import PlayerDetail from "@/pages/PlayerDetail";
 import Login from "@/pages/Login";
 import Scoring from "@/pages/Scoring";
 import Admin from "@/pages/Admin";
@@ -38,6 +40,8 @@ export default function App() {
         <Route path="/teams/:id" element={<TeamDetail />} />
         <Route path="/tournaments" element={<Tournaments />} />
         <Route path="/tournaments/:id" element={<TournamentDetail />} />
+        <Route path="/leaderboards" element={<Leaderboards />} />
+        <Route path="/players/:id" element={<PlayerDetail />} />
         <Route path="/login" element={<Login />} />
         <Route
           path="/admin"

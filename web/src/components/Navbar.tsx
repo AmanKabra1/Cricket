@@ -48,6 +48,7 @@ export default function Navbar() {
           <NavLink to="/" className={({ isActive }) => navItem(isActive)} end>Home</NavLink>
           <NavLink to="/teams" className={({ isActive }) => navItem(isActive)}>Teams</NavLink>
           <NavLink to="/tournaments" className={({ isActive }) => navItem(isActive)}>Tournaments</NavLink>
+          <NavLink to="/leaderboards" className={({ isActive }) => navItem(isActive)}>Stats</NavLink>
           {isAdmin && (
             <NavLink to="/admin" className={({ isActive }) => navItem(isActive)}>Manage</NavLink>
           )}
@@ -92,6 +93,7 @@ export default function Navbar() {
           <NavLink to="/" end className={({ isActive }) => mobileItem(isActive)}>Home</NavLink>
           <NavLink to="/teams" className={({ isActive }) => mobileItem(isActive)}>Teams</NavLink>
           <NavLink to="/tournaments" className={({ isActive }) => mobileItem(isActive)}>Tournaments</NavLink>
+          <NavLink to="/leaderboards" className={({ isActive }) => mobileItem(isActive)}>Stats</NavLink>
           {isAdmin && <NavLink to="/admin" className={({ isActive }) => mobileItem(isActive)}>Manage</NavLink>}
           <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--border)" }}>
             {isAdmin ? (

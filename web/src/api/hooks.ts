@@ -109,6 +109,22 @@ export const useTournamentMatches = (id: number) =>
     refetchInterval: 15000,
   });
 
+// ---- Player stats & leaderboards (Phase 9) ----
+export interface PlayerCareer {
+  player: { id: number; name: string; team_id: number; role: string; batting_style: string; bowling_style: string; photo_url: string | null; jersey_number: number | null };
+  batting: { matches: number; innings: number; runs: number; balls: number; high_score: number; not_outs: number; fours: number; sixes: number; fifties: number; hundreds: number; average: number | null; strike_rate: number };
+  bowling: { overs: string; runs_conceded: number; wickets: number; best_wickets: number; economy: number; average: number | null; strike_rate: number | null };
+  fielding: { catches: number };
+}
+export interface LeaderRow { player_id: number; name: string; photo_url: string | null; team_name: string; value: number; matches: number }
+export interface Leaderboards { top_run_scorers: LeaderRow[]; top_wicket_takers: LeaderRow[] }
+
+export const usePlayerStats = (id: number) =>
+  useQuery({ queryKey: ["player-stats", id], queryFn: () => get<PlayerCareer>(`/public/players/${id}/stats`), enabled: !!id });
+
+export const useLeaderboards = () =>
+  useQuery({ queryKey: ["leaderboards"], queryFn: () => get<Leaderboards>("/public/leaderboards") });
+
 export const useMatches = (status?: string) =>
   useQuery({
     queryKey: ["matches", status ?? "all"],
