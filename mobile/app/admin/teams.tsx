@@ -11,7 +11,10 @@ import type { Team } from "@/types";
 
 const ROLES = ["BATSMAN", "BOWLER", "ALL_ROUNDER", "WICKET_KEEPER"];
 const BATTING = ["RIGHT_HAND", "LEFT_HAND"];
-const BOWLING = ["Right-arm fast", "Right-arm medium", "Right-arm off-break", "Right-arm leg-break", "Left-arm fast", "Left-arm medium", "Left-arm orthodox"];
+const BOWLING = [
+  "Right-arm fast", "Right-arm fast-medium", "Right-arm medium", "Right-arm off-break", "Right-arm leg-break",
+  "Left-arm fast", "Left-arm fast-medium", "Left-arm medium", "Left-arm orthodox", "Left-arm wrist-spin",
+];
 const bowls = (r: string) => r === "BOWLER" || r === "ALL_ROUNDER";
 
 export default function ManageTeams() {

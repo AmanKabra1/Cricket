@@ -8,13 +8,23 @@ import { tokenStore } from "@/lib/api";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import TopProgressBar from "@/components/TopProgressBar";
 import ScreenBackground from "@/components/ScreenBackground";
-import { useTheme } from "@/theme";
+import { ThemeProvider, useTheme } from "@/theme";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 10_000, retry: 1 } },
 });
 
 export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <RootInner />
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+function RootInner() {
   const t = useTheme();
 
   useEffect(() => {
@@ -24,7 +34,6 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
         <View style={{ flex: 1, backgroundColor: t.bg }}>
         <ScreenBackground />
         <StatusBar style="auto" />
@@ -50,7 +59,6 @@ export default function RootLayout() {
         </Stack>
         <TopProgressBar />
         </View>
-      </QueryClientProvider>
     </SafeAreaProvider>
   );
 }

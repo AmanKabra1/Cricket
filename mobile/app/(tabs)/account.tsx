@@ -2,14 +2,21 @@ import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { logout, useMe } from "@/api/auth";
-import { Btn } from "@/components/ui";
-import { useTheme } from "@/theme";
+import { Btn, Chip } from "@/components/ui";
+import { useTheme, useThemeMode, type ThemeMode } from "@/theme";
+
+const MODES: { key: ThemeMode; label: string }[] = [
+  { key: "system", label: "⚙️ System" },
+  { key: "light", label: "☀️ Light" },
+  { key: "dark", label: "🌙 Dark" },
+];
 
 export default function Account() {
   const t = useTheme();
   const router = useRouter();
   const qc = useQueryClient();
   const { data: me, isLoading } = useMe();
+  const { mode, setMode } = useThemeMode();
 
   const doLogout = async () => {
     await logout();
@@ -52,6 +59,16 @@ export default function Account() {
           <Btn label="Sign in" onPress={() => router.push("/login")} />
         </View>
       )}
+
+      {/* Appearance — light/dark/system, persisted (web parity). */}
+      <View style={{ marginTop: 28 }}>
+        <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginBottom: 8 }}>APPEARANCE</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+          {MODES.map((m) => (
+            <Chip key={m.key} label={m.label} selected={mode === m.key} onPress={() => setMode(m.key)} />
+          ))}
+        </View>
+      </View>
     </ScrollView>
   );
 }

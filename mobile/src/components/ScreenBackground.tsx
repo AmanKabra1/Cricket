@@ -1,6 +1,7 @@
-import { ImageBackground, StyleSheet, useColorScheme, View } from "react-native";
+import { ImageBackground, StyleSheet, View } from "react-native";
 import { usePathname } from "expo-router";
 import { useBackgrounds } from "@/api/admin";
+import { useThemeMode } from "@/theme";
 import { pageKey, resolveBackground } from "@/lib/backgrounds";
 
 /**
@@ -10,7 +11,7 @@ import { pageKey, resolveBackground } from "@/lib/backgrounds";
  * sets/overrides URLs in Manage → Appearance.
  */
 export default function ScreenBackground() {
-  const scheme = useColorScheme() === "dark" ? "dark" : "light";
+  const scheme = useThemeMode().resolved;
   const pathname = usePathname();
   const { data } = useBackgrounds();
   const url = resolveBackground(data, pageKey(pathname || "/"), scheme);
