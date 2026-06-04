@@ -25,9 +25,16 @@ export default function AnalyticsTab({ matchId }: { matchId: number }) {
         // Give charts room per over and let them scroll horizontally when an
         // innings has many overs (so bars/labels don't get crushed on mobile).
         const chartWidth = Math.max(320, inn.overs.length * 46);
+        const total = inn.overs.length ? inn.overs[inn.overs.length - 1].cumulative : 0;
+        const wkts = inn.overs.reduce((s: number, o: { wickets: number }) => s + o.wickets, 0);
+        const oversBowled = inn.overs.length;
         return (
         <div key={inn.innings_number} className="card-surface p-5">
-          <h3 className="mb-4 font-bold">{teamName(teams, inn.batting_team_id)} — over by over</h3>
+          <div className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <h3 className="font-bold">{teamName(teams, inn.batting_team_id)}</h3>
+            <span className="text-2xl font-extrabold">{total}/{wkts}</span>
+            <span className="text-sm muted">{oversBowled} ov · RR {(total / Math.max(1, oversBowled)).toFixed(2)}</span>
+          </div>
 
           <div className="mb-2 text-sm muted">Manhattan (runs per over)</div>
           <div className="overflow-x-auto">

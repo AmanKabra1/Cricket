@@ -217,6 +217,10 @@ export default function Score() {
     try {
       const { data } = await api.post(`/matches/${matchId}/scoring/ball`, payload);
       if ((payload as any).is_wicket) warn(); else success();
+      // Write the authoritative new score straight from the response so the
+      // displayed total updates instantly — no stale gap that makes the scorer
+      // think the tap missed and re-tap (which double-counted runs).
+      if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       setHistory((h) => [...h, { striker, nonStriker, bowler, lastOverBowler, dismissed: [...dismissed] }]);
       applyPostBall(payload as any, !!data?.over_completed);
       setWicketType(WICKET_TYPES[0]);
@@ -272,7 +276,8 @@ export default function Score() {
     }
     setInfo(null);
     try {
-      await api.post(`/matches/${matchId}/scoring/undo`);
+      const { data } = await api.post(`/matches/${matchId}/scoring/undo`);
+      if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       refresh();
     } catch {
       /* ignore */

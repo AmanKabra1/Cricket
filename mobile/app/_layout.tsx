@@ -11,7 +11,9 @@ import ScreenBackground from "@/components/ScreenBackground";
 import { ThemeProvider, useTheme } from "@/theme";
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 10_000, retry: 1 } },
+  // Longer stale window → switching back to a tab shows cached data instantly
+  // (no loading flash); live data still updates via sockets + its own polling.
+  defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000, retry: 1 } },
 });
 
 export default function RootLayout() {

@@ -47,8 +47,12 @@ class StorageError(RuntimeError):
 
 
 def _public_url(key: str) -> str:
+    # S3_PUBLIC_URL is the bucket's public root. For Cloudflare R2 that's the
+    # bucket-scoped r2.dev URL (or a custom domain) — the object is at
+    # "<public>/<key>", no bucket segment. For path-style hosts (AWS/MinIO),
+    # set S3_PUBLIC_URL to include the bucket, e.g. ".../my-bucket".
     base = settings.S3_PUBLIC_URL.rstrip("/")
-    return f"{base}/{settings.S3_BUCKET}/{key}"
+    return f"{base}/{key}"
 
 
 def _save_local(key: str, data: bytes) -> None:

@@ -9,18 +9,10 @@ export type BgConfig = Record<string, BgEntry>;
 export const BG_PAGES = ["home", "teams", "tournaments", "match", "admin", "auth"] as const;
 export type BgPage = (typeof BG_PAGES)[number];
 
-const W1 = "https://wallpaperaccess.com/full/4650746.jpg";
-const W2 = "https://wallpaperaccess.com/full/4650798.jpg";
-const W3 = "https://wallpaperaccess.com/full/4650915.jpg";
-
-export const DEFAULT_BACKGROUNDS: BgConfig = {
-  home: { light: W1, dark: W1 },
-  teams: { light: W2, dark: W2 },
-  tournaments: { light: W3, dark: W3 },
-  match: { light: W1, dark: W1 },
-  admin: { light: W2, dark: W2 },
-  auth: { light: W3, dark: W3 },
-};
+// No remote default wallpapers on mobile: a clean solid background loads
+// instantly and feels native. The super admin can still set a per-page image in
+// Manage → Appearance, which then shows. (Web keeps its own HD defaults.)
+export const DEFAULT_BACKGROUNDS: BgConfig = {};
 
 /** Map an expo-router pathname to a background page key. */
 export function pageKey(pathname: string): BgPage {

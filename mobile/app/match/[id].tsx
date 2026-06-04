@@ -327,11 +327,22 @@ function AnalyticsTab({ matchId, teams }: { matchId: number; teams: Map<number, 
     <View>
       {data.innings.map((inn) => {
         const max = Math.max(1, ...inn.overs.map((o) => o.runs));
+        const total = inn.overs.length ? inn.overs[inn.overs.length - 1].cumulative : 0;
+        const wkts = inn.overs.reduce((s, o) => s + o.wickets, 0);
+        const oversBowled = inn.overs.length;
+        const best = inn.overs.reduce((b, o) => (o.runs > b.runs ? o : b), { over: 0, runs: 0, wickets: 0, cumulative: 0 } as OverPoint);
         return (
           <View key={inn.innings_number} style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
-            <Text style={[styles.cardTitle, { color: t.text }]}>{teamName(teams, inn.batting_team_id)} — over by over</Text>
+            <Text style={[styles.cardTitle, { color: t.text }]}>{teamName(teams, inn.batting_team_id)}</Text>
+            {/* Score strip so the charts have context. */}
+            <View style={styles.metaRow}>
+              <Text style={{ color: t.text, fontWeight: "900", fontSize: 20 }}>{total}/{wkts}</Text>
+              <Text style={{ color: t.muted }}>{oversBowled} ov</Text>
+              <Text style={{ color: t.muted }}>RR {(total / Math.max(1, oversBowled)).toFixed(1)}</Text>
+              {best.runs > 0 && <Text style={{ color: t.primary }}>Best over: {best.runs} (#{best.over})</Text>}
+            </View>
 
-            <Text style={{ color: t.muted, fontSize: 12, marginBottom: 4 }}>Manhattan (runs per over)</Text>
+            <Text style={{ color: t.muted, fontSize: 12, marginTop: 10, marginBottom: 4 }}>Manhattan (runs per over)</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.manhattan}>
                 {inn.overs.map((o: OverPoint) => (
