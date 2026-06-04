@@ -1,5 +1,5 @@
-import { FlatList, Image, StyleSheet, Text, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useTeam } from "@/api/hooks";
 import { Loading } from "@/components/States";
 import { palette, useTheme } from "@/theme";
@@ -8,6 +8,7 @@ export default function TeamDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading } = useTeam(Number(id));
   const t = useTheme();
+  const router = useRouter();
 
   if (isLoading || !data) return <Loading />;
 
@@ -40,7 +41,10 @@ export default function TeamDetail() {
         data={data.players}
         keyExtractor={(p) => String(p.id)}
         renderItem={({ item }) => (
-          <View style={[styles.row, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <Pressable
+            onPress={() => router.push(`/player/${item.id}`)}
+            style={({ pressed }) => [styles.row, { backgroundColor: t.surface, borderColor: t.border, opacity: pressed ? 0.85 : 1 }]}
+          >
             {item.photo_url ? (
               <Image source={{ uri: item.photo_url }} style={styles.avatar} />
             ) : (
@@ -61,7 +65,8 @@ export default function TeamDetail() {
                 {item.bowling_style && item.bowling_style !== "None" ? ` · ${item.bowling_style}` : ""}
               </Text>
             </View>
-          </View>
+            <Text style={{ color: t.muted }}>›</Text>
+          </Pressable>
         )}
       />
     </View>

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useTeam } from "@/api/hooks";
 import Spinner, { ErrorState } from "@/components/Spinner";
 
@@ -48,7 +48,7 @@ export default function TeamDetail() {
               <tr key={p.id} style={{ borderBottom: "1px solid var(--border)" }}>
                 <td className="p-3 muted">{p.jersey_number ?? "—"}</td>
                 <td className="p-3 font-medium">
-                  {p.name}
+                  <Link to={`/players/${p.id}`} className="hover:text-pitch-600 hover:underline">{p.name}</Link>
                   {data.captain_id === p.id && <RoleTag>C</RoleTag>}
                   {data.vice_captain_id === p.id && <RoleTag>VC</RoleTag>}
                   {data.wicket_keeper_id === p.id && <RoleTag>WK</RoleTag>}
