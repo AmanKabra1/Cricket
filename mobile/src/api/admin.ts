@@ -207,7 +207,16 @@ export const useDeleteUser = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => api.delete(`/admin/users/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+    // Optimistically drop the row so it disappears at once and doesn't flicker
+    // back while the list refetches; roll back if the delete fails.
+    onMutate: async (id: number) => {
+      await qc.cancelQueries({ queryKey: ["users"] });
+      const prev = qc.getQueryData<User[]>(["users"]);
+      qc.setQueryData<User[]>(["users"], (old) => (old ?? []).filter((u) => u.id !== id));
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => { if (ctx?.prev) qc.setQueryData(["users"], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["users"] }),
   });
 };
 export const useTestEmail = () =>

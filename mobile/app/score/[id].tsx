@@ -57,6 +57,8 @@ export default function Score() {
   const [msg, setMsg] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editPlayers, setEditPlayers] = useState(false); // expand the on-field pickers
+  const [wicketOpen, setWicketOpen] = useState(false); // reveal the wicket-type panel
 
   // Restore on (re)entering an open innings: prefer the server's on-field state
   // (synced across web & app), else this device's last local picks. Resets the
@@ -65,6 +67,8 @@ export default function Score() {
     setWicketType(WICKET_TYPES[0]);
     setRunOutEnd("striker");
     setHistory([]);
+    setWicketOpen(false);
+    setEditPlayers(false);
     if (!openId) {
       setStriker(null); setNonStriker(null); setBowler(null);
       setLastOverBowler(null); setDismissed(new Set());
@@ -217,6 +221,7 @@ export default function Score() {
       applyPostBall(payload as any, !!data?.over_completed);
       setWicketType(WICKET_TYPES[0]);
       setRunOutEnd("striker");
+      setWicketOpen(false);
       refresh();
     } catch (e: any) {
       setInfo(null);
@@ -345,13 +350,31 @@ export default function Score() {
 
       {open && canScore && (
         <View>
-          <Picker t={t} title="🏏 Striker (on strike)" players={strikerOptions} value={striker} onPick={setStriker} />
-          <Picker t={t} title="Non-striker" players={nonStrikerOptions} value={nonStriker} onPick={setNonStriker} />
-          <Picker t={t} title="Bowler" players={bowlerOptions} value={bowler} onPick={setBowler} />
+          {/* Wait for both squads before showing selectors, so they're not empty. */}
+          {(!teamA || !teamB) ? (
+            <Card t={t}><Text style={{ color: t.muted, textAlign: "center" }}>Loading players…</Text></Card>
+          ) : !ready || editPlayers ? (
+            <>
+              <Picker t={t} title="🏏 Striker (on strike)" players={strikerOptions} value={striker} onPick={setStriker} />
+              <Picker t={t} title="Non-striker" players={nonStrikerOptions} value={nonStriker} onPick={setNonStriker} />
+              <Picker t={t} title="Bowler" players={bowlerOptions} value={bowler} onPick={setBowler} />
+              {ready && <Btn t={t} tone="ghost" label="Done — collapse players" style={{ marginTop: 6 }} onPress={() => setEditPlayers(false)} />}
+            </>
+          ) : (
+            // Compact summary once all three are chosen — keeps the run buttons in view.
+            <View style={{ backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, borderRadius: 12, padding: 12 }}>
+              <Text style={{ color: t.text }}>
+                🏏 <Text style={{ color: t.primary, fontWeight: "800" }}>{batPlayers.find((p) => p.id === striker)?.name ?? "—"}</Text>
+                {"  &  "}{batPlayers.find((p) => p.id === nonStriker)?.name ?? "—"}
+              </Text>
+              <Text style={{ color: t.text, marginTop: 2 }}>🎯 {bowlPlayers.find((p) => p.id === bowler)?.name ?? "—"}</Text>
+              <Btn t={t} tone="ghost" label="Change players" style={{ marginTop: 8 }} onPress={() => setEditPlayers(true)} />
+            </View>
+          )}
 
-          {!!striker && (
+          {ready && !editPlayers && (
             <Text style={{ color: t.muted, fontSize: 12, marginTop: 8 }}>
-              On strike: <Text style={{ color: t.primary, fontWeight: "700" }}>{batPlayers.find((p) => p.id === striker)?.name ?? "—"}</Text> · strike rotates automatically on odd runs and at over's end.
+              Strike rotates automatically on odd runs and at over's end.
             </Text>
           )}
 
@@ -388,25 +411,38 @@ export default function Score() {
                 <Btn t={t} label="Leg bye" tone="amber" disabled={busy} onPress={() => send({ extra_type: "LEG_BYE", extra_runs: 1 })} style={chipStyle} />
               </Row>
 
-              <Text style={{ color: t.muted, fontWeight: "700", marginTop: 8, marginBottom: 6 }}>WICKET</Text>
-              <Row>
-                {(freeHit ? ["RUN_OUT"] : WICKET_TYPES).map((w) => (
-                  <Seg key={w} t={t} label={w.replace("_", " ")} selected={effectiveWicket === w} onPress={() => setWicketType(w)} />
-                ))}
-              </Row>
-              {effectiveWicket === "RUN_OUT" && (
-                <Row>
-                  <Seg t={t} label="Striker out" selected={runOutEnd === "striker"} onPress={() => setRunOutEnd("striker")} />
-                  <Seg t={t} label="Non-striker out" selected={runOutEnd === "non_striker"} onPress={() => setRunOutEnd("non_striker")} />
-                </Row>
+              {/* Wicket panel stays hidden until you tap it — keeps the common
+                  runs/extras within reach and avoids accidental dismissals. */}
+              {!wicketOpen ? (
+                <Btn t={t} label="🏏 Wicket…" tone="red" disabled={busy} style={{ marginTop: 12 }} onPress={() => setWicketOpen(true)} />
+              ) : (
+                <View style={{ marginTop: 12, borderColor: t.border, borderWidth: 1, borderRadius: 12, padding: 12 }}>
+                  <Text style={{ color: t.muted, fontWeight: "700", marginBottom: 6 }}>HOW OUT?</Text>
+                  <Row>
+                    {(freeHit ? ["RUN_OUT"] : WICKET_TYPES).map((w) => (
+                      <Seg key={w} t={t} label={w.replace("_", " ")} selected={effectiveWicket === w} onPress={() => setWicketType(w)} />
+                    ))}
+                  </Row>
+                  {effectiveWicket === "RUN_OUT" && (
+                    <Row>
+                      <Seg t={t} label="Striker out" selected={runOutEnd === "striker"} onPress={() => setRunOutEnd("striker")} />
+                      <Seg t={t} label="Non-striker out" selected={runOutEnd === "non_striker"} onPress={() => setRunOutEnd("non_striker")} />
+                    </Row>
+                  )}
+                  {freeHit && <Text style={{ color: "#b45309", fontSize: 12, marginVertical: 6 }}>Free hit: only run-out counts.</Text>}
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Btn t={t} label="Confirm OUT" tone="red" disabled={busy}
+                        onPress={() => send({
+                          is_wicket: true,
+                          wicket_type: effectiveWicket,
+                          dismissed_player_id: effectiveWicket === "RUN_OUT" && runOutEnd === "non_striker" ? nonStriker : striker,
+                        })} />
+                    </View>
+                    <Btn t={t} label="Cancel" tone="ghost" disabled={busy} onPress={() => setWicketOpen(false)} />
+                  </View>
+                </View>
               )}
-              <Btn t={t} label="OUT" tone="red" disabled={busy} style={{ marginTop: 8 }}
-                onPress={() => send({
-                  is_wicket: true,
-                  wicket_type: effectiveWicket,
-                  dismissed_player_id: effectiveWicket === "RUN_OUT" && runOutEnd === "non_striker" ? nonStriker : striker,
-                })} />
-              {freeHit && <Text style={{ color: "#b45309", fontSize: 12, marginTop: 6 }}>Free hit: only run-out counts.</Text>}
             </>
           )}
 
@@ -473,11 +509,12 @@ function Btn({
   );
 }
 
-// Segmented selector chip (wicket type / run-out end).
-function Seg({ t, label, selected, onPress }: { t: Theme; label: string; selected: boolean; onPress: () => void }) {
+// Segmented selector chip (wicket type / run-out end / toss).
+function Seg({ t, label, selected, onPress, disabled }: { t: Theme; label: string; selected: boolean; onPress: () => void; disabled?: boolean }) {
   return (
     <Pressable
       onPress={() => { tap(); onPress(); }}
+      disabled={disabled}
       style={({ pressed }) => ({
         backgroundColor: selected ? t.primary : t.surface,
         borderColor: selected ? t.primary : t.border,
@@ -487,7 +524,7 @@ function Seg({ t, label, selected, onPress }: { t: Theme; label: string; selecte
         borderRadius: 999,
         marginRight: 6,
         marginBottom: 6,
-        opacity: pressed ? 0.85 : 1,
+        opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
       })}
     >
       <Text style={{ color: selected ? "#fff" : t.text, fontSize: 13, fontWeight: "600" }}>{label}</Text>
@@ -605,7 +642,9 @@ function TossPanel({
     });
   };
 
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "1980deg"] });
+  // End on a full-turn multiple (1800 = 5 turns) so the face text lands upright,
+  // not mirrored. A separate face flag, not the rotation, picks heads/tails.
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "1800deg"] });
 
   return (
     <Card t={t}>
@@ -632,14 +671,14 @@ function TossPanel({
           <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginBottom: 6 }}>Toss won by</Text>
           <Row>
             {[match.team_a_id, match.team_b_id].map((id) => (
-              <Seg key={id} t={t} label={teamName(teams, id)} selected={winner === id} onPress={() => setWinner(id)} />
+              <Seg key={id} t={t} label={teamName(teams, id)} selected={winner === id} disabled={busy} onPress={() => setWinner(id)} />
             ))}
           </Row>
 
           <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginTop: 8, marginBottom: 6 }}>Chose to</Text>
           <Row>
-            <Seg t={t} label="Bat first" selected={decision === "BAT"} onPress={() => setDecision("BAT")} />
-            <Seg t={t} label="Bowl first" selected={decision === "BOWL"} onPress={() => setDecision("BOWL")} />
+            <Seg t={t} label="Bat first" selected={decision === "BAT"} disabled={busy} onPress={() => setDecision("BAT")} />
+            <Seg t={t} label="Bowl first" selected={decision === "BOWL"} disabled={busy} onPress={() => setDecision("BOWL")} />
           </Row>
 
           <Btn t={t} label={busy ? "Saving…" : "Confirm toss"} disabled={!winner || busy} style={{ marginTop: 10 }}

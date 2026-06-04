@@ -29,6 +29,18 @@ const BOWLING_TYPES = [
 ];
 const bowls = (role?: string) => role === "BOWLER" || role === "ALL_ROUNDER";
 
+// Defined at module scope (NOT inside a component) so React keeps the same
+// element type across renders — otherwise each keystroke remounts the input and
+// it loses focus after one character.
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-semibold muted">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 export default function ManageTeams() {
   const { data: teams } = useTeams();
   const [selected, setSelected] = useState<number | null>(null);
@@ -146,13 +158,6 @@ function TeamEditor({ teamId }: { teamId: number }) {
     setP(blank);
     setPhoto(undefined);
   };
-
-  const Field = ({ label, children }: { label: string; children: ReactNode }) => (
-    <label className="block">
-      <span className="mb-1 block text-xs font-semibold muted">{label}</span>
-      {children}
-    </label>
-  );
 
   return (
     <div>

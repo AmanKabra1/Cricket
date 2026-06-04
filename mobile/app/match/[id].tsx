@@ -160,6 +160,8 @@ function LiveTab({ matchId, teams }: { matchId: number; teams: Map<number, Team>
   const t = useTheme();
   if (isLoading) return <Loading />;
   if (!data?.innings.length) return <Empty message="Match not started." />;
+  // Run-rates are meaningless once the match is decided — show only final scores.
+  const done = data.status === "COMPLETED" || data.status === "ABANDONED";
   return (
     <View>
       {data.innings.map((inn: InningsScore) => (
@@ -169,8 +171,9 @@ function LiveTab({ matchId, teams }: { matchId: number; teams: Map<number, Team>
             {inn.runs}/{inn.wickets} <Text style={{ color: t.muted, fontSize: 16 }}>({inn.overs})</Text>
           </Text>
           <View style={styles.metaRow}>
-            <Text style={{ color: t.muted }}>CRR {inn.run_rate.toFixed(2)}</Text>
-            {inn.required_run_rate != null && (
+            <Text style={{ color: t.muted }}>Extras {inn.extras}</Text>
+            {!done && <Text style={{ color: t.muted }}>CRR {inn.run_rate.toFixed(2)}</Text>}
+            {!done && inn.required_run_rate != null && (
               <Text style={{ color: palette.amber }}>RRR {inn.required_run_rate.toFixed(2)}</Text>
             )}
             {inn.target != null && <Text style={{ color: t.muted }}>Target {inn.target}</Text>}

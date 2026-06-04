@@ -289,8 +289,12 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
       {/* Edge-case-aware preview of what will be created. */}
       {nMatches > 0 && (
         <p className="rounded-lg bg-pitch-500/10 p-2 text-xs text-pitch-700 dark:text-pitch-300">
-          {nTeams} teams → <b>{nMatches}</b> match{nMatches === 1 ? "" : "es"}
-          {startAt && nDays > 0 && <> over <b>{nDays}</b> day{nDays === 1 ? "" : "s"} ({perDay}/day)</>}.
+          {isKnockout ? (
+            <>{nTeams} teams → <b>{nMatches}</b> first-round match{nMatches === 1 ? "" : "es"} (winners advance).</>
+          ) : (
+            <>{nTeams} teams, each plays every other once → <b>{nMatches}</b> match{nMatches === 1 ? "" : "es"}.</>
+          )}
+          {startAt && nDays > 0 && <> Scheduled {perDay}/day, so it runs over <b>{nDays}</b> day{nDays === 1 ? "" : "s"}.</>}
         </p>
       )}
       {oddKnockout && (

@@ -192,7 +192,10 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
           )}
           {nMatches > 0 && (
             <Text style={{ color: t.primary, fontSize: 12, backgroundColor: t.primary + "18", padding: 8, borderRadius: 8, marginTop: 4 }}>
-              {nTeams} teams → {nMatches} match{nMatches === 1 ? "" : "es"}{start && nDays > 0 ? ` over ${nDays} day${nDays === 1 ? "" : "s"} (${pd}/day)` : ""}.
+              {isKnockout
+                ? `${nTeams} teams → ${nMatches} first-round match${nMatches === 1 ? "" : "es"} (winners advance).`
+                : `${nTeams} teams, each plays every other once → ${nMatches} match${nMatches === 1 ? "" : "es"}.`}
+              {start && nDays > 0 ? ` Scheduled ${pd}/day, so it runs over ${nDays} day${nDays === 1 ? "" : "s"}.` : ""}
             </Text>
           )}
           {oddKnockout && <Note tone="error">Odd number of teams — one team sits out the first round.</Note>}

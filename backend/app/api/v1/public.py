@@ -213,7 +213,9 @@ async def ai_prediction(match_id: int, db: DbSession) -> dict:
         return cached
 
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        # The AI service is on a free tier and may cold-start (sleep ~30s), so the
+        # first call needs a generous timeout; the result is then cached.
+        async with httpx.AsyncClient(timeout=25.0) as client:
             resp = await client.post(
                 f"{settings.AI_SERVICE_URL}/predict/win-probability",
                 json={"match_id": match_id, "live_score": live},
