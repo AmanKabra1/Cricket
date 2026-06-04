@@ -158,8 +158,11 @@ export default function Score() {
   const matchOver = match.status === "COMPLETED" || bothInningsDone;
   const ballsLeft = open ? match.overs_limit * 6 - oversToBalls(open.overs) : 0;
 
+  // NOTE: we deliberately do NOT invalidate ["live"] here. The ball/undo
+  // response already gives the authoritative new score (written via
+  // setQueryData), so refetching would only risk an in-flight request resolving
+  // late and reverting the score. Only the derived views need refreshing.
   const refresh = () => {
-    qc.invalidateQueries({ queryKey: ["live", matchId] });
     qc.invalidateQueries({ queryKey: ["scorecard", matchId] });
     qc.invalidateQueries({ queryKey: ["match", matchId] });
   };
@@ -215,9 +218,10 @@ export default function Score() {
     try {
       const { data } = await api.post(`/matches/${matchId}/scoring/ball`, payload);
       if ((payload as any).is_wicket) warn(); else success();
-      // Write the authoritative new score straight from the response so the
-      // displayed total updates instantly — no stale gap that makes the scorer
-      // think the tap missed and re-tap (which double-counted runs).
+      // Cancel any in-flight live fetch (it would resolve late with the OLD
+      // score and revert this), then write the authoritative new score from the
+      // response so the total updates instantly and stays put.
+      await qc.cancelQueries({ queryKey: ["live", matchId] });
       if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       setHistory((h) => [...h, { striker, nonStriker, bowler, lastOverBowler, dismissed: [...dismissed] }]);
       applyPostBall(payload as any, !!data?.over_completed);
@@ -275,6 +279,7 @@ export default function Score() {
     setInfo(null);
     try {
       const { data } = await api.post(`/matches/${matchId}/scoring/undo`);
+      await qc.cancelQueries({ queryKey: ["live", matchId] });
       if (data?.live_score) qc.setQueryData(["live", matchId], data.live_score);
       refresh();
     } catch {
@@ -356,24 +361,20 @@ export default function Score() {
           {/* Wait for both squads before showing selectors, so they're not empty. */}
           {(!teamA || !teamB) ? (
             <Card t={t}><Text style={{ color: t.muted, textAlign: "center" }}>Loading players…</Text></Card>
-          ) : !ready ? (
-            // Pickers appear only when a slot is empty — at the start, after an
-            // over completes (new bowler), or when a wicket falls (new batter).
-            <>
-              <Picker t={t} title="🏏 Striker (on strike)" players={strikerOptions} value={striker} onPick={setStriker} />
-              <Picker t={t} title="Non-striker" players={nonStrikerOptions} value={nonStriker} onPick={setNonStriker} />
-              <Picker t={t} title="Bowler" players={bowlerOptions} value={bowler} onPick={setBowler} />
-            </>
           ) : (
-            // Locked compact summary — players can't be changed mid-over; the
-            // over's end or a wicket re-opens the relevant picker (undo to fix).
-            <View style={{ backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, borderRadius: 12, padding: 12 }}>
-              <Text style={{ color: t.text }}>
-                🏏 <Text style={{ color: t.primary, fontWeight: "800" }}>{batPlayers.find((p) => p.id === striker)?.name ?? "—"}</Text>
-                {"  &  "}{batPlayers.find((p) => p.id === nonStriker)?.name ?? "—"}
-              </Text>
-              <Text style={{ color: t.text, marginTop: 2 }}>🎯 {bowlPlayers.find((p) => p.id === bowler)?.name ?? "—"}</Text>
-              <Text style={{ color: t.muted, fontSize: 11, marginTop: 6 }}>🔒 Locked until the over ends or a wicket falls. Tap Undo to fix a mistake.</Text>
+            // Each filled slot is a locked row; ONLY the empty slot (after a
+            // wicket → batter, or over's end → bowler) shows its picker.
+            <View style={{ gap: 6 }}>
+              {striker
+                ? <LockedRow t={t} icon="🏏" label={`${batPlayers.find((p) => p.id === striker)?.name ?? "—"} · striker`} />
+                : <Picker t={t} title="🏏 Choose striker" players={strikerOptions} value={striker} onPick={setStriker} />}
+              {nonStriker
+                ? <LockedRow t={t} icon="🏏" label={`${batPlayers.find((p) => p.id === nonStriker)?.name ?? "—"} · non-striker`} />
+                : <Picker t={t} title="Choose non-striker" players={nonStrikerOptions} value={nonStriker} onPick={setNonStriker} />}
+              {bowler
+                ? <LockedRow t={t} icon="🔴" label={`${bowlPlayers.find((p) => p.id === bowler)?.name ?? "—"} · bowler`} />
+                : <Picker t={t} title="🔴 Choose bowler" players={bowlerOptions} value={bowler} onPick={setBowler} />}
+              {ready && <Text style={{ color: t.muted, fontSize: 11 }}>🔒 Locked until the over ends or a wicket falls. Strike rotates automatically. Undo to fix.</Text>}
             </View>
           )}
 
@@ -505,6 +506,17 @@ function Btn({
     >
       <Text style={{ color: fg, fontWeight: "800", fontSize: 15 }}>{label}</Text>
     </Pressable>
+  );
+}
+
+// A filled on-field slot shown read-only (can't be changed mid-over).
+function LockedRow({ t, icon, label }: { t: Theme; icon: string; label: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+      <Text style={{ fontSize: 15 }}>{icon}</Text>
+      <Text style={{ color: t.text, fontWeight: "700", flex: 1 }} numberOfLines={1}>{label}</Text>
+      <Text style={{ color: t.muted, fontSize: 12 }}>🔒</Text>
+    </View>
   );
 }
 
