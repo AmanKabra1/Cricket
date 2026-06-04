@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent } from "react";
 import { uploadImage, type UploadCategory } from "@/api/admin";
+import ImageCropper from "@/components/ImageCropper";
 
 /**
  * Pick an image → upload to object storage → return its public URL.
@@ -19,10 +20,20 @@ export default function ImageUpload({
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Local object URL + name of the file being cropped before upload.
+  const [cropping, setCropping] = useState<{ src: string; name: string } | null>(null);
 
-  async function onFile(e: ChangeEvent<HTMLInputElement>) {
+  function onFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setErr(null);
+    setCropping({ src: URL.createObjectURL(file), name: file.name });
+    e.target.value = ""; // allow re-selecting the same file
+  }
+
+  async function uploadCropped(file: File) {
+    if (cropping) URL.revokeObjectURL(cropping.src);
+    setCropping(null);
     setBusy(true);
     setErr(null);
     try {
@@ -58,6 +69,14 @@ export default function ImageUpload({
       </div>
       {busy && <p className="mt-1 text-xs muted">Uploading…</p>}
       {err && <p className="mt-1 text-xs text-amber-500">{err}</p>}
+      {cropping && (
+        <ImageCropper
+          src={cropping.src}
+          fileName={cropping.name}
+          onDone={uploadCropped}
+          onCancel={() => { URL.revokeObjectURL(cropping.src); setCropping(null); }}
+        />
+      )}
     </div>
   );
 }
