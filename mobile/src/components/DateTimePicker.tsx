@@ -82,7 +82,6 @@ export default function DateTimePicker({ value, onChange, placeholder = "Pick da
   }, [view]);
 
   const isPast = (d: Date) => startOfDay(d).getTime() < today.getTime();
-  const selDayIsToday = sameDay(parsed.day, today);
   const atCurrentMonth = view.getFullYear() === today.getFullYear() && view.getMonth() === today.getMonth();
 
   const chip = (selected: boolean, disabled: boolean) => ({
@@ -145,40 +144,32 @@ export default function DateTimePicker({ value, onChange, placeholder = "Pick da
 
             {/* Time — 12-hour with AM/PM */}
             <View style={{ borderTopColor: t.border, borderTopWidth: 1, marginTop: 10, paddingTop: 10 }}>
+              {/* Any hour/minute is selectable; a past time on *today* is clamped
+                  up to the current time on commit, so future edits are never blocked. */}
               <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginBottom: 6 }}>Hour</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((hh) => {
-                  const h24 = to24(hh, ampm);
-                  const gone = selDayIsToday && h24 < now.getHours();
-                  return (
-                    <Pressable key={hh} disabled={gone} onPress={() => { tap(); pickTime(to24(hh, ampm), curMin); }} style={chip(hh === h12, gone)}>
-                      <Text style={{ color: hh === h12 ? "#fff" : t.text }}>{hh}</Text>
-                    </Pressable>
-                  );
-                })}
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((hh) => (
+                  <Pressable key={hh} onPress={() => { tap(); pickTime(to24(hh, ampm), curMin); }} style={chip(hh === h12, false)}>
+                    <Text style={{ color: hh === h12 ? "#fff" : t.text }}>{hh}</Text>
+                  </Pressable>
+                ))}
               </ScrollView>
 
               <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginBottom: 6 }}>Minute</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-                {Array.from({ length: 60 }, (_, m) => m).map((m) => {
-                  const gone = selDayIsToday && (curHour < now.getHours() || (curHour === now.getHours() && m < now.getMinutes()));
-                  return (
-                    <Pressable key={m} disabled={gone} onPress={() => { tap(); pickTime(curHour, m); }} style={chip(m === curMin, gone)}>
-                      <Text style={{ color: m === curMin ? "#fff" : t.text }}>{pad(m)}</Text>
-                    </Pressable>
-                  );
-                })}
+                {Array.from({ length: 60 }, (_, m) => m).map((m) => (
+                  <Pressable key={m} onPress={() => { tap(); pickTime(curHour, m); }} style={chip(m === curMin, false)}>
+                    <Text style={{ color: m === curMin ? "#fff" : t.text }}>{pad(m)}</Text>
+                  </Pressable>
+                ))}
               </ScrollView>
 
               <View style={{ flexDirection: "row" }}>
-                {["AM", "PM"].map((ap) => {
-                  const gone = selDayIsToday && ap === "AM" && now.getHours() >= 12;
-                  return (
-                    <Pressable key={ap} disabled={gone} onPress={() => { tap(); pickTime(to24(h12, ap), curMin); }} style={chip(ap === ampm, gone)}>
-                      <Text style={{ color: ap === ampm ? "#fff" : t.text }}>{ap}</Text>
-                    </Pressable>
-                  );
-                })}
+                {["AM", "PM"].map((ap) => (
+                  <Pressable key={ap} onPress={() => { tap(); pickTime(to24(h12, ap), curMin); }} style={chip(ap === ampm, false)}>
+                    <Text style={{ color: ap === ampm ? "#fff" : t.text }}>{ap}</Text>
+                  </Pressable>
+                ))}
               </View>
             </View>
 

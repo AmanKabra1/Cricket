@@ -25,8 +25,14 @@ async def upload(
     data = await file.read()
     if len(data) > MAX_BYTES:
         raise HTTPException(status_code=413, detail="File exceeds the 5 MB limit")
+    # Build the public origin honoring the proxy (Render/Vercel terminate TLS, so
+    # request.url.scheme is 'http' internally — using it would yield an http://
+    # image URL that an https page blocks as mixed content and won't display).
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+    base_url = f"{proto}://{host}"
     try:
-        url = await upload_image(data, file.content_type or "", category, base_url=str(request.base_url))
+        url = await upload_image(data, file.content_type or "", category, base_url=base_url)
     except StorageError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return {"url": url, "category": category}
