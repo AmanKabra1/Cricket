@@ -55,6 +55,41 @@ def _public_url(key: str) -> str:
     return f"{base}/{key}"
 
 
+def _key_from_url(url: str) -> str | None:
+    """Recover the storage key from a public image URL (local or S3/R2)."""
+    if "/media/" in url:
+        return url.split("/media/", 1)[1]
+    base = settings.S3_PUBLIC_URL.rstrip("/") + "/"
+    if url.startswith(base):
+        return url[len(base):]
+    return None
+
+
+async def delete_image(url: str | None) -> None:
+    """Best-effort delete of a stored image by its public URL. Never raises —
+    cleaning up orphaned files must not block deleting the owning record."""
+    if not url:
+        return
+    key = _key_from_url(url)
+    if not key:
+        return
+    try:
+        if settings.STORAGE_BACKEND.lower() != "s3":
+            path = os.path.join(settings.UPLOAD_DIR, key)
+
+            def _rm() -> None:
+                if os.path.exists(path):
+                    os.remove(path)
+
+            await run_in_threadpool(_rm)
+        else:
+            await run_in_threadpool(
+                lambda: _get_client().delete_object(Bucket=settings.S3_BUCKET, Key=key)
+            )
+    except Exception:  # noqa: BLE001
+        logger.info("image cleanup skipped for %s", url)
+
+
 def _save_local(key: str, data: bytes) -> None:
     path = os.path.join(settings.UPLOAD_DIR, key)
     os.makedirs(os.path.dirname(path), exist_ok=True)

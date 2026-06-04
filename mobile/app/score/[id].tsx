@@ -57,7 +57,6 @@ export default function Score() {
   const [msg, setMsg] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [editPlayers, setEditPlayers] = useState(false); // expand the on-field pickers
   const [wicketOpen, setWicketOpen] = useState(false); // reveal the wicket-type panel
 
   // Restore on (re)entering an open innings: prefer the server's on-field state
@@ -68,7 +67,6 @@ export default function Score() {
     setRunOutEnd("striker");
     setHistory([]);
     setWicketOpen(false);
-    setEditPlayers(false);
     if (!openId) {
       setStriker(null); setNonStriker(null); setBowler(null);
       setLastOverBowler(null); setDismissed(new Set());
@@ -358,29 +356,25 @@ export default function Score() {
           {/* Wait for both squads before showing selectors, so they're not empty. */}
           {(!teamA || !teamB) ? (
             <Card t={t}><Text style={{ color: t.muted, textAlign: "center" }}>Loading players…</Text></Card>
-          ) : !ready || editPlayers ? (
+          ) : !ready ? (
+            // Pickers appear only when a slot is empty — at the start, after an
+            // over completes (new bowler), or when a wicket falls (new batter).
             <>
               <Picker t={t} title="🏏 Striker (on strike)" players={strikerOptions} value={striker} onPick={setStriker} />
               <Picker t={t} title="Non-striker" players={nonStrikerOptions} value={nonStriker} onPick={setNonStriker} />
               <Picker t={t} title="Bowler" players={bowlerOptions} value={bowler} onPick={setBowler} />
-              {ready && <Btn t={t} tone="ghost" label="Done — collapse players" style={{ marginTop: 6 }} onPress={() => setEditPlayers(false)} />}
             </>
           ) : (
-            // Compact summary once all three are chosen — keeps the run buttons in view.
+            // Locked compact summary — players can't be changed mid-over; the
+            // over's end or a wicket re-opens the relevant picker (undo to fix).
             <View style={{ backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, borderRadius: 12, padding: 12 }}>
               <Text style={{ color: t.text }}>
                 🏏 <Text style={{ color: t.primary, fontWeight: "800" }}>{batPlayers.find((p) => p.id === striker)?.name ?? "—"}</Text>
                 {"  &  "}{batPlayers.find((p) => p.id === nonStriker)?.name ?? "—"}
               </Text>
               <Text style={{ color: t.text, marginTop: 2 }}>🎯 {bowlPlayers.find((p) => p.id === bowler)?.name ?? "—"}</Text>
-              <Btn t={t} tone="ghost" label="Change players" style={{ marginTop: 8 }} onPress={() => setEditPlayers(true)} />
+              <Text style={{ color: t.muted, fontSize: 11, marginTop: 6 }}>🔒 Locked until the over ends or a wicket falls. Tap Undo to fix a mistake.</Text>
             </View>
-          )}
-
-          {ready && !editPlayers && (
-            <Text style={{ color: t.muted, fontSize: 12, marginTop: 8 }}>
-              Strike rotates automatically on odd runs and at over's end.
-            </Text>
           )}
 
           {msg && <Text style={{ color: "#fff", backgroundColor: "#ef4444", padding: 8, borderRadius: 8, marginVertical: 8 }}>{msg}</Text>}

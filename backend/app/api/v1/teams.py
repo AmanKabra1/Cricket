@@ -18,6 +18,7 @@ from app.schemas.catalog import (
     TeamOut,
     TeamUpdate,
 )
+from app.services.storage import delete_image
 
 from app.models.user import User
 
@@ -133,8 +134,10 @@ async def delete_player(
     )
     if used:
         raise HTTPException(status_code=400, detail="Player has match data and can't be deleted")
+    photo = player.photo_url
     await db.delete(player)
     await db.commit()
+    await delete_image(photo)  # clean the stored photo so files don't pile up
     return {"ok": True}
 
 
@@ -153,6 +156,11 @@ async def delete_team(
     )
     if in_match:
         raise HTTPException(status_code=400, detail="Team is used in a match and can't be deleted")
+    # Collect image URLs (logo + each player's photo) to clean after the delete.
+    photos = (await db.scalars(select(Player.photo_url).where(Player.team_id == team_id))).all()
+    images = [team.logo_url, *photos]
     await db.delete(team)  # players cascade
     await db.commit()
+    for url in images:
+        await delete_image(url)
     return {"ok": True}
