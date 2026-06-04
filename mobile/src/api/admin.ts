@@ -18,8 +18,15 @@ export interface StandingRow {
   net_run_rate: number;
 }
 
-const detail = (e: any): string =>
-  e?.response?.data?.detail ?? (e?.response ? "Request failed" : "Can't reach the server");
+const detail = (e: any): string => {
+  const d = e?.response?.data?.detail;
+  // FastAPI/Pydantic 422 returns detail as an array of {type,loc,msg,...} objects.
+  // Always coerce to a string so it can't be rendered as a React child (crash).
+  if (typeof d === "string") return d;
+  if (Array.isArray(d)) return d.map((x) => x?.msg ?? String(x)).join("; ");
+  if (d && typeof d === "object") return d.msg ?? JSON.stringify(d);
+  return e?.response ? "Request failed" : "Can't reach the server";
+};
 
 // ---------- Lists ----------
 export const useMatches = () =>
