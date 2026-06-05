@@ -261,6 +261,8 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
     <form ref={formRef} onSubmit={run} className="mt-1 w-full space-y-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
       <p className="text-xs font-semibold text-pitch-600">Auto-generate (whole schedule at once)</p>
       <p className="text-xs muted">Applied to every fixture. With a start time, matches fill each day then continue the next — so a long tournament spans days, not one overnight run.</p>
+      {/* Lock all inputs while generating so values can't change mid-request. */}
+      <fieldset disabled={gen.isPending} className="m-0 space-y-2 border-0 p-0">
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
           <span className="mb-1 block text-xs font-semibold muted">Overs / match</span>
@@ -297,6 +299,7 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
           )}
         </div>
       )}
+      </fieldset>
       {/* Edge-case-aware preview of what will be created. */}
       {nMatches > 0 && (
         <p className="rounded-lg bg-pitch-500/10 p-2 text-xs text-pitch-700 dark:text-pitch-300">

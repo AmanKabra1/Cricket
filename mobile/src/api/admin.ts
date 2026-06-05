@@ -128,6 +128,17 @@ export const useCreateMatch = () => {
     },
   });
 };
+export const useUpdateMatch = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: { scheduled_at?: string; venue_id?: number | null; overs_limit?: number } }) =>
+      api.patch<Match>(`/matches/${id}`, body).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["matches"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+};
 export const useApproveMatch = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -155,6 +166,14 @@ export const useCreateTournament = () => {
   return useMutation({
     mutationFn: (body: { name: string; format: string; team_ids: number[] }) =>
       api.post<Tournament>("/tournaments", body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tournaments"] }),
+  });
+};
+export const useUpdateTournament = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name }: { id: number; name: string }) =>
+      api.patch<Tournament>(`/tournaments/${id}`, { name }).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tournaments"] }),
   });
 };

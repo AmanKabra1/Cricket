@@ -6,7 +6,7 @@ import { useMe } from "@/api/auth";
 import { teamName, useTeamMap } from "@/hooks/useTeamMap";
 import {
   errorDetail, useApproveMatch, useCreateMatch, useCreateVenue, useDeleteMatch,
-  useDeleteVenue, useMatches, useTournamentsAdmin, useUsers, useVenues,
+  useDeleteVenue, useMatches, useTournamentsAdmin, useUpdateMatch, useUsers, useVenues,
 } from "@/api/admin";
 import { Screen, H1, Card, Btn, Field, Chip, Note, Muted } from "@/components/ui";
 import DateTimePicker from "@/components/DateTimePicker";
@@ -41,6 +41,7 @@ export default function ManageMatches() {
   const [venue, setVenue] = useState<number | null>(null);
   const [tournament, setTournament] = useState<number | null>(null);
   const [admins, setAdmins] = useState<number[]>([]);
+  const [editId, setEditId] = useState<number | null>(null);
   const [when, setWhen] = useState(defaultWhen());
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -141,12 +142,63 @@ export default function ManageMatches() {
               {(m as any).approved === false && !isSuper && <Text style={{ color: t.muted, fontSize: 12, marginRight: 8 }}>Awaiting super-admin approval to score</Text>}
               {!done && (m as any).approved !== false && <Chip label="Score" selected onPress={() => router.push(`/score/${m.id}`)} />}
               {done && <Chip label="View" selected={false} onPress={() => router.push(`/match/${m.id}`)} />}
+              {m.status === "SCHEDULED" && <Chip label={editId === m.id ? "Close" : "Edit"} selected={false} onPress={() => setEditId(editId === m.id ? null : m.id)} />}
               <Chip label="Delete" selected={false} loading={del.isPending && del.variables === m.id} onPress={() => del.mutate(m.id)} />
             </View>
+            {editId === m.id && <EditMatch match={m} venues={venues ?? []} onDone={() => setEditId(null)} />}
           </Card>
         );
       })}
     </Screen>
+  );
+}
+
+// Inline edit of a scheduled match — date/time, venue, overs (teams locked).
+function EditMatch({ match, venues, onDone }: { match: Match; venues: { id: number; name: string }[]; onDone: () => void }) {
+  const t = useTheme();
+  const update = useUpdateMatch();
+  const toLocal = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso); const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  const [when, setWhen] = useState(toLocal(match.scheduled_at));
+  const [venue, setVenue] = useState<number | null>(match.venue_id ?? null);
+  const [overs, setOvers] = useState(String(match.overs_limit));
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const save = async () => {
+    setMsg(null);
+    try {
+      await update.mutateAsync({ id: match.id, body: {
+        scheduled_at: when ? `${when}:00` : undefined,
+        venue_id: venue,
+        overs_limit: Math.max(1, Number(overs) || match.overs_limit),
+      } });
+      onDone();
+    } catch (e) { setMsg(errorDetail(e)); }
+  };
+
+  return (
+    <View style={{ marginTop: 10, borderColor: t.border, borderWidth: 1, borderRadius: 10, padding: 12 }}>
+      <Text style={{ color: t.primary, fontWeight: "700", fontSize: 12, marginBottom: 6 }}>Edit match (teams can't be changed)</Text>
+      <Field label="Overs" value={overs} onChangeText={setOvers} keyboardType="numeric" />
+      {!!venues.length && (
+        <>
+          <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Venue</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+            {venues.map((v) => <Chip key={v.id} label={v.name} selected={venue === v.id} onPress={() => setVenue(venue === v.id ? null : v.id)} />)}
+          </View>
+        </>
+      )}
+      <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginBottom: 4 }}>Date & time</Text>
+      <DateTimePicker value={when} onChange={setWhen} />
+      <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+        <View style={{ flex: 1 }}><Btn label={update.isPending ? "Saving…" : "Save changes"} onPress={save} loading={update.isPending} /></View>
+        <Btn label="Cancel" tone="ghost" onPress={onDone} />
+      </View>
+      {msg && <Note tone="error">{msg}</Note>}
+    </View>
   );
 }
 

@@ -4,7 +4,7 @@ import { useTeams } from "@/api/hooks";
 import { useMe } from "@/api/auth";
 import {
   errorDetail, useApproveTournament, useCreateMatch, useCreateTournament, useDeleteTournament,
-  useGenerateFixtures, useStandings, useTournamentsAdmin, useVenues,
+  useGenerateFixtures, useStandings, useTournamentsAdmin, useUpdateTournament, useVenues,
 } from "@/api/admin";
 import { Screen, H1, Card, Btn, Field, Chip, Note, Muted } from "@/components/ui";
 import DateTimePicker from "@/components/DateTimePicker";
@@ -93,6 +93,9 @@ function TournamentRow({ tn, isSuper }: { tn: Tournament; isSuper: boolean }) {
   const t = useTheme();
   const approve = useApproveTournament();
   const del = useDeleteTournament();
+  const rename = useUpdateTournament();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(tn.name);
 
   return (
     <Card>
@@ -100,7 +103,20 @@ function TournamentRow({ tn, isSuper }: { tn: Tournament; isSuper: boolean }) {
         <Text style={{ color: t.text, fontWeight: "700", flex: 1 }}>{tn.name}</Text>
         <Text style={{ color: t.muted, fontSize: 12 }}>{tn.format.replace("_", " ")} · {tn.status}</Text>
       </View>
+      {editing && (
+        <View style={{ marginTop: 8 }}>
+          <Field label="Tournament name" value={name} onChangeText={setName} />
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <Btn label={rename.isPending ? "Saving…" : "Save name"} loading={rename.isPending}
+                onPress={async () => { if (name.trim()) { await rename.mutateAsync({ id: tn.id, name: name.trim() }); setEditing(false); } }} />
+            </View>
+            <Btn label="Cancel" tone="ghost" onPress={() => { setName(tn.name); setEditing(false); }} />
+          </View>
+        </View>
+      )}
       <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
+        <Chip label="Edit" selected={false} onPress={() => setEditing((e) => !e)} />
         {isSuper && tn.status === "PENDING" && (
           <Chip label="Approve" selected={false} loading={approve.isPending && approve.variables === tn.id} onPress={() => approve.mutate(tn.id)} />
         )}
@@ -164,6 +180,8 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
         <View style={{ borderColor: t.border, borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 8 }}>
           <Text style={{ color: t.primary, fontWeight: "700", fontSize: 12, marginBottom: 2 }}>Auto-generate (whole schedule at once)</Text>
           <Text style={{ color: t.muted, fontSize: 12, marginBottom: 8 }}>With a start time, matches fill each day then continue the next — a long tournament spans days.</Text>
+          {/* Lock the inputs while generating so the values can't change mid-request. */}
+          <View pointerEvents={gen.isPending ? "none" : "auto"} style={{ opacity: gen.isPending ? 0.5 : 1 }}>
           <Field label="Overs / match" value={overs} onChangeText={setOvers} keyboardType="numeric" />
           {!!venues?.length && (
             <>
@@ -199,6 +217,7 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
             </Text>
           )}
           {oddKnockout && <Note tone="error">Odd number of teams — one team sits out the first round.</Note>}
+          </View>
           <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
             <View style={{ flex: 1 }}><Btn label={gen.isPending ? "Generating…" : "Generate"} onPress={run} loading={gen.isPending} /></View>
             <Btn label="Cancel" tone="ghost" onPress={() => setOpen(false)} />

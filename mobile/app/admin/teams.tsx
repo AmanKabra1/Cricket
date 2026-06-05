@@ -8,7 +8,7 @@ import {
 import { Screen, H1, Card, Btn, Field, Chip, Note } from "@/components/ui";
 import { ImageField } from "@/components/ImageField";
 import { useTheme } from "@/theme";
-import type { Team } from "@/types";
+import type { Team, TeamDetail } from "@/types";
 
 const ROLES = ["BATSMAN", "BOWLER", "ALL_ROUNDER", "WICKET_KEEPER"];
 const BATTING = ["RIGHT_HAND", "LEFT_HAND"];
@@ -124,6 +124,7 @@ function Squad({ teamId }: { teamId: number }) {
 
   return (
     <View style={{ marginTop: 10 }}>
+      <EditTeamDetails key={team.id} team={team} update={update} />
       <Field label="Player name" value={pname} onChangeText={setPname} placeholder="e.g. Rohit" />
       <Field label="Jersey number" value={jersey} onChangeText={setJersey} keyboardType="numeric" placeholder="e.g. 7" />
       <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Role</Text>
@@ -176,6 +177,32 @@ function Squad({ teamId }: { teamId: number }) {
           );
         })}
         {!team.players.length && <Note>No players yet.</Note>}
+      </View>
+    </View>
+  );
+}
+
+// Pre-filled edit of a team's name/city/coach/logo (collapsed by default).
+function EditTeamDetails({ team, update }: { team: TeamDetail; update: ReturnType<typeof useUpdateTeam> }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(team.name);
+  const [city, setCity] = useState(team.city ?? "");
+  const [coach, setCoach] = useState(team.coach ?? "");
+  const [logo, setLogo] = useState<string | null>(team.logo_url ?? null);
+
+  if (!open) return <View style={{ marginBottom: 8 }}><Chip label="✎ Edit team details" selected={false} onPress={() => setOpen(true)} /></View>;
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <Field label="Team name" value={name} onChangeText={setName} />
+      <Field label="City" value={city} onChangeText={setCity} />
+      <Field label="Coach" value={coach} onChangeText={setCoach} />
+      <ImageField label="Team logo" value={logo} onChange={setLogo} category="team_logo" />
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flex: 1 }}>
+          <Btn label={update.isPending ? "Saving…" : "Save details"} loading={update.isPending}
+            onPress={async () => { if (name.trim()) { await update.mutateAsync({ name: name.trim(), city, coach, logo_url: logo }); setOpen(false); } }} />
+        </View>
+        <Btn label="Cancel" tone="ghost" onPress={() => setOpen(false)} />
       </View>
     </View>
   );
