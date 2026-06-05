@@ -2,6 +2,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -9,6 +10,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+
+// Red dot on the runs line at any over where a wicket fell (shows where teams lost batters).
+function wicketDot(props: { cx?: number; cy?: number; index?: number; payload?: { wickets: number } }) {
+  const { cx, cy, index, payload } = props;
+  if (!payload || payload.wickets <= 0 || cx == null || cy == null) return <g key={index} />;
+  return <circle key={index} cx={cx} cy={cy} r={5} fill="#ef4444" stroke="#fff" strokeWidth={1.5} />;
+}
 import { useAnalytics } from "@/api/hooks";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import Spinner, { EmptyState } from "@/components/Spinner";
@@ -51,16 +59,19 @@ export default function AnalyticsTab({ matchId }: { matchId: number }) {
             </div>
           </div>
 
-          <div className="mb-2 mt-6 text-sm muted">Worm (cumulative runs)</div>
+          <div className="mb-2 mt-6 text-sm muted">Runs &amp; wickets (cumulative) — red marks where a wicket fell</div>
           <div className="overflow-x-auto">
             <div style={{ minWidth: chartWidth }}>
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={inn.overs}>
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={(() => { let cw = 0; return inn.overs.map((o) => ({ ...o, cwk: (cw += o.wickets) })); })()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="over" stroke="var(--muted)" fontSize={12} />
-                  <YAxis stroke="var(--muted)" fontSize={12} width={28} />
+                  <YAxis yAxisId="r" stroke="var(--muted)" fontSize={12} width={28} />
+                  <YAxis yAxisId="w" orientation="right" stroke="#ef4444" fontSize={12} width={24} allowDecimals={false} />
                   <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)" }} />
-                  <Line type="monotone" dataKey="cumulative" stroke="#039855" strokeWidth={2} dot={false} />
+                  <Legend />
+                  <Line yAxisId="r" name="Runs" type="monotone" dataKey="cumulative" stroke="#039855" strokeWidth={2.5} dot={wicketDot} />
+                  <Line yAxisId="w" name="Wickets" type="stepAfter" dataKey="cwk" stroke="#ef4444" strokeWidth={2} strokeDasharray="4 3" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

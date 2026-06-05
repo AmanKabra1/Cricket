@@ -346,7 +346,7 @@ function AnalyticsTab({ matchId, teams }: { matchId: number; teams: Map<number, 
             <Manhattan overs={inn.overs} />
             <Text style={{ color: t.muted, fontSize: 11 }}>🟥 a wicket fell that over · 🟩 runs only</Text>
 
-            <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginTop: 14, marginBottom: 2 }}>Worm · cumulative runs</Text>
+            <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginTop: 14, marginBottom: 2 }}>Runs & wickets (cumulative)</Text>
             <Worm overs={inn.overs} />
           </View>
         );

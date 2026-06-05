@@ -1,4 +1,4 @@
-import { ScrollView } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import Svg, { Circle, G, Line, Polygon, Polyline, Rect, Text as SvgText } from "react-native-svg";
 import { palette, useTheme } from "@/theme";
 import type { OverPoint } from "@/types";
@@ -37,40 +37,57 @@ export function Manhattan({ overs }: { overs: OverPoint[] }) {
   );
 }
 
-/** Worm — cumulative runs as a filled area + line with a dot per over. */
+function Dot({ color }: { color: string }) {
+  return <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: color }} />;
+}
+
+/**
+ * Worm — cumulative runs (green line + area) AND cumulative wickets (red line)
+ * on one graph, with a red marker + "W" where each wicket fell. Two scales so
+ * both fit: runs by max score, wickets by max wickets.
+ */
 export function Worm({ overs }: { overs: OverPoint[] }) {
   const t = useTheme();
   if (!overs.length) return null;
   const maxCum = Math.max(1, overs[overs.length - 1]?.cumulative ?? 1);
+  // Running cumulative wickets per over.
+  let cw = 0;
+  const rows = overs.map((o) => ({ over: o.over, cum: o.cumulative, wkts: o.wickets, cwk: (cw += o.wickets) }));
+  const maxWkts = Math.max(1, cw);
   const w = Math.max(overs.length * COL + 24, 240);
   const plotH = H - PAD_TOP - PAD_BOTTOM;
-  const pt = (o: OverPoint, i: number) => ({
-    x: i * COL + 28,
-    y: H - PAD_BOTTOM - (o.cumulative / maxCum) * plotH,
-  });
-  const pts = overs.map(pt);
-  const line = pts.map((p) => `${p.x},${p.y}`).join(" ");
-  const first = pts[0];
-  const last = pts[pts.length - 1];
-  const area = `${first.x},${H - PAD_BOTTOM} ${line} ${last.x},${H - PAD_BOTTOM}`;
+  const xOf = (i: number) => i * COL + 28;
+  const yRun = (cum: number) => H - PAD_BOTTOM - (cum / maxCum) * plotH;
+  const yWk = (cwk: number) => H - PAD_BOTTOM - (cwk / maxWkts) * plotH;
+  const runLine = rows.map((p, i) => `${xOf(i)},${yRun(p.cum)}`).join(" ");
+  const wkLine = rows.map((p, i) => `${xOf(i)},${yWk(p.cwk)}`).join(" ");
+  const area = `${xOf(0)},${H - PAD_BOTTOM} ${runLine} ${xOf(rows.length - 1)},${H - PAD_BOTTOM}`;
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <Svg width={w} height={H}>
-        <Line x1={0} y1={H - PAD_BOTTOM} x2={w} y2={H - PAD_BOTTOM} stroke={t.border} strokeWidth={1} />
-        <Polygon points={area} fill={palette.pitch + "26"} />
-        <Polyline points={line} fill="none" stroke={palette.pitchDark} strokeWidth={2.5} />
-        {overs.map((o, i) => {
-          const p = pt(o, i);
-          return (
-            <G key={o.over}>
-              <Circle cx={p.x} cy={p.y} r={3.5} fill={palette.pitchDark} />
-              <SvgText x={p.x} y={p.y - 8} fontSize={10} fill={t.muted} textAnchor="middle">{o.cumulative}</SvgText>
-              <SvgText x={p.x} y={H - 6} fontSize={10} fill={t.muted} textAnchor="middle">{o.over}</SvgText>
+    <View>
+      <View style={{ flexDirection: "row", gap: 16, marginBottom: 4 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}><Dot color={palette.pitchDark} /><Text style={{ color: t.muted, fontSize: 11 }}>Runs</Text></View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}><Dot color={palette.red} /><Text style={{ color: t.muted, fontSize: 11 }}>Wickets (where out)</Text></View>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <Svg width={w} height={H}>
+          <Line x1={0} y1={H - PAD_BOTTOM} x2={w} y2={H - PAD_BOTTOM} stroke={t.border} strokeWidth={1} />
+          <Polygon points={area} fill={palette.pitch + "22"} />
+          {/* Cumulative wickets line (red) */}
+          <Polyline points={wkLine} fill="none" stroke={palette.red} strokeWidth={2} strokeDasharray="4 3" />
+          {/* Cumulative runs line (green) */}
+          <Polyline points={runLine} fill="none" stroke={palette.pitchDark} strokeWidth={2.5} />
+          {rows.map((p, i) => (
+            <G key={p.over}>
+              <Circle cx={xOf(i)} cy={yRun(p.cum)} r={3.5} fill={palette.pitchDark} />
+              <SvgText x={xOf(i)} y={yRun(p.cum) - 8} fontSize={9} fill={t.muted} textAnchor="middle">{p.cum}</SvgText>
+              {p.wkts > 0 && <Circle cx={xOf(i)} cy={yWk(p.cwk)} r={4.5} fill={palette.red} />}
+              {p.wkts > 0 && <SvgText x={xOf(i)} y={yWk(p.cwk) - 8} fontSize={9} fontWeight="bold" fill={palette.red} textAnchor="middle">{p.wkts > 1 ? `${p.wkts}W` : "W"}</SvgText>}
+              <SvgText x={xOf(i)} y={H - 6} fontSize={10} fill={t.muted} textAnchor="middle">{p.over}</SvgText>
             </G>
-          );
-        })}
-      </Svg>
-    </ScrollView>
+          ))}
+        </Svg>
+      </ScrollView>
+    </View>
   );
 }
