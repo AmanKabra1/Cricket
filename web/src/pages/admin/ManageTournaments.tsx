@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useStandings, useTeams, useTournaments, useVenues } from "@/api/hooks";
-import { useApproveTournament, useCreateMatch, useCreateTournament, useDeleteTournament, useGenerateFixtures } from "@/api/admin";
+import { useApproveTournament, useCreateMatch, useCreateTournament, useDeleteTournament, useGenerateFixtures, useUpdateTournament } from "@/api/admin";
 import { useAppSelector } from "@/store";
 import DateTimePicker from "@/components/DateTimePicker";
 import type { Tournament } from "@/types";
@@ -118,6 +118,7 @@ function TournamentList() {
   const user = useAppSelector((s) => s.auth.user);
   const approve = useApproveTournament();
   const del = useDeleteTournament();
+  const rename = useUpdateTournament();
   const isSuper = user?.role === "SUPER_ADMIN";
 
   return (
@@ -141,6 +142,16 @@ function TournamentList() {
               <Link to={`/tournaments/${t.id}`} className="font-medium hover:text-pitch-600">{t.name}</Link>
               <div className="flex shrink-0 items-center gap-2">
                 <span className="text-xs muted">{t.format.replace("_", " ")} · {t.status}</span>
+                <button
+                  className="rounded px-2 py-1 text-xs font-semibold text-pitch-600 hover:bg-pitch-500/10"
+                  title="Rename tournament"
+                  onClick={() => {
+                    const name = window.prompt("Tournament name", t.name)?.trim();
+                    if (name && name !== t.name) rename.mutate({ id: t.id, name });
+                  }}
+                >
+                  Edit
+                </button>
                 {isSuper && (
                   <button
                     className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"

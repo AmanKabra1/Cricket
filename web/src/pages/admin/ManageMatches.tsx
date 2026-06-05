@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMatches, useTeams, useVenues, useTournaments } from "@/api/hooks";
-import { useApproveMatch, useCreateMatch, useCreateVenue, useDeleteMatch, useDeleteVenue, useUsers } from "@/api/admin";
+import { useApproveMatch, useCreateMatch, useCreateVenue, useDeleteMatch, useDeleteVenue, useUpdateMatch, useUsers } from "@/api/admin";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { useAppSelector } from "@/store";
 import DateTimePicker from "@/components/DateTimePicker";
@@ -208,6 +208,8 @@ function MatchList() {
   const isSuper = useAppSelector((s) => s.auth.user?.role === "SUPER_ADMIN");
   const { data: tournaments } = useTournaments();
   const { data: users } = useUsers(); // super-admin only; for the creator label
+  const { data: venues } = useVenues();
+  const [editId, setEditId] = useState<number | null>(null);
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -227,7 +229,8 @@ function MatchList() {
           const tour = tournaments?.find((tn) => tn.id === m.tournament_id);
           const creator = users?.find((u) => u.id === m.created_by_id);
           return (
-          <div key={m.id} className="card-surface flex items-center justify-between gap-2 p-3">
+          <div key={m.id} className="card-surface p-3">
+            <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               {tour && (
                 <span className="mb-1 inline-block rounded bg-pitch-500/15 px-2 py-0.5 text-xs font-bold text-pitch-700 dark:text-pitch-300">
@@ -259,6 +262,11 @@ function MatchList() {
                   {approve.isPending && approve.variables === m.id ? "Approving…" : "Approve"}
                 </button>
               )}
+              {m.status === "SCHEDULED" && (
+                <button className="btn-ghost text-sm" onClick={() => setEditId(editId === m.id ? null : m.id)}>
+                  {editId === m.id ? "Close" : "Edit"}
+                </button>
+              )}
               {m.status === "COMPLETED" || m.status === "ABANDONED" ? (
                 <Link to={`/matches/${m.id}`} className="btn-ghost text-sm">View</Link>
               ) : m.approved === false ? (
@@ -279,11 +287,75 @@ function MatchList() {
                 {del.isPending && del.variables === m.id ? "Deleting…" : "Delete"}
               </button>
             </div>
+            </div>
+            {editId === m.id && <EditMatchInline match={m} venues={venues ?? []} onDone={() => setEditId(null)} />}
           </div>
           );
         })}
         {!isLoading && !isError && !matches?.length && <p className="muted">No matches yet.</p>}
       </div>
     </div>
+  );
+}
+
+// Inline editor for a scheduled match — time / venue / overs (teams are locked).
+function EditMatchInline({
+  match,
+  venues,
+  onDone,
+}: {
+  match: import("@/types").Match;
+  venues: { id: number; name: string }[];
+  onDone: () => void;
+}) {
+  const update = useUpdateMatch();
+  const toLocal = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  const [when, setWhen] = useState(toLocal(match.scheduled_at));
+  const [venueId, setVenueId] = useState<number | "">(match.venue_id ?? "");
+  const [overs, setOvers] = useState(match.overs_limit);
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    await update.mutateAsync({
+      id: match.id,
+      body: {
+        scheduled_at: when ? (when.length === 16 ? `${when}:00` : when) : undefined,
+        venue_id: venueId === "" ? null : Number(venueId),
+        overs_limit: overs,
+      },
+    });
+    onDone();
+  };
+
+  return (
+    <form onSubmit={save} className="mt-3 space-y-2 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
+      <p className="text-xs font-semibold text-pitch-600">Edit match — teams can't be changed</p>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold muted">Overs</span>
+          <input className="input" type="number" min={1} max={100} value={overs} onChange={(e) => setOvers(Number(e.target.value))} />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold muted">Venue</span>
+          <select className="input" value={venueId} onChange={(e) => setVenueId(e.target.value === "" ? "" : Number(e.target.value))}>
+            <option value="">— none —</option>
+            {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+          </select>
+        </label>
+      </div>
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold muted">Date &amp; time</span>
+        <DateTimePicker value={when} onChange={setWhen} />
+      </label>
+      <div className="flex gap-2">
+        <button className="btn-primary flex-1 text-sm" disabled={update.isPending}>{update.isPending ? "Saving…" : "Save changes"}</button>
+        <button type="button" className="btn-ghost text-sm" onClick={onDone}>Cancel</button>
+      </div>
+    </form>
   );
 }

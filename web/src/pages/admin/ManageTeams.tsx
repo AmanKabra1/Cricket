@@ -169,6 +169,8 @@ function TeamEditor({ teamId }: { teamId: number }) {
     <div>
       <h2 className="mb-3 text-lg font-bold">{team.name} — squad ({team.players.length})</h2>
 
+      <EditTeamDetails key={team.id} team={team} update={update} />
+
       <form onSubmit={submit} className="card-surface mb-4 space-y-3 p-4">
         <Field label="Player name *">
           <input className="input" placeholder="e.g. Rohit Sharma" value={p.name}
@@ -279,6 +281,39 @@ function TeamEditor({ teamId }: { teamId: number }) {
         {!team.players.length && <p className="p-4 muted">No players yet.</p>}
       </div>
     </div>
+  );
+}
+
+function EditTeamDetails({ team, update }: { team: import("@/types").TeamDetail; update: ReturnType<typeof useUpdateTeam> }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(team.name);
+  const [city, setCity] = useState(team.city ?? "");
+  const [coach, setCoach] = useState(team.coach ?? "");
+  const [logo, setLogo] = useState<string | undefined>(team.logo_url ?? undefined);
+
+  if (!open) {
+    return (
+      <button className="btn-ghost mb-4 text-sm" onClick={() => setOpen(true)}>✎ Edit team details</button>
+    );
+  }
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    await update.mutateAsync({ name, city, coach, logo_url: logo });
+    setOpen(false);
+  };
+  return (
+    <form onSubmit={save} className="card-surface mb-4 space-y-3 p-4">
+      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Team name *" required />
+      <div className="grid grid-cols-2 gap-3">
+        <input className="input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />
+        <input className="input" value={coach} onChange={(e) => setCoach(e.target.value)} placeholder="Coach" />
+      </div>
+      <ImageUpload category="team_logo" label="Logo" value={logo} onChange={setLogo} />
+      <div className="flex gap-2">
+        <button className="btn-primary flex-1" disabled={update.isPending}>{update.isPending ? "Saving…" : "Save details"}</button>
+        <button type="button" className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+    </form>
   );
 }
 
