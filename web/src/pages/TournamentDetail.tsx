@@ -1,8 +1,27 @@
-import { useParams } from "react-router-dom";
-import { useStandings, useTournamentMatches, useTournaments } from "@/api/hooks";
+import { Link, useParams } from "react-router-dom";
+import { useStandings, useTournamentLeaderboards, useTournamentMatches, useTournaments, type LeaderRow } from "@/api/hooks";
 import { useTeamMap } from "@/hooks/useTeamMap";
 import MatchCard from "@/components/MatchCard";
 import Spinner, { ErrorState } from "@/components/Spinner";
+
+function MiniBoard({ title, unit, rows }: { title: string; unit: string; rows: LeaderRow[] }) {
+  if (!rows.length) return null;
+  return (
+    <div className="card-surface p-4">
+      <h3 className="mb-2 font-bold">{title}</h3>
+      <ol className="space-y-1 text-sm">
+        {rows.slice(0, 5).map((r, i) => (
+          <li key={r.player_id}>
+            <Link to={`/players/${r.player_id}`} className="flex items-center justify-between rounded p-1 hover:bg-pitch-500/10">
+              <span className="truncate"><span className="mr-2 muted">{i + 1}</span>{r.name} <span className="text-xs muted">· {r.team_name}</span></span>
+              <span className="font-bold text-pitch-600">{r.value}<span className="ml-1 text-xs muted">{unit}</span></span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 export default function TournamentDetail() {
   const { id } = useParams();
@@ -10,8 +29,10 @@ export default function TournamentDetail() {
   const { data: tournaments } = useTournaments();
   const { data: standings, isLoading, isError } = useStandings(tid);
   const { data: matches } = useTournamentMatches(tid);
+  const { data: lb } = useTournamentLeaderboards(tid);
   const teams = useTeamMap();
   const tournament = tournaments?.find((t) => t.id === tid);
+  const mvp = lb?.mvps?.[0];
 
   if (isLoading) return <Spinner />;
   if (isError) return <ErrorState />;
@@ -53,6 +74,25 @@ export default function TournamentDetail() {
           </tbody>
         </table>
       </div>
+
+      {mvp && (
+        <div className="mb-6 rounded-2xl bg-gradient-to-br from-pitch-600 to-navy-800 p-5 text-white shadow-card">
+          <div className="text-xs font-bold uppercase tracking-wide text-white/70">⭐ Tournament MVP</div>
+          <Link to={`/players/${mvp.player_id}`} className="text-2xl font-extrabold hover:underline">{mvp.name}</Link>
+          <div className="text-sm text-white/80">{mvp.team_name} · {mvp.value} impact pts over {mvp.matches} match{mvp.matches === 1 ? "" : "es"}</div>
+        </div>
+      )}
+
+      {lb && (lb.top_run_scorers.length > 0 || lb.top_wicket_takers.length > 0) && (
+        <>
+          <h2 className="mb-3 text-lg font-bold">Leaderboards</h2>
+          <div className="mb-8 grid gap-4 sm:grid-cols-3">
+            <MiniBoard title="⭐ MVP" unit="pts" rows={lb.mvps} />
+            <MiniBoard title="🏏 Runs" unit="runs" rows={lb.top_run_scorers} />
+            <MiniBoard title="🔴 Wickets" unit="wkts" rows={lb.top_wicket_takers} />
+          </div>
+        </>
+      )}
 
       <h2 className="mb-3 text-lg font-bold">Fixtures</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

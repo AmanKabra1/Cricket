@@ -51,7 +51,8 @@ export default function Leaderboards() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold">Leaderboards</h1>
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Board title="⭐ MVP (impact)" unit="pts" rows={data.mvps} />
         <Board title="🏏 Most runs" unit="runs" rows={data.top_run_scorers} />
         <Board title="🔴 Most wickets" unit="wkts" rows={data.top_wicket_takers} />
       </div>

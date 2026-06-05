@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useLiveScore, useMatch } from "@/api/hooks";
+import { useLiveScore, useMatch, useMatchBest } from "@/api/hooks";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useAppSelector } from "@/store";
@@ -48,6 +48,8 @@ export default function MatchCenter() {
   const canScore = user && user.role !== "PUBLIC";
   const completed = match.status === "COMPLETED";
   const winnerId = match.winner_team_id;
+  const { data: best } = useMatchBest(matchId);
+  const potm = completed ? best?.player_of_match : null;
 
   return (
     <div>
@@ -77,6 +79,13 @@ export default function MatchCenter() {
                 ` · ${teamName(teams, match.toss_winner_id)} won the toss & chose to ${match.toss_decision?.toLowerCase()}`}
             </p>
             {match.result_text && <p className="mt-1 font-semibold text-pitch-600">{match.result_text}</p>}
+            {potm && (
+              <p className="mt-1 text-sm">
+                <span className="muted">🏅 Player of the Match: </span>
+                <Link to={`/players/${potm.player_id}`} className="font-semibold hover:underline">{potm.name}</Link>
+                <span className="muted"> — {potm.line}</span>
+              </p>
+            )}
           </div>
           {canScore && match.approved !== false && match.status !== "COMPLETED" && match.status !== "ABANDONED" && (
             <Link to={`/admin/matches/${matchId}/score`} className="btn-primary">

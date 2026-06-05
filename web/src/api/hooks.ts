@@ -117,13 +117,20 @@ export interface PlayerCareer {
   fielding: { catches: number };
 }
 export interface LeaderRow { player_id: number; name: string; photo_url: string | null; team_name: string; value: number; matches: number }
-export interface Leaderboards { top_run_scorers: LeaderRow[]; top_wicket_takers: LeaderRow[] }
+export interface Leaderboards { top_run_scorers: LeaderRow[]; top_wicket_takers: LeaderRow[]; mvps: LeaderRow[] }
+export interface BestPerformer { player_id: number; name: string; photo_url: string | null; team_name: string; line: string; impact: number }
 
 export const usePlayerStats = (id: number) =>
   useQuery({ queryKey: ["player-stats", id], queryFn: () => get<PlayerCareer>(`/public/players/${id}/stats`), enabled: !!id });
 
 export const useLeaderboards = () =>
   useQuery({ queryKey: ["leaderboards"], queryFn: () => get<Leaderboards>("/public/leaderboards") });
+
+export const useTournamentLeaderboards = (id: number) =>
+  useQuery({ queryKey: ["tournament-leaderboards", id], queryFn: () => get<Leaderboards>(`/public/tournaments/${id}/leaderboards`), enabled: !!id });
+
+export const useMatchBest = (id: number) =>
+  useQuery({ queryKey: ["match-best", id], queryFn: () => get<{ player_of_match: BestPerformer | null }>(`/public/matches/${id}/best`), enabled: !!id });
 
 export const useMatches = (status?: string) =>
   useQuery({
