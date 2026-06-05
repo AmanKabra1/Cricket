@@ -18,6 +18,7 @@ from app.models.user import User
 from app.schemas.match import (
     MatchCreate,
     MatchOut,
+    MatchUpdate,
     StartInningsRequest,
     TossUpdate,
 )
@@ -83,6 +84,25 @@ async def create_match(
     await db.commit()
     await db.refresh(match)
     # Drop the cached dashboard so the new match shows at once.
+    from app.core.cache import DASHBOARD_KEY, cache
+
+    await cache.invalidate(DASHBOARD_KEY)
+    return match
+
+
+@router.patch("/{match_id}", response_model=MatchOut)
+async def update_match(
+    match_id: int, payload: MatchUpdate, db: DbSession, user: User = Depends(require_admin)
+) -> Match:
+    """Edit a not-yet-started match's time / venue / overs (assigned admins or super)."""
+    match = await authorize_match_admin(match_id, db, user)
+    if match.status != MatchStatus.SCHEDULED:
+        raise HTTPException(status_code=400, detail="Only a scheduled (not started) match can be edited.")
+    data = payload.model_dump(exclude_unset=True)
+    for field, value in data.items():
+        setattr(match, field, value)
+    await db.commit()
+    await db.refresh(match)
     from app.core.cache import DASHBOARD_KEY, cache
 
     await cache.invalidate(DASHBOARD_KEY)

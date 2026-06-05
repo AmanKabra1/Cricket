@@ -111,6 +111,26 @@ async def approve_tournament(
     return tournament
 
 
+class TournamentRename(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+
+
+@router.patch("/{tournament_id}", response_model=TournamentOut)
+async def update_tournament(
+    tournament_id: int, payload: TournamentRename, db: DbSession, user: User = Depends(require_admin)
+) -> Tournament:
+    """Rename a tournament (its creator or a super admin)."""
+    tournament = await db.get(Tournament, tournament_id)
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    if user.role != UserRole.SUPER_ADMIN and tournament.created_by not in (None, user.id):
+        raise HTTPException(status_code=403, detail="Only the creator or a super admin can rename this tournament.")
+    tournament.name = payload.name
+    await db.commit()
+    await db.refresh(tournament)
+    return tournament
+
+
 class FixtureOptions(BaseModel):
     """Defaults applied to every generated fixture; matches are laid out across
     match-days so a long tournament doesn't run overnight."""

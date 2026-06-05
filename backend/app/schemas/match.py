@@ -25,6 +25,13 @@ class MatchCreate(BaseModel):
         return self
 
 
+class MatchUpdate(BaseModel):
+    """Edit a scheduled match's time / venue / overs (teams aren't editable)."""
+    scheduled_at: datetime | None = None
+    venue_id: int | None = None
+    overs_limit: int | None = Field(default=None, ge=1, le=100)
+
+
 class TossUpdate(BaseModel):
     toss_winner_id: int
     decision: TossDecision
