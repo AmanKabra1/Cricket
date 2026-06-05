@@ -158,7 +158,7 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
     setMsg(null);
     try {
       await gen.mutateAsync({
-        overs_limit: Math.max(1, Number(overs) || 20),
+        overs_limit: Math.min(50, Math.max(1, Number(overs) || 20)),
         matches_per_day: pd,
         interval_minutes: interval,
         venue_id: venue,
@@ -258,7 +258,7 @@ function ManualMatchForm({ tournament }: { tournament: Tournament }) {
         team_b_id: b,
         tournament_id: tournament.id,
         venue_id: venue ?? undefined,
-        overs_limit: Math.max(1, Number(overs) || 20),
+        overs_limit: Math.min(50, Math.max(1, Number(overs) || 20)),
         scheduled_at: when ? `${when}:00` : undefined,
       });
       setMsg("Match added ✓");

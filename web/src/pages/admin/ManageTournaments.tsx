@@ -266,7 +266,7 @@ function FixturesPanel({ tournament }: { tournament: Tournament }) {
       <div className="grid grid-cols-2 gap-2">
         <label className="block">
           <span className="mb-1 block text-xs font-semibold muted">Overs / match</span>
-          <input className="input" type="number" min={1} max={100} value={overs}
+          <input className="input" type="number" min={1} max={50} value={overs}
             onChange={(e) => setOvers(Number(e.target.value))} />
         </label>
         <label className="block">
@@ -384,7 +384,7 @@ function ManualMatchForm({ tournament }: { tournament: Tournament }) {
         </select>
         <label className="block">
           <span className="mb-1 block text-xs font-semibold muted">Overs</span>
-          <input className="input" type="number" min={1} max={100} value={overs} onChange={(e) => setOvers(Number(e.target.value))} />
+          <input className="input" type="number" min={1} max={50} value={overs} onChange={(e) => setOvers(Number(e.target.value))} />
         </label>
         <label className="block">
           <span className="mb-1 block text-xs font-semibold muted">Venue</span>

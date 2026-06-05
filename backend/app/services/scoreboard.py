@@ -44,7 +44,7 @@ def _required_run_rate(target: int, runs: int, legal_balls: int, overs_limit: in
     return round(runs_needed / (balls_left / 6), 2)
 
 
-def innings_score(inn: Innings, overs_limit: int) -> dict:
+def innings_score(inn: Innings, overs_limit: int, team_size: int = 11) -> dict:
     return {
         "innings_id": inn.id,
         "innings_number": inn.innings_number,
@@ -52,6 +52,9 @@ def innings_score(inn: Innings, overs_limit: int) -> dict:
         "bowling_team_id": inn.bowling_team_id,
         "runs": inn.total_runs,
         "wickets": inn.total_wickets,
+        # Max wickets that can fall = squad size − 1 (so AI/UX reflect 6-a-side
+        # etc., not a hard-coded 10).
+        "max_wickets": max(1, team_size - 1),
         "overs": inn.overs_str,
         "extras": inn.total_extras,
         "run_rate": _run_rate(inn.total_runs, inn.legal_balls),
@@ -72,12 +75,20 @@ def innings_score(inn: Innings, overs_limit: int) -> dict:
 async def build_live_score(db: AsyncSession, match: Match) -> dict:
     open_innings = next((i for i in match.innings if not i.is_closed), None)
     free_hit = await _next_is_free_hit(db, open_innings) if open_innings else False
+    # Squad size per team → real "wickets in hand" for any format (6/8/11-a-side).
+    sizes = {
+        match.team_a_id: len(match.team_a.players) if match.team_a else 11,
+        match.team_b_id: len(match.team_b.players) if match.team_b else 11,
+    }
     return {
         "match_id": match.id,
         "status": match.status,
         "overs_limit": match.overs_limit,
         "free_hit": free_hit,
-        "innings": [innings_score(inn, match.overs_limit) for inn in match.innings],
+        "innings": [
+            innings_score(inn, match.overs_limit, sizes.get(inn.batting_team_id, 11))
+            for inn in match.innings
+        ],
     }
 
 

@@ -56,7 +56,10 @@ def extract_features(state: LiveScoreState) -> MatchFeatures | None:
     balls_bowled = overs_to_balls(inn.overs)
     total_balls = state.overs_limit * 6
     balls_left = max(0, total_balls - balls_bowled)
-    wickets_in_hand = max(0, 10 - inn.wickets)
+    # Wickets in hand respects the actual squad size (6/8/11-a-side), not a
+    # hard-coded 10. Falls back to 10 for older payloads without max_wickets.
+    max_wickets = inn.max_wickets if inn.max_wickets else 10
+    wickets_in_hand = max(0, max_wickets - inn.wickets)
     is_chase = inn.target is not None
     runs_needed = (inn.target - inn.runs) if inn.target is not None else None
 

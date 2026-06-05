@@ -14,6 +14,7 @@ class InningsState(BaseModel):
     bowling_team_id: int
     runs: int
     wickets: int
+    max_wickets: int | None = None  # squad size − 1 (None → assume 10)
     overs: str  # "12.3"
     run_rate: float = 0.0
     target: int | None = None

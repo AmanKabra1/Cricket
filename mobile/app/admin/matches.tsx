@@ -57,7 +57,7 @@ export default function ManageMatches() {
         venue_id: venue ?? undefined,
         tournament_id: tournament ?? undefined,
         admin_ids: admins.length ? admins : undefined,
-        overs_limit: Math.max(1, Number(overs) || 20),
+        overs_limit: Math.min(50, Math.max(1, Number(overs) || 20)),
         scheduled_at: when ? (when.length === 16 ? `${when}:00` : when) : undefined,
       });
       setMsg("Match created ✓");
@@ -173,7 +173,7 @@ function EditMatch({ match, venues, onDone }: { match: Match; venues: { id: numb
       await update.mutateAsync({ id: match.id, body: {
         scheduled_at: when ? `${when}:00` : undefined,
         venue_id: venue,
-        overs_limit: Math.max(1, Number(overs) || match.overs_limit),
+        overs_limit: Math.min(50, Math.max(1, Number(overs) || match.overs_limit)),
       } });
       onDone();
     } catch (e) { setMsg(errorDetail(e)); }

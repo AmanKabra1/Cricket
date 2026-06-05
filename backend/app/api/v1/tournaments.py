@@ -134,7 +134,7 @@ async def update_tournament(
 class FixtureOptions(BaseModel):
     """Defaults applied to every generated fixture; matches are laid out across
     match-days so a long tournament doesn't run overnight."""
-    overs_limit: int = Field(default=20, ge=1, le=100)
+    overs_limit: int = Field(default=20, ge=1, le=50)
     venue_id: int | None = None
     start_at: datetime | None = None  # date + daily start time of the 1st match
     interval_minutes: int = Field(default=180, ge=0, le=100_000)  # gap on the same day

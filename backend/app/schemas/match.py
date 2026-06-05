@@ -15,7 +15,7 @@ class MatchCreate(BaseModel):
     venue_id: int | None = None
     tournament_id: int | None = None
     scheduled_at: datetime  # required — every match needs a date & time
-    overs_limit: int = Field(default=20, ge=1, le=100)
+    overs_limit: int = Field(default=20, ge=1, le=50)  # 50 = max (ODI length)
     admin_ids: list[int] = []
 
     @model_validator(mode="after")
@@ -29,7 +29,7 @@ class MatchUpdate(BaseModel):
     """Edit a scheduled match's time / venue / overs (teams aren't editable)."""
     scheduled_at: datetime | None = None
     venue_id: int | None = None
-    overs_limit: int | None = Field(default=None, ge=1, le=100)
+    overs_limit: int | None = Field(default=None, ge=1, le=50)
 
 
 class TossUpdate(BaseModel):
