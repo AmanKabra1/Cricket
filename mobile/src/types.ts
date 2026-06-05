@@ -58,6 +58,7 @@ export interface Match {
   result_text: string | null;
   admin_ids?: number[];
   starting_soon?: boolean;
+  created_by_id?: number | null;
 }
 
 export interface InningsScore {

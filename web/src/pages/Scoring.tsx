@@ -103,6 +103,7 @@ export default function Scoring() {
   const [bowler, setBowler] = useState<number | "">("");
   const [wicketType, setWicketType] = useState(WICKET_TYPES[0]);
   const [runOutEnd, setRunOutEnd] = useState<"striker" | "non_striker">("striker");
+  const [fielder, setFielder] = useState<number | "">(""); // catcher on a CAUGHT dismissal
   const [msg, setMsg] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   // Players already dismissed this innings — hidden from the batter selectors.
@@ -133,6 +134,7 @@ export default function Scoring() {
     // Always reset the wicket selector and undo history for a fresh innings.
     setWicketType(WICKET_TYPES[0]);
     setRunOutEnd("striker");
+    setFielder("");
     setHistory([]);
     const innId = openInnings?.innings_id;
     if (!innId) {
@@ -245,6 +247,7 @@ export default function Scoring() {
       // Reset the wicket selector back to default after every delivery.
       setWicketType(WICKET_TYPES[0]);
       setRunOutEnd("striker");
+      setFielder("");
     } catch (e: unknown) {
       setInfo(null);
       setMsg((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Failed to record ball");
@@ -484,6 +487,13 @@ export default function Scoring() {
                   <option value="non_striker">Non-striker out</option>
                 </select>
               )}
+              {/* On a catch, record the fielder so their catches stat counts. */}
+              {effectiveWicket === "CAUGHT" && (
+                <select className="input flex-1" value={fielder} onChange={(e) => setFielder(e.target.value === "" ? "" : Number(e.target.value))}>
+                  <option value="">Caught by…</option>
+                  {bowlingPlayers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              )}
               <button
                 className="rounded-lg bg-red-500 px-4 py-2 font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
                 disabled={postBall.isPending || !ready}
@@ -495,6 +505,7 @@ export default function Scoring() {
                       effectiveWicket === "RUN_OUT" && runOutEnd === "non_striker"
                         ? Number(nonStriker)
                         : Number(striker),
+                    fielder_id: effectiveWicket === "CAUGHT" && fielder !== "" ? Number(fielder) : null,
                   })
                 }
               >

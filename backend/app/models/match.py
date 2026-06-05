@@ -51,6 +51,10 @@ class Match(Base, TimestampMixin):
     # hidden from the public home page until a super admin approves it. Super
     # admin matches (and tournament fixtures) are approved on creation.
     approved: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Which admin created the match (so super admins can see who's responsible).
+    created_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
 
     team_a = relationship("Team", foreign_keys=[team_a_id], lazy="selectin")
     team_b = relationship("Team", foreign_keys=[team_b_id], lazy="selectin")

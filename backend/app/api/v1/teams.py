@@ -28,7 +28,8 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 # ---------- public reads ----------
 @router.get("", response_model=list[TeamOut])
 async def list_teams(db: DbSession, city: str | None = None) -> list[Team]:
-    stmt = select(Team).order_by(Team.name)
+    # Newest team first so a just-created team appears at the top of lists.
+    stmt = select(Team).order_by(Team.id.desc())
     if city:
         stmt = stmt.where(Team.city == city)
     return list((await db.scalars(stmt)).all())

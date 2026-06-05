@@ -206,6 +206,8 @@ function MatchList() {
   const del = useDeleteMatch();
   const approve = useApproveMatch();
   const isSuper = useAppSelector((s) => s.auth.user?.role === "SUPER_ADMIN");
+  const { data: tournaments } = useTournaments();
+  const { data: users } = useUsers(); // super-admin only; for the creator label
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -221,9 +223,17 @@ function MatchList() {
             Couldn’t load matches (server may be waking up). Tap Refresh in a moment.
           </p>
         )}
-        {(matches ?? []).map((m) => (
+        {(matches ?? []).map((m) => {
+          const tour = tournaments?.find((tn) => tn.id === m.tournament_id);
+          const creator = users?.find((u) => u.id === m.created_by_id);
+          return (
           <div key={m.id} className="card-surface flex items-center justify-between gap-2 p-3">
             <div className="min-w-0">
+              {tour && (
+                <span className="mb-1 inline-block rounded bg-pitch-500/15 px-2 py-0.5 text-xs font-bold text-pitch-700 dark:text-pitch-300">
+                  🏆 {tour.name}
+                </span>
+              )}
               <div className="truncate font-medium">
                 {teamName(teams, m.team_a_id)} vs {teamName(teams, m.team_b_id)}
               </div>
@@ -233,6 +243,11 @@ function MatchList() {
                   <span className="ml-2 font-semibold text-amber-600">· Pending approval</span>
                 )}
               </div>
+              {isSuper && (
+                <div className="text-xs muted">
+                  {creator ? `Created by ${creator.full_name} ${creator.role === "SUPER_ADMIN" ? "👑" : "🛡️"}` : "Creator unknown"}
+                </div>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {m.approved === false && isSuper && (
@@ -265,7 +280,8 @@ function MatchList() {
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
         {!isLoading && !isError && !matches?.length && <p className="muted">No matches yet.</p>}
       </div>
     </div>

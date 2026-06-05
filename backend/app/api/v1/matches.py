@@ -73,6 +73,7 @@ async def create_match(
         overs_limit=payload.overs_limit,
         status=MatchStatus.SCHEDULED,
         approved=True,
+        created_by_id=user.id,
     )
     # Assign scoring admins (creator always included).
     admin_ids = set(payload.admin_ids) | {user.id}

@@ -58,6 +58,7 @@ export default function Score() {
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [wicketOpen, setWicketOpen] = useState(false); // reveal the wicket-type panel
+  const [fielder, setFielder] = useState<number | null>(null); // catcher on a CAUGHT dismissal
 
   // Restore on (re)entering an open innings: prefer the server's on-field state
   // (synced across web & app), else this device's last local picks. Resets the
@@ -67,6 +68,7 @@ export default function Score() {
     setRunOutEnd("striker");
     setHistory([]);
     setWicketOpen(false);
+    setFielder(null);
     if (!openId) {
       setStriker(null); setNonStriker(null); setBowler(null);
       setLastOverBowler(null); setDismissed(new Set());
@@ -228,6 +230,7 @@ export default function Score() {
       setWicketType(WICKET_TYPES[0]);
       setRunOutEnd("striker");
       setWicketOpen(false);
+      setFielder(null);
       refresh();
     } catch (e: any) {
       setInfo(null);
@@ -429,6 +432,17 @@ export default function Score() {
                       <Seg t={t} label="Non-striker out" selected={runOutEnd === "non_striker"} onPress={() => setRunOutEnd("non_striker")} />
                     </Row>
                   )}
+                  {/* On a catch, record the fielder so their catches stat counts. */}
+                  {effectiveWicket === "CAUGHT" && (
+                    <>
+                      <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700", marginTop: 6, marginBottom: 4 }}>Caught by</Text>
+                      <Row>
+                        {bowlPlayers.map((p) => (
+                          <Seg key={p.id} t={t} label={p.name} selected={fielder === p.id} onPress={() => setFielder(fielder === p.id ? null : p.id)} />
+                        ))}
+                      </Row>
+                    </>
+                  )}
                   {freeHit && <Text style={{ color: "#b45309", fontSize: 12, marginVertical: 6 }}>Free hit: only run-out counts.</Text>}
                   <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
                     <View style={{ flex: 1 }}>
@@ -437,6 +451,7 @@ export default function Score() {
                           is_wicket: true,
                           wicket_type: effectiveWicket,
                           dismissed_player_id: effectiveWicket === "RUN_OUT" && runOutEnd === "non_striker" ? nonStriker : striker,
+                          fielder_id: effectiveWicket === "CAUGHT" ? fielder ?? undefined : undefined,
                         })} />
                     </View>
                     <Btn t={t} label="Cancel" tone="ghost" disabled={busy} onPress={() => setWicketOpen(false)} />

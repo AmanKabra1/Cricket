@@ -116,12 +116,25 @@ export default function ManageMatches() {
       {isLoading && <Note>Loading…</Note>}
       {(matches ?? []).map((m: Match) => {
         const done = m.status === "COMPLETED" || m.status === "ABANDONED";
+        const tour = tournaments?.find((tn) => tn.id === m.tournament_id);
+        const creator = users?.find((u) => u.id === m.created_by_id);
         return (
           <Card key={m.id}>
+            {/* Tournament accent so tournament fixtures stand out for super admins. */}
+            {tour && (
+              <View style={{ alignSelf: "flex-start", backgroundColor: t.primary + "22", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 4 }}>
+                <Text style={{ color: t.primary, fontSize: 11, fontWeight: "800" }}>🏆 {tour.name}</Text>
+              </View>
+            )}
             <Text style={{ color: t.text, fontWeight: "700" }}>{teamName(teamsMap, m.team_a_id)} vs {teamName(teamsMap, m.team_b_id)}</Text>
             <Text style={{ color: t.muted, fontSize: 12 }}>
               {m.status.replace("_", " ")} · {m.overs_limit} ov{(m as any).approved === false ? " · Pending approval" : ""}
             </Text>
+            {isSuper && (
+              <Text style={{ color: t.muted, fontSize: 12, marginTop: 2 }}>
+                {creator ? `Created by ${creator.full_name}${creator.role === "SUPER_ADMIN" ? " 👑" : " 🛡️"}` : "Creator unknown"}
+              </Text>
+            )}
             <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
               {/* Only a super admin can approve. A match admin sees a hint instead. */}
               {(m as any).approved === false && isSuper && <Chip label="Approve" selected={false} loading={approve.isPending && approve.variables === m.id} onPress={() => approve.mutate(m.id)} />}

@@ -60,6 +60,7 @@ export interface Match {
   result_text: string | null;
   admin_ids: number[];
   approved?: boolean;
+  created_by_id?: number | null;
   // Set by the dashboard for a scheduled match whose start time has arrived.
   starting_soon?: boolean;
 }

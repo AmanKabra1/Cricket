@@ -137,21 +137,27 @@ function Squad({ teamId }: { teamId: number }) {
   return (
     <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
       <Text style={[styles.cardTitle, { color: t.text }]}>{data.name}</Text>
-      {data.players.map((p) => (
-        <View key={p.id} style={styles.statRow}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-            <PlayerAvatar name={p.name} photo={p.photo_url} size={26} />
-            <Text style={{ color: t.muted, width: 22, textAlign: "center" }}>{p.jersey_number ?? "–"}</Text>
-            <Text style={{ color: t.text, fontWeight: "600" }} numberOfLines={1}>
-              {p.name}
-              {data.captain_id === p.id ? <Text style={{ color: t.primary }}> C</Text> : null}
-              {data.vice_captain_id === p.id ? <Text style={{ color: t.primary }}> VC</Text> : null}
-              {data.wicket_keeper_id === p.id ? <Text style={{ color: t.primary }}> WK</Text> : null}
-            </Text>
+      {data.players.map((p) => {
+        const tag = data.captain_id === p.id ? "C" : data.vice_captain_id === p.id ? "VC" : data.wicket_keeper_id === p.id ? "WK" : null;
+        return (
+          <View key={p.id} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 7 }}>
+            <PlayerAvatar name={p.name} photo={p.photo_url} size={28} />
+            <Text style={{ color: t.muted, width: 20, textAlign: "center" }}>{p.jersey_number ?? "–"}</Text>
+            {/* Name + role stacked so the C/VC/WK badge never collides with the role text. */}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={{ color: t.text, fontWeight: "700", flexShrink: 1 }} numberOfLines={1}>{p.name}</Text>
+                {tag && (
+                  <View style={{ backgroundColor: t.primary, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                    <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800" }}>{tag}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={{ color: t.muted, fontSize: 12 }} numberOfLines={1}>{p.role.replace("_", " ")}</Text>
+            </View>
           </View>
-          <Text style={{ color: t.muted, fontSize: 12 }}>{p.role.replace("_", " ")}</Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -289,9 +295,9 @@ function PredictionTab({ matchId, teams }: { matchId: number; teams: Map<number,
           <View style={{ width: `${batPct}%`, backgroundColor: t.primary }} />
           <View style={{ width: `${bowlPct}%`, backgroundColor: palette.amber }} />
         </View>
-        <View style={styles.metaRow}>
-          <Text style={{ color: t.primary, fontWeight: "800" }}>{batName} {batPct}%</Text>
-          <Text style={{ color: palette.amber, fontWeight: "800" }}>{bowlName} {bowlPct}%</Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10, marginTop: 6 }}>
+          <Text style={{ color: t.primary, fontWeight: "800", flex: 1 }}>{batName} {batPct}%</Text>
+          <Text style={{ color: palette.amber, fontWeight: "800", flex: 1, textAlign: "right" }}>{bowlName} {bowlPct}%</Text>
         </View>
         {data.projected_score != null && (
           <Text style={{ color: t.muted, marginTop: 10 }}>Projected score: <Text style={{ color: t.text, fontWeight: "800" }}>{data.projected_score}</Text></Text>
