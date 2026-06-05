@@ -63,18 +63,42 @@ transparent cricket **heuristic** already works today with **zero keys**.
 - **EAS build & submit**: Android (Play) first, then iOS; app icons/splash.
 - Offline-friendly read caching for spectators on poor networks.
 
-## Phase 9 — Polish & growth
+## Phase 9 — Player stats & leaderboards ✅ DONE
 
-- Player **career aggregates + leaderboards** (most runs/wickets, best SR/econ).
-- Observability: **Sentry** (free tier) for web + backend, structured logs,
-  `/ready` probe.
+- Player **career aggregates** (batting/bowling/fielding) + screens (web + app).
+- Global **leaderboards** (most runs / wickets).
+
+## Phase 10 — Competition stats & awards ✅ DONE
+
+- **Tournament-scoped leaderboards** (per-competition runs/wickets/MVP).
+- **MVP** ranking by all-round impact (runs + 20·wkts + 10·catches) — global,
+  per-tournament, and a **Tournament MVP** banner.
+- **Player of the Match** on completed matches (web + app).
+- API: `GET /public/tournaments/{id}/leaderboards`, `GET /public/matches/{id}/best`.
+
+## Phase 11 — Reliability & observability (next)
+
+- **Sentry** (free tier) for backend + web + app, structured logs, `/ready` probe.
+- **Match-assignment email** ("you've been assigned to score X vs Y on {date}")
+  in addition to the existing 3-hour reminder.
+
+## Phase 12 — Engagement & notifications
+
+- Push/email on match start, wicket clusters, result; **follow a team/tournament**.
+- Knockout **bracket view**.
+
+## Later
+
 - Shareable match cards (image/OG) for social sharing.
-- Multi-sport: add a second `ScoringEngine` (football/kabaddi) behind the
-  existing interface (teams/tournaments are already sport-agnostic).
+- Load-test to the 10k-concurrent target; offline-friendly scoring (queue balls).
+- Multi-sport: a second `ScoringEngine` (football/kabaddi) behind the existing
+  interface (teams/tournaments/venues are already sport-agnostic).
 
 ---
 
 ## Immediate next action
-Start with **Stage 7.1** — deploy `ai-service` and flip the Prediction tab to
-the working heuristic. It's the fastest path to "AI is live" with no keys and no
-cost, and unblocks 7.2–7.4.
+**Phase 11** — wire Sentry (backend + web + app) and add the match-assignment
+email. Then Phase 12 (notifications + bracket view).
+
+> Note: Play Store deploy is intentionally **on hold**; everything else for
+> go-live (web on Vercel, backend/AI on Render) is done.
