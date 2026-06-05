@@ -243,5 +243,17 @@ async def player_stats_endpoint(player_id: int, db: DbSession) -> dict:
 
 @router.get("/leaderboards")
 async def leaderboards_endpoint(db: DbSession, limit: int = 10) -> dict:
-    """Top run-scorers and wicket-takers across all matches."""
+    """Top run-scorers, wicket-takers and MVPs across all matches."""
     return await player_stats.leaderboards(db, limit=min(50, max(1, limit)))
+
+
+@router.get("/tournaments/{tournament_id}/leaderboards")
+async def tournament_leaderboards(tournament_id: int, db: DbSession, limit: int = 10) -> dict:
+    """Top run-scorers, wicket-takers and the MVP for one tournament."""
+    return await player_stats.leaderboards(db, limit=min(50, max(1, limit)), tournament_id=tournament_id)
+
+
+@router.get("/matches/{match_id}/best")
+async def match_best_performer(match_id: int, db: DbSession) -> dict:
+    """Player of the match — best all-round performer (null until balls are scored)."""
+    return {"player_of_match": await player_stats.player_of_match(db, match_id)}

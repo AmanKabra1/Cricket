@@ -84,23 +84,33 @@ async def player_career(db: AsyncSession, player_id: int) -> dict | None:
     }
 
 
-async def leaderboards(db: AsyncSession, limit: int = 10) -> dict:
+def _impact(s: type[PlayerMatchStats]):
+    """A simple all-round impact score: runs + 20·wickets + 10·catches."""
+    return s.runs_scored + 20 * s.wickets + 10 * s.catches
+
+
+async def leaderboards(db: AsyncSession, limit: int = 10, tournament_id: int | None = None) -> dict:
+    """Top run-scorers, wicket-takers and MVPs — overall or scoped to a tournament."""
     s = PlayerMatchStats
     name_cols = (Player.id, Player.name, Player.photo_url, Team.name.label("team_name"))
 
     async def _top(metric, having_gt: int):
-        rows = (
-            await db.execute(
-                select(*name_cols, func.coalesce(func.sum(metric), 0).label("value"),
-                       func.count(func.distinct(s.match_id)).label("matches"))
-                .join(Player, Player.id == s.player_id)
-                .join(Team, Team.id == Player.team_id)
-                .group_by(Player.id, Player.name, Player.photo_url, Team.name)
-                .having(func.coalesce(func.sum(metric), 0) > having_gt)
-                .order_by(func.coalesce(func.sum(metric), 0).desc())
-                .limit(limit)
-            )
-        ).all()
+        q = (
+            select(*name_cols, func.coalesce(func.sum(metric), 0).label("value"),
+                   func.count(func.distinct(s.match_id)).label("matches"))
+            .join(Player, Player.id == s.player_id)
+            .join(Team, Team.id == Player.team_id)
+        )
+        if tournament_id is not None:
+            from app.models.match import Match
+            q = q.join(Match, Match.id == s.match_id).where(Match.tournament_id == tournament_id)
+        q = (
+            q.group_by(Player.id, Player.name, Player.photo_url, Team.name)
+            .having(func.coalesce(func.sum(metric), 0) > having_gt)
+            .order_by(func.coalesce(func.sum(metric), 0).desc())
+            .limit(limit)
+        )
+        rows = (await db.execute(q)).all()
         return [
             {"player_id": r.id, "name": r.name, "photo_url": r.photo_url,
              "team_name": r.team_name, "value": int(r.value), "matches": r.matches}
@@ -110,4 +120,39 @@ async def leaderboards(db: AsyncSession, limit: int = 10) -> dict:
     return {
         "top_run_scorers": await _top(s.runs_scored, 0),
         "top_wicket_takers": await _top(s.wickets, 0),
+        "mvps": await _top(_impact(s), 0),  # all-round impact ranking
+    }
+
+
+def _line(r) -> str:
+    """A short performance line, e.g. '54 (32) & 2/18'."""
+    bat = f"{r.runs} ({r.balls})" if (r.balls or r.runs) else ""
+    bowl = f"{r.wickets}/{r.conceded}" if r.balls_bowled else ""
+    return " & ".join(x for x in (bat, bowl) if x) or "—"
+
+
+async def player_of_match(db: AsyncSession, match_id: int) -> dict | None:
+    """Best all-round performer in a single match (by impact score)."""
+    s = PlayerMatchStats
+    row = (
+        await db.execute(
+            select(
+                Player.id, Player.name, Player.photo_url, Team.name.label("team_name"),
+                s.runs_scored.label("runs"), s.balls_faced.label("balls"),
+                s.wickets.label("wickets"), s.runs_conceded.label("conceded"),
+                s.legal_balls_bowled.label("balls_bowled"), s.catches.label("catches"),
+                _impact(s).label("impact"),
+            )
+            .join(Player, Player.id == s.player_id)
+            .join(Team, Team.id == Player.team_id)
+            .where(s.match_id == match_id, _impact(s) > 0)
+            .order_by(_impact(s).desc())
+            .limit(1)
+        )
+    ).first()
+    if not row:
+        return None
+    return {
+        "player_id": row.id, "name": row.name, "photo_url": row.photo_url,
+        "team_name": row.team_name, "line": _line(row), "impact": int(row.impact),
     }
