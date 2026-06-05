@@ -1,7 +1,7 @@
 """Match venues / grounds."""
 from __future__ import annotations
 
-from sqlalchemy import Integer, String
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -16,3 +16,7 @@ class Venue(Base, TimestampMixin):
     city: Mapped[str] = mapped_column(String(120), nullable=False)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Which admin created it — match admins see only their own venues; super sees all.
+    created_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )

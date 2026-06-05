@@ -87,6 +87,7 @@ class TeamOut(BaseModel):
     captain_id: int | None
     vice_captain_id: int | None = None
     wicket_keeper_id: int | None = None
+    created_by: int | None = None  # owning admin (only they / a super admin can delete)
     model_config = {"from_attributes": True}
 
 

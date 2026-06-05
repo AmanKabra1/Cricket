@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, useWindowDimensions, View } from "react-native";
-import { useIsMutating } from "@tanstack/react-query";
+import { useIsFetching, useIsMutating } from "@tanstack/react-query";
 import { palette } from "@/theme";
 
 /**
- * A thin indeterminate bar pinned to the top that animates only while a
- * MUTATION (a write action — create/score/delete/etc.) is in flight. It used to
- * also track every fetch, but background polling made it flash constantly; now
- * it appears only when you actually do something.
+ * A thin indeterminate bar pinned to the top — the app's "page is loading"
+ * signal, like the web. It shows while a MUTATION runs OR while a query is
+ * doing its FIRST load (no cached data yet, e.g. opening a new screen), but NOT
+ * for background refetches/polling (which already have data) — so it doesn't
+ * flicker constantly.
  */
 export default function TopProgressBar() {
-  const active = useIsMutating() > 0;
+  const initialLoads = useIsFetching({
+    predicate: (q) => q.state.data === undefined && q.state.fetchStatus === "fetching",
+  });
+  const active = initialLoads + useIsMutating() > 0;
   const { width } = useWindowDimensions();
   const seg = Math.max(80, width * 0.35);
   const x = useRef(new Animated.Value(0)).current;

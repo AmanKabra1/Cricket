@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { useTeam, useTeams } from "@/api/hooks";
+import { useMe } from "@/api/auth";
 import {
   errorDetail, useAddPlayer, useCreateTeam, useDeletePlayer, useDeleteTeam, useUpdateTeam,
 } from "@/api/admin";
@@ -19,9 +20,11 @@ const bowls = (r: string) => r === "BOWLER" || r === "ALL_ROUNDER";
 
 export default function ManageTeams() {
   const t = useTheme();
+  const { data: me } = useMe();
   const { data: teams, isLoading, refetch, isFetching } = useTeams();
   const create = useCreateTeam();
   const del = useDeleteTeam();
+  const canDelete = (tm: Team) => me?.role === "SUPER_ADMIN" || tm.created_by == null || tm.created_by === me?.id;
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [coach, setCoach] = useState("");
@@ -64,12 +67,21 @@ export default function ManageTeams() {
             <Text style={{ color: t.text, fontWeight: "700", fontSize: 16 }} onPress={() => setSelected(selected === tm.id ? null : tm.id)}>
               {tm.name}
             </Text>
-            <Text
-              style={{ color: "#ef4444", fontWeight: "700" }}
-              onPress={async () => { try { await del.mutateAsync(tm.id); } catch (e) { setMsg(errorDetail(e)); } }}
-            >
-              Delete
-            </Text>
+            {canDelete(tm) && (
+              <Text
+                style={{ color: "#ef4444", fontWeight: "700" }}
+                onPress={() => Alert.alert(
+                  `Delete ${tm.name}?`,
+                  "This removes the team and all its players. A team used in any match can't be deleted.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Delete", style: "destructive", onPress: async () => { try { await del.mutateAsync(tm.id); } catch (e) { setMsg(errorDetail(e)); } } },
+                  ],
+                )}
+              >
+                Delete
+              </Text>
+            )}
           </View>
           {selected === tm.id && <Squad teamId={tm.id} />}
           {selected !== tm.id && <Text style={{ color: t.muted, fontSize: 12, marginTop: 4 }}>Tap the name to manage squad</Text>}

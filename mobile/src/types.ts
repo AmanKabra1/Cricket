@@ -26,6 +26,7 @@ export interface Team {
   captain_id: number | null;
   vice_captain_id?: number | null;
   wicket_keeper_id?: number | null;
+  created_by?: number | null;
 }
 
 export interface Player {

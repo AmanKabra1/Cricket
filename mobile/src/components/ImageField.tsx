@@ -25,6 +25,7 @@ export function ImageField({ label, value, onChange, category }: {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
+      aspect: [1, 1], // forces a square crop UI (logos/photos) — without this Android often skips cropping
       quality: 0.7,
     });
     if (res.canceled || !res.assets?.length) return;

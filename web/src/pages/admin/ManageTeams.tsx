@@ -10,6 +10,7 @@ import {
 } from "@/api/admin";
 import ImageUpload from "@/components/ImageUpload";
 import Spinner from "@/components/Spinner";
+import { useAppSelector } from "@/store";
 
 const ROLES = ["BATSMAN", "BOWLER", "ALL_ROUNDER", "WICKET_KEEPER"];
 const BAT = ["RIGHT_HAND", "LEFT_HAND"];
@@ -45,6 +46,9 @@ export default function ManageTeams() {
   const { data: teams } = useTeams();
   const [selected, setSelected] = useState<number | null>(null);
   const deleteTeam = useDeleteTeam();
+  const user = useAppSelector((s) => s.auth.user);
+  const canDelete = (createdBy?: number | null) =>
+    user?.role === "SUPER_ADMIN" || createdBy == null || createdBy === user?.id;
 
   const onDelete = async (id: number, name: string) => {
     if (!confirm(`Delete team "${name}"? This removes its players too.`)) return;
@@ -85,14 +89,16 @@ export default function ManageTeams() {
                 )}
                 <span className="font-medium">{t.name}</span>
               </button>
-              <button
-                onClick={() => onDelete(t.id, t.name)}
-                disabled={deleteTeam.isPending && deleteTeam.variables === t.id}
-                className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"
-                title="Delete team"
-              >
-                {deleteTeam.isPending && deleteTeam.variables === t.id ? "Deleting…" : "Delete"}
-              </button>
+              {canDelete(t.created_by) && (
+                <button
+                  onClick={() => onDelete(t.id, t.name)}
+                  disabled={deleteTeam.isPending && deleteTeam.variables === t.id}
+                  className="rounded px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                  title="Delete team"
+                >
+                  {deleteTeam.isPending && deleteTeam.variables === t.id ? "Deleting…" : "Delete"}
+                </button>
+              )}
             </div>
           ))}
         </div>

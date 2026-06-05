@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession, require_admin
 from app.models.ball import Ball
+from app.models.enums import UserRole
 from app.models.match import Match
 from app.models.player import Player
 from app.models.team import Team
@@ -149,6 +150,9 @@ async def delete_team(
     team = await db.get(Team, team_id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
+    # Only the team's creator (or a super admin) may delete it.
+    if user.role != UserRole.SUPER_ADMIN and team.created_by not in (None, user.id):
+        raise HTTPException(status_code=403, detail="Only the team's creator or a super admin can delete this team.")
     # Block deletion if the team is part of any match (FK is RESTRICT).
     in_match = await db.scalar(
         select(Match.id).where(
