@@ -41,6 +41,45 @@ function Dot({ color }: { color: string }) {
   return <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: color }} />;
 }
 
+/** Both teams' cumulative runs as two lines on one graph (innings comparison). */
+export function WormCompare({ series }: { series: { name: string; color: string; overs: OverPoint[] }[] }) {
+  const t = useTheme();
+  const filled = series.filter((s) => s.overs.length);
+  if (!filled.length) return null;
+  const maxOvers = Math.max(...filled.map((s) => s.overs.length));
+  const maxCum = Math.max(1, ...filled.map((s) => s.overs[s.overs.length - 1]?.cumulative ?? 0));
+  const w = Math.max(maxOvers * COL + 24, 240);
+  const plotH = H - PAD_TOP - PAD_BOTTOM;
+  const xOf = (i: number) => i * COL + 28;
+  const yOf = (cum: number) => H - PAD_BOTTOM - (cum / maxCum) * plotH;
+
+  return (
+    <View>
+      <View style={{ flexDirection: "row", gap: 16, marginBottom: 4, flexWrap: "wrap" }}>
+        {filled.map((s) => (
+          <View key={s.name} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <Dot color={s.color} /><Text style={{ color: t.muted, fontSize: 11 }} numberOfLines={1}>{s.name}</Text>
+          </View>
+        ))}
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <Svg width={w} height={H}>
+          <Line x1={0} y1={H - PAD_BOTTOM} x2={w} y2={H - PAD_BOTTOM} stroke={t.border} strokeWidth={1} />
+          {filled.map((s) => (
+            <G key={s.name}>
+              <Polyline points={s.overs.map((o, i) => `${xOf(i)},${yOf(o.cumulative)}`).join(" ")} fill="none" stroke={s.color} strokeWidth={2.5} />
+              {s.overs.map((o, i) => <Circle key={i} cx={xOf(i)} cy={yOf(o.cumulative)} r={2.5} fill={s.color} />)}
+            </G>
+          ))}
+          {Array.from({ length: maxOvers }, (_, i) => (
+            <SvgText key={i} x={xOf(i)} y={H - 6} fontSize={10} fill={t.muted} textAnchor="middle">{i + 1}</SvgText>
+          ))}
+        </Svg>
+      </ScrollView>
+    </View>
+  );
+}
+
 /**
  * Worm — cumulative runs (green line + area) AND cumulative wickets (red line)
  * on one graph, with a red marker + "W" where each wicket fell. Two scales so

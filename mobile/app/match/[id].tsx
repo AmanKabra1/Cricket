@@ -7,7 +7,7 @@ import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import { Loading, Empty } from "@/components/States";
 import Celebration from "@/components/Celebration";
-import { Manhattan, Worm } from "@/components/Charts";
+import { Manhattan, Worm, WormCompare } from "@/components/Charts";
 import { Btn } from "@/components/ui";
 import { palette, useTheme } from "@/theme";
 import type { BatterCard, BowlerCard, CommentaryItem, InningsCard, InningsScore, Match, OverPoint, Team } from "@/types";
@@ -344,8 +344,14 @@ function AnalyticsTab({ matchId, teams }: { matchId: number; teams: Map<number, 
   if (isLoading) return <Loading />;
   if (!data?.innings.length) return <Empty message="No analytics yet." />;
 
+  const COMPARE_COLORS = ["#16a34a", "#2563eb"];
   return (
     <View>
+      {/* Single graph comparing both teams' cumulative runs. */}
+      <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+        <Text style={[styles.cardTitle, { color: t.text }]}>Run comparison (cumulative)</Text>
+        <WormCompare series={data.innings.map((inn, k) => ({ name: teamName(teams, inn.batting_team_id), color: COMPARE_COLORS[k % COMPARE_COLORS.length], overs: inn.overs }))} />
+      </View>
       {data.innings.map((inn) => {
         const total = inn.overs.length ? inn.overs[inn.overs.length - 1].cumulative : 0;
         const wkts = inn.overs.reduce((s, o) => s + o.wickets, 0);

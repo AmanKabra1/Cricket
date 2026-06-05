@@ -21,14 +21,59 @@ import { useAnalytics } from "@/api/hooks";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
 import Spinner, { EmptyState } from "@/components/Spinner";
 
+const TEAM_COLORS = ["#16a34a", "#2563eb"];
+
+// Tooltip for the Manhattan: "Over N — R runs · W wkt".
+function ManhattanTip({ active, payload, label }: { active?: boolean; payload?: { payload: { runs: number; wickets: number } }[]; label?: number | string }) {
+  if (!active || !payload?.length) return null;
+  const o = payload[0].payload;
+  return (
+    <div className="rounded-lg border px-3 py-2 text-xs" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+      <div className="font-bold">Over {label}</div>
+      <div>{o.runs} run{o.runs === 1 ? "" : "s"}{o.wickets ? ` · ${o.wickets} wkt` : ""}</div>
+    </div>
+  );
+}
+
 export default function AnalyticsTab({ matchId }: { matchId: number }) {
   const { data, isLoading } = useAnalytics(matchId);
   const teams = useTeamMap();
   if (isLoading) return <Spinner />;
   if (!data || !data.innings.length) return <EmptyState message="Charts appear once overs are bowled." />;
 
+  // Merge both innings by over for a single side-by-side worm.
+  const maxOvers = Math.max(...data.innings.map((i) => i.overs.length), 0);
+  const comparison = Array.from({ length: maxOvers }, (_, idx) => {
+    const row: Record<string, number | null> = { over: idx + 1 };
+    data.innings.forEach((inn, k) => { row[`t${k}`] = inn.overs[idx]?.cumulative ?? null; });
+    return row;
+  });
+  const cmpWidth = Math.max(320, maxOvers * 46);
+
   return (
     <div className="space-y-8">
+      {/* Single worm comparing both teams' cumulative runs. */}
+      <div className="card-surface p-5">
+        <div className="mb-2 text-sm muted">Run comparison (cumulative)</div>
+        <div className="overflow-x-auto">
+          <div style={{ minWidth: cmpWidth }}>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={comparison}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="over" stroke="var(--muted)" fontSize={12} />
+                <YAxis stroke="var(--muted)" fontSize={12} width={28} />
+                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)" }} />
+                <Legend />
+                {data.innings.map((inn, k) => (
+                  <Line key={inn.innings_number} type="monotone" dataKey={`t${k}`} name={teamName(teams, inn.batting_team_id)}
+                    stroke={TEAM_COLORS[k % TEAM_COLORS.length]} strokeWidth={2.5} dot={false} connectNulls />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       {data.innings.map((inn) => {
         // Give charts room per over and let them scroll horizontally when an
         // innings has many overs (so bars/labels don't get crushed on mobile).
@@ -52,7 +97,7 @@ export default function AnalyticsTab({ matchId }: { matchId: number }) {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="over" stroke="var(--muted)" fontSize={12} />
                   <YAxis stroke="var(--muted)" fontSize={12} width={28} />
-                  <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)" }} />
+                  <Tooltip content={<ManhattanTip />} cursor={{ fill: "var(--border)", opacity: 0.3 }} />
                   <Bar dataKey="runs" fill="#16a34a" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

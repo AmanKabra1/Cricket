@@ -634,7 +634,7 @@ function StartPanel({
       ) : (
         <Row>
           {battingOptions.map((id) => (
-            <Seg key={id} t={t} label={teamName(teams, id)} selected={batId === id} onPress={() => setBatId(id)} />
+            <Seg key={id} t={t} label={teamName(teams, id)} selected={batId === id} disabled={busy} onPress={() => setBatId(id)} />
           ))}
         </Row>
       )}
