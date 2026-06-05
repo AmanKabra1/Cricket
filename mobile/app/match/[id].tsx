@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useAnalytics, useCommentary, useLiveScore, useMatch, usePrediction, useScorecard, useTeam } from "@/api/hooks";
+import { useAnalytics, useCommentary, useLiveScore, useMatch, useMatchBest, usePrediction, useScorecard, useTeam } from "@/api/hooks";
 import { useMe } from "@/api/auth";
 import { useLiveSocket } from "@/hooks/useLiveSocket";
 import { useTeamMap, teamName } from "@/hooks/useTeamMap";
@@ -39,12 +39,14 @@ export default function MatchCentre() {
   const { data: match, isLoading } = useMatch(matchId);
   const { data: live } = useLiveScore(matchId);
   const { data: me } = useMe();
+  const { data: best } = useMatchBest(matchId);
   useLiveSocket(matchId);
 
   if (isLoading || !match) return <Loading />;
 
   const isLive = match.status === "LIVE";
   const completed = match.status === "COMPLETED" || match.status === "ABANDONED";
+  const potm = match.status === "COMPLETED" ? best?.player_of_match : null;
   const winnerId = match.winner_team_id;
   const canScore = me && me.role !== "PUBLIC" && !completed && (match as any).approved !== false;
 
@@ -76,7 +78,16 @@ export default function MatchCentre() {
         {match.toss_winner_id ? ` · ${teamName(teams, match.toss_winner_id)} won the toss & chose to ${(match.toss_decision || "").toLowerCase()}` : ""}
       </Text>
       {match.result_text && (
-        <Text style={{ color: t.primary, fontWeight: "800", marginBottom: 14 }}>🏆 {match.result_text}</Text>
+        <Text style={{ color: t.primary, fontWeight: "800", marginBottom: potm ? 4 : 14 }}>🏆 {match.result_text}</Text>
+      )}
+      {potm && (
+        <Pressable onPress={() => router.push(`/player/${potm.player_id}`)} style={{ marginBottom: 14 }}>
+          <Text style={{ color: t.text }}>
+            <Text style={{ color: t.muted }}>🏅 Player of the Match: </Text>
+            <Text style={{ fontWeight: "800" }}>{potm.name}</Text>
+            <Text style={{ color: t.muted }}> — {potm.line}</Text>
+          </Text>
+        </Pressable>
       )}
 
       {canScore && (

@@ -1,22 +1,38 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
-import { useTournaments } from "@/api/hooks";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTournaments, useTournamentLeaderboards, type LeaderRow } from "@/api/hooks";
 import { useStandings, useTournamentMatches } from "@/api/admin";
 import { useTeamMap } from "@/hooks/useTeamMap";
 import MatchCard from "@/components/MatchCard";
 import { Loading } from "@/components/States";
-import { useTheme } from "@/theme";
+import { palette, useTheme } from "@/theme";
 import type { Match } from "@/types";
 
 export default function TournamentDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const tid = Number(id);
   const t = useTheme();
+  const router = useRouter();
   const teams = useTeamMap();
   const { data: tournaments } = useTournaments();
   const { data: standings, isLoading } = useStandings(tid);
   const { data: matches } = useTournamentMatches(tid);
+  const { data: lb } = useTournamentLeaderboards(tid);
   const tournament = tournaments?.find((x) => x.id === tid);
+  const mvp = lb?.mvps?.[0];
+
+  const MiniBoard = ({ title, unit, rows }: { title: string; unit: string; rows: LeaderRow[] }) =>
+    rows.length ? (
+      <View style={{ backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 10 }}>
+        <Text style={{ color: t.text, fontWeight: "800", marginBottom: 4 }}>{title}</Text>
+        {rows.slice(0, 5).map((r, i) => (
+          <Pressable key={r.player_id} onPress={() => router.push(`/player/${r.player_id}`)} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 5 }}>
+            <Text style={{ color: t.text, flex: 1 }} numberOfLines={1}><Text style={{ color: t.muted }}>{i + 1}  </Text>{r.name}</Text>
+            <Text style={{ color: t.primary, fontWeight: "800" }}>{r.value}<Text style={{ color: t.muted, fontSize: 11 }}> {unit}</Text></Text>
+          </Pressable>
+        ))}
+      </View>
+    ) : null;
 
   if (isLoading) return <Loading />;
 
@@ -61,6 +77,23 @@ export default function TournamentDetail() {
         ))}
         {!standings?.length && <Text style={{ color: t.muted, padding: 12 }}>No standings yet.</Text>}
       </View>
+
+      {/* MVP + leaderboards */}
+      {mvp && (
+        <View style={{ backgroundColor: palette.pitch, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+          <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: "800" }}>⭐ TOURNAMENT MVP</Text>
+          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "900", marginTop: 2 }}>{mvp.name}</Text>
+          <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12 }}>{mvp.team_name} · {mvp.value} impact pts · {mvp.matches} match{mvp.matches === 1 ? "" : "es"}</Text>
+        </View>
+      )}
+      {lb && (lb.top_run_scorers.length > 0 || lb.top_wicket_takers.length > 0) && (
+        <>
+          <Text style={[styles.h2, { color: t.text }]}>Leaderboards</Text>
+          <MiniBoard title="⭐ MVP" unit="pts" rows={lb.mvps} />
+          <MiniBoard title="🏏 Most runs" unit="runs" rows={lb.top_run_scorers} />
+          <MiniBoard title="🔴 Most wickets" unit="wkts" rows={lb.top_wicket_takers} />
+        </>
+      )}
 
       {/* Fixtures grouped like the dashboard */}
       <Text style={[styles.h2, { color: t.text, marginTop: 8 }]}>Fixtures</Text>

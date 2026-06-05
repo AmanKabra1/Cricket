@@ -51,6 +51,7 @@ export default function Stats() {
   const open = (id: number) => router.push(`/player/${id}`);
   return (
     <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: 16 }}>
+      <Board title="⭐ MVP (impact)" unit="pts" rows={data!.mvps} onOpen={open} />
       <Board title="🏏 Most runs" unit="runs" rows={data!.top_run_scorers} onOpen={open} />
       <Board title="🔴 Most wickets" unit="wkts" rows={data!.top_wicket_takers} onOpen={open} />
     </ScrollView>
