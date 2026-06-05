@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Directory holding trained model artifacts (*.joblib). When absent, the
     # heuristic predictors are used — so the service works before any training.
     MODEL_DIR: str = "models"
+    # The committed model is trained on SYNTHETIC data and is weaker/less
+    # calibrated than the heuristic, so it's OFF by default. Flip to true once a
+    # model trained on real exported match data is in MODEL_DIR.
+    USE_TRAINED_MODEL: bool = False
 
 
 @lru_cache

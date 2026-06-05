@@ -41,6 +41,8 @@ def _load_model():
     if _model_loaded:
         return _model
     _model_loaded = True
+    if not settings.USE_TRAINED_MODEL:  # heuristic by default — see config
+        return None
     path = os.path.join(settings.MODEL_DIR, "win_probability.joblib")
     if os.path.exists(path):
         try:
@@ -159,7 +161,13 @@ def predict(state: LiveScoreState) -> WinProbability:
         )
 
     model = _load_model()
-    projected: int | None = None
+
+    # Always compute a projected score — the trained model only outputs a
+    # probability, so without this the projection (and its insight line) is None.
+    if f.is_chase:
+        heuristic_prob, projected = _heuristic_chase_prob(f), f.target
+    else:
+        heuristic_prob, projected = _first_innings_prob_and_projection(f)
 
     if model is not None:
         try:
@@ -167,17 +175,9 @@ def predict(state: LiveScoreState) -> WinProbability:
             batting_prob = float(model.predict_proba(row)[0][1])
             model_name = type(model).__name__
         except Exception:  # noqa: BLE001
-            model, model_name = None, "heuristic"
-            batting_prob = _heuristic_chase_prob(f) if f.is_chase else 0.5
+            batting_prob, model_name = heuristic_prob, "heuristic"
     else:
-        model_name = "heuristic"
-
-    if model is None:
-        if f.is_chase:
-            batting_prob = _heuristic_chase_prob(f)
-            projected = f.target
-        else:
-            batting_prob, projected = _first_innings_prob_and_projection(f)
+        batting_prob, model_name = heuristic_prob, "heuristic"
 
     batting_prob = round(batting_prob, 3)
     return WinProbability(
