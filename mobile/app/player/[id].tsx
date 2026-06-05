@@ -33,7 +33,14 @@ export default function PlayerDetail() {
           </View>
         )}
         <View style={{ flex: 1 }}>
-          <Text style={{ color: t.text, fontSize: 22, fontWeight: "800" }}>{p.name}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <Text style={{ color: t.text, fontSize: 22, fontWeight: "800" }}>{p.name}</Text>
+            {p.jersey_number != null && (
+              <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7, backgroundColor: t.primary + "22" }}>
+                <Text style={{ color: t.primary, fontWeight: "800", fontSize: 12 }}>👕 #{p.jersey_number}</Text>
+              </View>
+            )}
+          </View>
           <Text style={{ color: t.muted }}>
             {p.role.replace("_", " ")} · {p.batting_style.replace("_", " ")}
             {p.bowling_style && p.bowling_style !== "None" ? ` · ${p.bowling_style}` : ""}

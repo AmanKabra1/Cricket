@@ -36,7 +36,7 @@ export default function TeamDetail() {
         <table className="w-full min-w-[480px] text-sm">
           <thead className="text-left muted">
             <tr style={{ borderBottom: "1px solid var(--border)" }}>
-              <th className="p-3">#</th>
+              <th className="p-3">Jersey</th>
               <th className="p-3">Player</th>
               <th className="p-3">Role</th>
               <th className="p-3">Batting</th>
@@ -46,7 +46,11 @@ export default function TeamDetail() {
           <tbody>
             {data.players.map((p) => (
               <tr key={p.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                <td className="p-3 muted">{p.jersey_number ?? "—"}</td>
+                <td className="p-3">
+                  {p.jersey_number != null
+                    ? <span className="rounded bg-pitch-500/15 px-2 py-0.5 text-xs font-bold text-pitch-700 dark:text-pitch-300">#{p.jersey_number}</span>
+                    : <span className="muted">—</span>}
+                </td>
                 <td className="p-3 font-medium">
                   <Link to={`/players/${p.id}`} className="hover:text-pitch-600 hover:underline">{p.name}</Link>
                   {data.captain_id === p.id && <RoleTag>C</RoleTag>}

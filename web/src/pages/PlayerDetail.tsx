@@ -30,7 +30,12 @@ export default function PlayerDetail() {
           </span>
         )}
         <div>
-          <h1 className="text-2xl font-bold">{p.name}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold">{p.name}</h1>
+            {p.jersey_number != null && (
+              <span className="rounded-md bg-pitch-500/15 px-2 py-0.5 text-sm font-bold text-pitch-700 dark:text-pitch-300">👕 #{p.jersey_number}</span>
+            )}
+          </div>
           <p className="muted">
             {p.role.replace("_", " ")} · {p.batting_style.replace("_", " ")}
             {p.bowling_style && p.bowling_style !== "None" ? ` · ${p.bowling_style}` : ""}

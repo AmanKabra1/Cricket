@@ -22,7 +22,9 @@ function Squad({ teamId }: { teamId: number }) {
         {data.players.map((p) => (
           <li key={p.id} className="flex items-center justify-between text-sm">
             <span>
-              <span className="mr-2 muted">{p.jersey_number ?? "–"}</span>
+              {p.jersey_number != null
+                ? <span className="mr-2 rounded bg-pitch-500/15 px-1.5 py-0.5 text-xs font-bold text-pitch-700 dark:text-pitch-300">#{p.jersey_number}</span>
+                : <span className="mr-2 muted">–</span>}
               {p.name}
               {data.captain_id === p.id && <RoleTag>C</RoleTag>}
               {data.vice_captain_id === p.id && <RoleTag>VC</RoleTag>}

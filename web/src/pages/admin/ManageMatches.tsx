@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMatches, useTeams, useVenues, useTournaments } from "@/api/hooks";
 import { useApproveMatch, useCreateMatch, useCreateVenue, useDeleteMatch, useDeleteVenue, useUpdateMatch, useUsers } from "@/api/admin";
@@ -68,6 +68,12 @@ function CreateMatchForm() {
   const [adminIds, setAdminIds] = useState<number[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<number | null>(null);
+  // Auto-dismiss the "Match created" banner after a few seconds.
+  useEffect(() => {
+    if (createdId === null) return;
+    const t = setTimeout(() => setCreatedId(null), 5000);
+    return () => clearTimeout(t);
+  }, [createdId]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

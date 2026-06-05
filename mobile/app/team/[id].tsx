@@ -52,7 +52,9 @@ export default function TeamDetail() {
                 <Text style={{ color: "#fff", fontWeight: "800", fontSize: 11 }}>{item.name.slice(0, 2).toUpperCase()}</Text>
               </View>
             )}
-            <Text style={[styles.num, { color: t.muted }]}>{item.jersey_number ?? "–"}</Text>
+            <View style={{ minWidth: 28, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6, backgroundColor: t.primary + "22", alignItems: "center" }}>
+              <Text style={{ color: t.primary, fontWeight: "800", fontSize: 12 }}>{item.jersey_number != null ? `#${item.jersey_number}` : "–"}</Text>
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.name, { color: t.text }]} numberOfLines={1}>
                 {item.name}

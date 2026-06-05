@@ -153,7 +153,10 @@ function Squad({ teamId }: { teamId: number }) {
         return (
           <View key={p.id} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 7 }}>
             <PlayerAvatar name={p.name} photo={p.photo_url} size={28} />
-            <Text style={{ color: t.muted, width: 20, textAlign: "center" }}>{p.jersey_number ?? "–"}</Text>
+            {/* Jersey number badge so it's clearly the shirt no. everywhere. */}
+            <View style={{ minWidth: 26, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6, backgroundColor: t.primary + "22", alignItems: "center" }}>
+              <Text style={{ color: t.primary, fontWeight: "800", fontSize: 12 }}>{p.jersey_number != null ? `#${p.jersey_number}` : "–"}</Text>
+            </View>
             {/* Name + role stacked so the C/VC/WK badge never collides with the role text. */}
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
