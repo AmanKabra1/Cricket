@@ -3,12 +3,12 @@ import { Alert, Text, View } from "react-native";
 import { useTeam, useTeams } from "@/api/hooks";
 import { useMe } from "@/api/auth";
 import {
-  errorDetail, useAddPlayer, useCreateTeam, useDeletePlayer, useDeleteTeam, useUpdateTeam,
+  errorDetail, useAddPlayer, useCreateTeam, useDeletePlayer, useDeleteTeam, useUpdatePlayer, useUpdateTeam,
 } from "@/api/admin";
 import { Screen, H1, Card, Btn, Field, Chip, Note } from "@/components/ui";
 import { ImageField } from "@/components/ImageField";
 import { useTheme } from "@/theme";
-import type { Team, TeamDetail } from "@/types";
+import type { Player, Team, TeamDetail } from "@/types";
 
 const ROLES = ["BATSMAN", "BOWLER", "ALL_ROUNDER", "WICKET_KEEPER"];
 const BATTING = ["RIGHT_HAND", "LEFT_HAND"];
@@ -97,7 +97,9 @@ function Squad({ teamId }: { teamId: number }) {
   const { data: team } = useTeam(teamId);
   const addPlayer = useAddPlayer(teamId);
   const delPlayer = useDeletePlayer(teamId);
+  const updatePlayer = useUpdatePlayer(teamId);
   const update = useUpdateTeam(teamId);
+  const [editPlayerId, setEditPlayerId] = useState<number | null>(null);
   const [pname, setPname] = useState("");
   const [role, setRole] = useState("BATSMAN");
   const [jersey, setJersey] = useState("");
@@ -171,8 +173,10 @@ function Squad({ teamId }: { teamId: number }) {
                 {isC && <Chip label="Clear C" selected loading={busyRole("captain_id", null)} onPress={() => update.mutate({ captain_id: null })} />}
                 {isVC && <Chip label="Clear VC" selected loading={busyRole("vice_captain_id", null)} onPress={() => update.mutate({ vice_captain_id: null })} />}
                 {isWK && <Chip label="Clear WK" selected loading={busyRole("wicket_keeper_id", null)} onPress={() => update.mutate({ wicket_keeper_id: null })} />}
+                <Chip label={editPlayerId === p.id ? "Close" : "Edit"} selected={false} onPress={() => setEditPlayerId(editPlayerId === p.id ? null : p.id)} />
                 <Chip label="Remove" selected={false} loading={delPlayer.isPending && delPlayer.variables === p.id} onPress={() => delPlayer.mutate(p.id)} />
               </View>
+              {editPlayerId === p.id && <EditPlayer key={p.id} player={p} updatePlayer={updatePlayer} onDone={() => setEditPlayerId(null)} />}
             </View>
           );
         })}
@@ -203,6 +207,58 @@ function EditTeamDetails({ team, update }: { team: TeamDetail; update: ReturnTyp
             onPress={async () => { if (name.trim()) { await update.mutateAsync({ name: name.trim(), city, coach, logo_url: logo }); setOpen(false); } }} />
         </View>
         <Btn label="Cancel" tone="ghost" onPress={() => setOpen(false)} />
+      </View>
+    </View>
+  );
+}
+
+// Pre-filled edit of an existing player (name/jersey/role/batting/bowling/photo).
+function EditPlayer({ player, updatePlayer, onDone }: { player: Player; updatePlayer: ReturnType<typeof useUpdatePlayer>; onDone: () => void }) {
+  const t = useTheme();
+  const [name, setName] = useState(player.name);
+  const [jersey, setJersey] = useState(player.jersey_number != null ? String(player.jersey_number) : "");
+  const [role, setRole] = useState(player.role);
+  const [batting, setBatting] = useState(player.batting_style);
+  const [bowling, setBowling] = useState(player.bowling_style && player.bowling_style !== "None" ? player.bowling_style : BOWLING[0]);
+  const [photo, setPhoto] = useState<string | null>(player.photo_url ?? null);
+
+  const save = async () => {
+    if (!name.trim()) return;
+    await updatePlayer.mutateAsync({ id: player.id, body: {
+      name: name.trim(), role, batting_style: batting,
+      bowling_style: bowls(role) ? bowling : "None",
+      jersey_number: jersey ? Number(jersey) : undefined,
+      photo_url: photo || undefined,
+    } });
+    onDone();
+  };
+
+  return (
+    <View style={{ marginTop: 8, borderColor: t.border, borderWidth: 1, borderRadius: 10, padding: 10 }}>
+      <Field label="Name" value={name} onChangeText={setName} />
+      <Field label="Jersey number" value={jersey} onChangeText={setJersey} keyboardType="numeric" />
+      <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Role</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+        {ROLES.map((r) => <Chip key={r} label={r.replace("_", " ")} selected={role === r} onPress={() => setRole(r)} />)}
+      </View>
+      <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Batting</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+        {BATTING.map((bt) => <Chip key={bt} label={bt.replace("_", " ")} selected={batting === bt} onPress={() => setBatting(bt)} />)}
+      </View>
+      {bowls(role) && (
+        <>
+          <Text style={{ color: t.muted, fontSize: 12, fontWeight: "700" }}>Bowling</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 6 }}>
+            {BOWLING.map((bw) => <Chip key={bw} label={bw} selected={bowling === bw} onPress={() => setBowling(bw)} />)}
+          </View>
+        </>
+      )}
+      <ImageField label="Player photo" value={photo} onChange={setPhoto} category="player_photo" />
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flex: 1 }}>
+          <Btn label={updatePlayer.isPending ? "Saving…" : "Save player"} loading={updatePlayer.isPending} onPress={save} />
+        </View>
+        <Btn label="Cancel" tone="ghost" onPress={onDone} />
       </View>
     </View>
   );

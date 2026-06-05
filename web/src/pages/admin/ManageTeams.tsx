@@ -5,6 +5,7 @@ import {
   useCreateTeam,
   useDeletePlayer,
   useDeleteTeam,
+  useUpdatePlayer,
   useUpdateTeam,
   type PlayerInput,
 } from "@/api/admin";
@@ -148,7 +149,9 @@ function TeamEditor({ teamId }: { teamId: number }) {
   const { data: team, isLoading } = useTeam(teamId);
   const addPlayer = useAddPlayer(teamId);
   const update = useUpdateTeam(teamId);
+  const updatePlayer = useUpdatePlayer(teamId);
   const deletePlayer = useDeletePlayer(teamId);
+  const [editPlayerId, setEditPlayerId] = useState<number | null>(null);
 
   const blank: PlayerInput = { name: "", role: "BATSMAN", batting_style: "RIGHT_HAND", bowling_style: "None" };
   const [p, setP] = useState<PlayerInput>(blank);
@@ -209,11 +212,8 @@ function TeamEditor({ teamId }: { teamId: number }) {
 
       <div className="card-surface divide-y" style={{ borderColor: "var(--border)" }}>
         {team.players.map((pl) => (
-          <div
-            key={pl.id}
-            className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
-            style={{ borderColor: "var(--border)" }}
-          >
+          <div key={pl.id} className="p-3" style={{ borderColor: "var(--border)" }}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             {/* Player info */}
             <div className="flex min-w-0 items-center gap-2">
               {pl.photo_url ? (
@@ -275,7 +275,12 @@ function TeamEditor({ teamId }: { teamId: number }) {
               >
                 Remove
               </button>
+              <button className="btn-ghost text-xs" onClick={() => setEditPlayerId(editPlayerId === pl.id ? null : pl.id)}>
+                {editPlayerId === pl.id ? "Close" : "Edit"}
+              </button>
             </div>
+          </div>
+          {editPlayerId === pl.id && <EditPlayerInline key={pl.id} player={pl} updatePlayer={updatePlayer} onDone={() => setEditPlayerId(null)} />}
           </div>
         ))}
         {!team.players.length && <p className="p-4 muted">No players yet.</p>}
@@ -312,6 +317,70 @@ function EditTeamDetails({ team, update }: { team: import("@/types").TeamDetail;
       <div className="flex gap-2">
         <button className="btn-primary flex-1" disabled={update.isPending}>{update.isPending ? "Saving…" : "Save details"}</button>
         <button type="button" className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+    </form>
+  );
+}
+
+// Pre-filled edit of an existing player.
+function EditPlayerInline({
+  player,
+  updatePlayer,
+  onDone,
+}: {
+  player: import("@/types").Player;
+  updatePlayer: ReturnType<typeof useUpdatePlayer>;
+  onDone: () => void;
+}) {
+  const [p, setP] = useState<PlayerInput>({
+    name: player.name,
+    role: player.role,
+    batting_style: player.batting_style,
+    bowling_style: player.bowling_style,
+    jersey_number: player.jersey_number ?? undefined,
+  });
+  const [photo, setPhoto] = useState<string | undefined>(player.photo_url ?? undefined);
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    await updatePlayer.mutateAsync({
+      id: player.id,
+      body: { ...p, bowling_style: bowls(p.role) ? p.bowling_style : "None", photo_url: photo },
+    });
+    onDone();
+  };
+  return (
+    <form onSubmit={save} className="mt-2 space-y-3 rounded-lg border p-3" style={{ borderColor: "var(--border)" }}>
+      <Field label="Player name *">
+        <input className="input" value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} required />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Role">
+          <select className="input" value={p.role} onChange={(e) => setP({ ...p, role: e.target.value })}>
+            {ROLES.map((r) => <option key={r} value={r}>{r.replace("_", " ")}</option>)}
+          </select>
+        </Field>
+        <Field label="Jersey number">
+          <input className="input" type="number" min={0} max={999} value={p.jersey_number ?? ""}
+            onChange={(e) => setP({ ...p, jersey_number: e.target.value === "" ? undefined : Math.max(0, Number(e.target.value)) })} />
+        </Field>
+        <Field label="Batting style">
+          <select className="input" value={p.batting_style} onChange={(e) => setP({ ...p, batting_style: e.target.value })}>
+            {BAT.map((b) => <option key={b} value={b}>{b.replace("_", " ")}</option>)}
+          </select>
+        </Field>
+        {bowls(p.role) && (
+          <Field label="Bowling type">
+            <select className="input" value={p.bowling_style} onChange={(e) => setP({ ...p, bowling_style: e.target.value })}>
+              {BOWLING_TYPES.filter((b) => b !== "None").map((b) => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </Field>
+        )}
+      </div>
+      <ImageUpload category="player_photo" label="Photo" value={photo} onChange={setPhoto} />
+      <div className="flex gap-2">
+        <button className="btn-primary flex-1" disabled={updatePlayer.isPending}>{updatePlayer.isPending ? "Saving…" : "Save player"}</button>
+        <button type="button" className="btn-ghost" onClick={onDone}>Cancel</button>
       </div>
     </form>
   );

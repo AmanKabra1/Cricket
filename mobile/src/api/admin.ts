@@ -84,6 +84,14 @@ export const useAddPlayer = (teamId: number) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["team", teamId] }),
   });
 };
+export const useUpdatePlayer = (teamId: number) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: PlayerInput }) =>
+      api.patch<Player>(`/teams/players/${id}`, body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["team", teamId] }),
+  });
+};
 export const useDeletePlayer = (teamId: number) => {
   const qc = useQueryClient();
   return useMutation({
