@@ -74,6 +74,10 @@ class Settings(BaseSettings):
     # Public site URL (used in emails so admins get a working link)
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # Error tracking (optional). Leave blank to disable Sentry entirely.
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0  # set >0 to sample performance traces
+
     # Email (SMTP). Leave SMTP_HOST blank to disable email (calls become no-ops).
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

@@ -119,3 +119,15 @@ def match_reminder_body(full_name: str, team_a: str, team_b: str, when: str) -> 
         f"Reminder: you're assigned to score {team_a} vs {team_b}, starting {when}.\n\n"
         f"Open the scoring console: {settings.FRONTEND_URL}\n\n— LocalScore"
     )
+
+
+def match_assignment_body(
+    full_name: str, team_a: str, team_b: str, when: str, venue: str | None
+) -> str:
+    where = f" at {venue}" if venue else ""
+    return (
+        f"Hi {full_name},\n\n"
+        f"You've been assigned to score {team_a} vs {team_b}, scheduled for {when}{where}.\n\n"
+        "You'll also get a reminder a few hours before it starts.\n"
+        f"Open the scoring console: {settings.FRONTEND_URL}\n\n— LocalScore"
+    )

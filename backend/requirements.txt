@@ -7,6 +7,9 @@ python-multipart==0.0.20
 python-socketio==5.12.1
 redis==5.2.1
 
+# --- Observability (optional; activates only when SENTRY_DSN is set) ---
+sentry-sdk[fastapi]==2.20.0
+
 # --- Data / ORM ---
 sqlalchemy[asyncio]==2.0.36
 alembic==1.14.0

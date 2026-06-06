@@ -59,7 +59,7 @@ async def delete_match(
 
 @router.post("", response_model=MatchOut, status_code=status.HTTP_201_CREATED)
 async def create_match(
-    payload: MatchCreate, db: DbSession, user: User = Depends(require_admin)
+    payload: MatchCreate, db: DbSession, background: BackgroundTasks, user: User = Depends(require_admin)
 ) -> Match:
     # Matches are public as soon as any admin creates them — no separate approval
     # step (only tournaments require super-admin approval). They show on the
@@ -86,6 +86,24 @@ async def create_match(
     from app.core.cache import DASHBOARD_KEY, cache
 
     await cache.invalidate(DASHBOARD_KEY)
+
+    # Notify each assigned admin (except the creator) that they're on this match.
+    # Sent in the background so creation stays instant even if SMTP is slow.
+    from app.services.email import match_assignment_body, send_email
+
+    when = match.scheduled_at.strftime("%d %b %Y, %H:%M") if match.scheduled_at else "soon"
+    a = match.team_a.name if match.team_a else "Team A"
+    b = match.team_b.name if match.team_b else "Team B"
+    venue_name = match.venue.name if match.venue else None
+    for admin in admins:
+        if admin.id == user.id:
+            continue  # the creator already knows
+        background.add_task(
+            send_email,
+            admin.email,
+            f"You're scoring: {a} vs {b}",
+            match_assignment_body(admin.full_name, a, b, when, venue_name),
+        )
     return match
 
 

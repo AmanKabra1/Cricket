@@ -25,6 +25,22 @@ from app.realtime.socket import sio
 logging.basicConfig(level=logging.INFO if not settings.DEBUG else logging.DEBUG)
 logger = logging.getLogger("localscore")
 
+# Error tracking — only initialises when SENTRY_DSN is set, so it's a no-op
+# locally and until you add a (free) DSN in the environment.
+if settings.SENTRY_DSN:
+    try:
+        import sentry_sdk  # noqa: PLC0415
+
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            environment=settings.ENVIRONMENT,
+            traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+            send_default_pii=False,
+        )
+        logger.info("Sentry error tracking enabled")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Sentry init failed: %s", exc)
+
 
 async def _maintenance_loop() -> None:
     """Automatic housekeeping: runs cleanup + reminders on an interval, with no
@@ -105,7 +121,38 @@ if settings.STORAGE_BACKEND.lower() != "s3":
 # GET + HEAD so uptime monitors (which often use HEAD) get 200, not 405.
 @app.api_route("/health", methods=["GET", "HEAD"], tags=["meta"])
 async def health() -> dict:
+    """Liveness: the process is up and serving (no dependency checks)."""
     return {"status": "ok", "service": settings.PROJECT_NAME, "env": settings.ENVIRONMENT}
+
+
+@app.get("/ready", tags=["meta"])
+async def ready():
+    """Readiness: can we actually serve? Checks the database (and cache).
+
+    Returns 200 only when the DB is reachable, else 503 — so load balancers /
+    uptime monitors can distinguish "up" from "ready to handle traffic".
+    """
+    from fastapi.responses import JSONResponse
+    from sqlalchemy import text
+
+    from app.core.cache import cache
+    from app.core.database import engine
+
+    checks = {"db": False, "cache": False}
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        checks["db"] = True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("readiness DB check failed: %s", exc)
+    try:
+        await cache.get_json("__ready__")  # reachability; missing key is fine
+        checks["cache"] = True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("readiness cache check failed: %s", exc)
+
+    ready_ok = checks["db"]  # cache falls back to in-memory, so DB is the gate
+    return JSONResponse({**checks, "ready": ready_ok}, status_code=200 if ready_ok else 503)
 
 
 @app.get("/", tags=["meta"])
