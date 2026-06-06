@@ -13,7 +13,7 @@ Create Date: 2026-06-02 02:00:00
 from typing import Sequence, Union
 
 from alembic import op
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 revision: str = "a7b8c9d0e1f2"
@@ -23,6 +23,14 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # This is a one-time backfill for EXISTING matches. On a fresh database
+    # (CI / a brand-new deploy) there are none, so skip — this also avoids
+    # loading the live ORM Match model here, whose columns (e.g. created_by_id,
+    # added by a later revision) don't exist at this point in history yet.
+    bind = op.get_bind()
+    if not bind.execute(text("SELECT COUNT(*) FROM matches")).scalar():
+        return
+
     # Imported here (not at module top) so the migration only pulls in app code
     # when actually run.
     from app.models.enums import MatchStatus
@@ -30,7 +38,7 @@ def upgrade() -> None:
     from app.models.player import Player
     from app.services.scoring_engine import finalize_match_result
 
-    session = Session(bind=op.get_bind())
+    session = Session(bind=bind)
     try:
         matches = session.scalars(
             select(Match).where(Match.status == MatchStatus.COMPLETED)
