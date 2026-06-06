@@ -5,8 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { store } from "@/store";
 import { ThemeProvider } from "@/theme/ThemeContext";
+import { initSentry } from "@/sentry";
 import App from "./App";
 import "./index.css";
+
+initSentry(); // no-op unless VITE_SENTRY_DSN is set
 
 const queryClient = new QueryClient({
   defaultOptions: {
