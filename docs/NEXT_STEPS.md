@@ -87,10 +87,20 @@ transparent cricket **heuristic** already works today with **zero keys**.
   - Web: `VITE_SENTRY_DSN` (+ `VITE_SENTRY_TRACES`).
   - App: `EXPO_PUBLIC_SENTRY_DSN` — needs a fresh EAS build (native module).
 
-## Phase 12 — Engagement & notifications (next)
+## Phase 12 — Engagement & notifications ✅ DONE
 
-- Push/email on match start, wicket clusters, result; **follow a team/tournament**.
-- Knockout **bracket view**.
+- **Match notifications**: push on match-live and result; tapping one opens that
+  Match Centre (deep link).
+- **Follow a team/tournament** (per-device): notifications now target followers
+  of either team or the tournament instead of everyone. `/push/follow|unfollow|follows`.
+- **HTML emails**: welcome / assignment / reminder send a branded HTML part
+  (plain-text fallback kept).
+- **Knockout bracket view** (web + app): round 1 = real fixtures, later rounds
+  project the winners advancing.
+
+> Note: the app's `@sentry/react-native` **Expo plugin** was removed (its
+> source-map upload broke the EAS build with no Sentry org/auth). Sentry still
+> initialises at runtime via the JS SDK when `EXPO_PUBLIC_SENTRY_DSN` is set.
 
 ## Later
 
@@ -102,8 +112,9 @@ transparent cricket **heuristic** already works today with **zero keys**.
 ---
 
 ## Immediate next action
-**Phase 12** — notifications (match start / wicket / result), follow a
-team/tournament, and the knockout **bracket view**.
+Phases 7–12 are done. **Play Store deploy is on hold** (per the user). Candidate
+next work (from *Later*): shareable match cards, offline-friendly scoring,
+load-testing, or a second sport behind the scoring interface.
 
 To activate Sentry: create free sentry.io projects and set `SENTRY_DSN`
 (backend env), `VITE_SENTRY_DSN` (Vercel env), `EXPO_PUBLIC_SENTRY_DSN` (EAS env
