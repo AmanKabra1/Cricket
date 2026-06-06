@@ -76,13 +76,18 @@ transparent cricket **heuristic** already works today with **zero keys**.
 - **Player of the Match** on completed matches (web + app).
 - API: `GET /public/tournaments/{id}/leaderboards`, `GET /public/matches/{id}/best`.
 
-## Phase 11 — Reliability & observability (next)
+## Phase 11 — Reliability & observability ✅ DONE
 
-- **Sentry** (free tier) for backend + web + app, structured logs, `/ready` probe.
-- **Match-assignment email** ("you've been assigned to score X vs Y on {date}")
-  in addition to the existing 3-hour reminder.
+- **Match-assignment email** — assigned admins (except the creator) get
+  "You're scoring: A vs B" with date/venue on match creation (+ the 3-hour reminder).
+- **`/ready` probe** — checks DB (and cache); 503 when the DB is down. `/health`
+  stays a pure liveness check.
+- **Sentry** (DSN-gated, inert until a DSN is set) on backend, web, and app:
+  - Backend: `SENTRY_DSN` (+ `SENTRY_TRACES_SAMPLE_RATE`).
+  - Web: `VITE_SENTRY_DSN` (+ `VITE_SENTRY_TRACES`).
+  - App: `EXPO_PUBLIC_SENTRY_DSN` — needs a fresh EAS build (native module).
 
-## Phase 12 — Engagement & notifications
+## Phase 12 — Engagement & notifications (next)
 
 - Push/email on match start, wicket clusters, result; **follow a team/tournament**.
 - Knockout **bracket view**.
@@ -97,8 +102,12 @@ transparent cricket **heuristic** already works today with **zero keys**.
 ---
 
 ## Immediate next action
-**Phase 11** — wire Sentry (backend + web + app) and add the match-assignment
-email. Then Phase 12 (notifications + bracket view).
+**Phase 12** — notifications (match start / wicket / result), follow a
+team/tournament, and the knockout **bracket view**.
+
+To activate Sentry: create free sentry.io projects and set `SENTRY_DSN`
+(backend env), `VITE_SENTRY_DSN` (Vercel env), `EXPO_PUBLIC_SENTRY_DSN` (EAS env
++ rebuild the app).
 
 > Note: Play Store deploy is intentionally **on hold**; everything else for
 > go-live (web on Vercel, backend/AI on Render) is done.
