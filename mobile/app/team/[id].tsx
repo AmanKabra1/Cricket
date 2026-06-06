@@ -1,6 +1,7 @@
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useTeam } from "@/api/hooks";
+import { FollowButton } from "@/components/FollowButton";
 import { Loading } from "@/components/States";
 import { palette, useTheme } from "@/theme";
 
@@ -35,6 +36,7 @@ export default function TeamDetail() {
                 </Text>
               </View>
             </View>
+            <View style={{ marginBottom: 16 }}><FollowButton teamId={Number(id)} /></View>
             <Text style={[styles.heading, { color: t.text }]}>Squad ({data.players.length})</Text>
           </View>
         }

@@ -1,5 +1,6 @@
 """Import all models so SQLAlchemy + Alembic see the full metadata."""
 from app.models.ball import Ball
+from app.models.follow import Follow
 from app.models.innings import Innings
 from app.models.match import Match
 from app.models.player import Player
@@ -14,6 +15,7 @@ from app.models.venue import Venue
 __all__ = [
     "AppSetting",
     "Ball",
+    "Follow",
     "Innings",
     "Match",
     "Player",

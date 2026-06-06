@@ -14,7 +14,13 @@ from app.models.enums import UserRole
 from app.models.setting import AppSetting
 from app.models.user import User
 from app.schemas.auth import UserOut
-from app.services.email import email_enabled, send_email, try_send_email, welcome_admin_body
+from app.services.email import (
+    email_enabled,
+    send_email,
+    try_send_email,
+    welcome_admin_body,
+    welcome_admin_html,
+)
 from app.services.maintenance import delete_user_and_matches, run_maintenance
 from app.services.training_data import FEATURE_KEYS, export_training_rows
 
@@ -98,6 +104,7 @@ async def create_user(
         user.email,
         "Your LocalScore admin account",
         welcome_admin_body(user.full_name, payload.email, payload.password, user.role.value),
+        welcome_admin_html(user.full_name, payload.email, payload.password, user.role.value),
     )
     return user
 

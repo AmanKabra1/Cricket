@@ -4,6 +4,7 @@ import { useTournaments, useTournamentLeaderboards, type LeaderRow } from "@/api
 import { useStandings, useTournamentMatches } from "@/api/admin";
 import { useTeamMap } from "@/hooks/useTeamMap";
 import MatchCard from "@/components/MatchCard";
+import { FollowButton } from "@/components/FollowButton";
 import { Loading } from "@/components/States";
 import { palette, useTheme } from "@/theme";
 import type { Match } from "@/types";
@@ -51,9 +52,10 @@ export default function TournamentDetail() {
   return (
     <ScrollView style={{ backgroundColor: "transparent" }} contentContainerStyle={{ padding: 16 }}>
       <Text style={[styles.h1, { color: t.text }]}>{tournament?.name ?? "Tournament"}</Text>
-      <Text style={{ color: t.muted, marginBottom: 16 }}>
+      <Text style={{ color: t.muted, marginBottom: 12 }}>
         {tournament?.format.replace("_", " ")}{tournament ? ` · ${tournament.status}` : ""}
       </Text>
+      <View style={{ marginBottom: 16 }}><FollowButton tournamentId={tid} /></View>
 
       {/* Points table */}
       <Text style={[styles.h2, { color: t.text }]}>Points table</Text>

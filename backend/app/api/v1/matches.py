@@ -89,7 +89,7 @@ async def create_match(
 
     # Notify each assigned admin (except the creator) that they're on this match.
     # Sent in the background so creation stays instant even if SMTP is slow.
-    from app.services.email import match_assignment_body, send_email
+    from app.services.email import match_assignment_body, match_assignment_html, send_email
 
     when = match.scheduled_at.strftime("%d %b %Y, %H:%M") if match.scheduled_at else "soon"
     a = match.team_a.name if match.team_a else "Team A"
@@ -103,6 +103,7 @@ async def create_match(
             admin.email,
             f"You're scoring: {a} vs {b}",
             match_assignment_body(admin.full_name, a, b, when, venue_name),
+            match_assignment_html(admin.full_name, a, b, when, venue_name),
         )
     return match
 
@@ -202,11 +203,18 @@ async def start_innings(
     match.status = MatchStatus.LIVE
     await db.commit()
     await db.refresh(match)
-    # Notify subscribers when the match goes live (first innings only).
+    # Notify followers of either team / the tournament when it goes live.
     if innings_number == 1:
-        from app.services.push import broadcast_bg
+        from app.services.push import broadcast_followers_bg
 
         a = match.team_a.name if match.team_a else "Team A"
         b = match.team_b.name if match.team_b else "Team B"
-        background.add_task(broadcast_bg, "🔴 Match live", f"{a} vs {b} is underway", {"matchId": match.id})
+        background.add_task(
+            broadcast_followers_bg,
+            "🔴 Match live",
+            f"{a} vs {b} is underway",
+            {"matchId": match.id},
+            [match.team_a_id, match.team_b_id],
+            match.tournament_id,
+        )
     return match

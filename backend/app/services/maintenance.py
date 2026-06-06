@@ -17,7 +17,7 @@ from app.models.innings import Innings
 from app.models.match import Match
 from app.models.stats import PlayerMatchStats
 from app.models.user import User, match_admins
-from app.services.email import match_reminder_body, send_email
+from app.services.email import match_reminder_body, match_reminder_html, send_email
 
 logger = logging.getLogger("localscore.maintenance")
 
@@ -150,6 +150,7 @@ async def send_due_reminders(db: AsyncSession) -> int:
                 admin.email,
                 f"Match reminder: {a} vs {b}",
                 match_reminder_body(admin.full_name, a, b, when),
+                match_reminder_html(admin.full_name, a, b, when),
             ):
                 sent += 1
         m.reminder_sent = True

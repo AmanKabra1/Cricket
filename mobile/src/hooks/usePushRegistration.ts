@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { api } from "@/lib/api";
+import { setPushToken } from "@/lib/pushToken";
 
 // Expo Go (SDK 53+) can't do remote push and even *importing* expo-notifications
 // there throws. So we detect Expo Go and skip push entirely, and we import
@@ -59,7 +60,10 @@ export function usePushRegistration() {
         const token = (
           await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)
         ).data;
-        if (token) await api.post("/push/register", { token });
+        if (token) {
+          await setPushToken(token);
+          await api.post("/push/register", { token });
+        }
       } catch {
         /* best-effort — never block app startup on push setup */
       }
