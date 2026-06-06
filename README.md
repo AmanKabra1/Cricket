@@ -118,6 +118,7 @@ docker compose exec backend python -m app.seed
 
 | Doc | What |
 |-----|------|
+| [OVERVIEW.md](docs/OVERVIEW.md) | One-page description of the whole product (what's built) |
 | [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Code tour: folders + controller→service→model flow |
 | [CURRENT_STATE.md](docs/CURRENT_STATE.md) | Features + how to run app/web/backend/AI |
 | [DEPLOYMENT_AND_SCALING.md](docs/DEPLOYMENT_AND_SCALING.md) | Deploy topology + scale-up playbook |
