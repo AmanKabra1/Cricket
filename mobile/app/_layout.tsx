@@ -4,10 +4,18 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as Sentry from "@sentry/react-native";
 import { tokenStore } from "@/lib/api";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import TopProgressBar from "@/components/TopProgressBar";
 import { ThemeProvider, useTheme } from "@/theme";
+
+// Error tracking — only initialises when EXPO_PUBLIC_SENTRY_DSN is set (it's
+// inlined at build time), so it's a no-op until you add a DSN to EAS env.
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (SENTRY_DSN) {
+  Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0 });
+}
 
 const queryClient = new QueryClient({
   // Longer stale window → switching back to a tab shows cached data instantly
@@ -15,7 +23,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000, retry: 1 } },
 });
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
@@ -24,6 +32,9 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
+
+// Sentry.wrap adds navigation/render context to captured errors (harmless if DSN unset).
+export default Sentry.wrap(RootLayout);
 
 function RootInner() {
   const t = useTheme();
