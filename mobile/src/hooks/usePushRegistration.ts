@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
+import { router } from "expo-router";
 import { api } from "@/lib/api";
 
 // Expo Go (SDK 53+) can't do remote push and even *importing* expo-notifications
@@ -15,6 +16,7 @@ const isExpoGo = Constants.executionEnvironment === "storeClient";
 export function usePushRegistration() {
   useEffect(() => {
     if (isExpoGo) return; // push needs a development or production build
+    let tapSub: { remove: () => void } | undefined;
     (async () => {
       try {
         const Device = await import("expo-device");
@@ -29,6 +31,18 @@ export function usePushRegistration() {
             shouldSetBadge: false,
           }),
         });
+
+        // Tapping a match notification opens that Match Centre. Also handles the
+        // case where the app was cold-started by tapping a notification.
+        const openFromData = (data: unknown) => {
+          const id = (data as { matchId?: number | string } | null)?.matchId;
+          if (id != null) router.push(`/match/${id}`);
+        };
+        tapSub = Notifications.addNotificationResponseReceivedListener((r) =>
+          openFromData(r.notification.request.content.data),
+        );
+        const last = await Notifications.getLastNotificationResponseAsync();
+        if (last) openFromData(last.notification.request.content.data);
         if (Platform.OS === "android") {
           await Notifications.setNotificationChannelAsync("default", {
             name: "Match alerts",
@@ -50,5 +64,6 @@ export function usePushRegistration() {
         /* best-effort — never block app startup on push setup */
       }
     })();
+    return () => tapSub?.remove();
   }, []);
 }
