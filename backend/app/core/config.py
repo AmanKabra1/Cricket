@@ -96,8 +96,11 @@ class Settings(BaseSettings):
 
     # Maintenance / data retention (free-tier housekeeping)
     MAINTENANCE_TOKEN: str = ""  # shared secret for the cron to call the endpoint
-    COMPLETED_MATCH_RETENTION_DAYS: int = 7  # delete completed matches older than this
-    ADMIN_RETENTION_DAYS: int = 15  # delete match-admin accounts older than this
+    # Retention is intentionally long so real history (matches, stats, admins) is
+    # NOT auto-deleted. Lower these only if you must reclaim free-tier storage.
+    # NOTE: teams, players and venues are NEVER auto-deleted by any job.
+    COMPLETED_MATCH_RETENTION_DAYS: int = 365  # delete completed matches older than this
+    ADMIN_RETENTION_DAYS: int = 365  # delete match-admin accounts older than this
     MATCH_REMINDER_HOURS: int = 3  # email assigned admins this many hours before start
     # Built-in automatic scheduler — runs cleanup + reminders without any cron.
     MAINTENANCE_AUTO: bool = True

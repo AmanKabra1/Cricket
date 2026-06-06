@@ -2,7 +2,12 @@
 
 A production-grade, real-time scoring platform for **local cricket tournaments and grounds** — inspired by CricHeroes, Cricbuzz, and ESPN Cricinfo, but built for community sport. Cricket-first, with an architecture designed to extend to Football, Volleyball, Kabaddi, and Basketball.
 
-> **Status:** Phase 1 — Backend foundation (FastAPI + scoring engine + realtime + auth). See [docs/ROADMAP.md](docs/ROADMAP.md) for the full phased plan.
+> **Status:** Phases 1–12 complete (full platform live on web + app; Play Store on hold). See [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md) for the phase log.
+
+### 📚 Start here
+- **[docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)** — first-time code tour: folder structure + request flow (controller → service → model).
+- **[docs/CURRENT_STATE.md](docs/CURRENT_STATE.md)** — what the app/web do and how to run everything locally.
+- **[docs/DEPLOYMENT_AND_SCALING.md](docs/DEPLOYMENT_AND_SCALING.md)** — how it's deployed and the step-by-step playbook to scale to large traffic.
 
 ---
 
