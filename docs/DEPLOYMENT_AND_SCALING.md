@@ -54,8 +54,8 @@ upgrade head` on a fresh DB) for backend, typecheck/build for web & mobile.
 `DB_SSL=true`, `BACKEND_CORS_ORIGINS`, `FRONTEND_URL`, `AI_SERVICE_URL`,
 `MAINTENANCE_TOKEN`, email (`BREVO_API_KEY` **or** `SMTP_*` / `RESEND_*`),
 object storage (`STORAGE_BACKEND=s3` + `S3_*` for Cloudflare R2/AWS), optional
-`REDIS_URL`, optional `SENTRY_DSN`. Retention: `COMPLETED_MATCH_RETENTION_DAYS`,
-`ADMIN_RETENTION_DAYS` (default 365 — see §4).
+`REDIS_URL`, optional `SENTRY_DSN`. Retention: `COMPLETED_MATCH_RETENTION_DAYS`
+(default 7), `ADMIN_RETENTION_DAYS` (default 15) — raise to keep more history (§4).
 **Web (Vercel):** `VITE_API_URL`, `VITE_SOCKET_URL`, optional `VITE_SENTRY_DSN`.
 **App (EAS):** `EXPO_PUBLIC_SENTRY_DSN` (only if app Sentry is re-added).
 
@@ -141,11 +141,12 @@ A background job (`services/maintenance.py`, runs automatically; also
 - deletes **MATCH_ADMIN** accounts older than `ADMIN_RETENTION_DAYS` (+ their matches),
 - marks no-show scheduled matches as abandoned, sends reminders.
 
-**Teams, players and venues are NEVER auto-deleted.** Defaults were tightened
-from 7/15 days to **365 days** so real history doesn't disappear. If you need
-free-tier cleanup, lower them — but prefer the manual scripts in
-`backend/reset_and_seed.sql` (soft reset keeps teams/admins). If these are set as
-**env vars on Render**, change them there too (env overrides the code default).
+**Teams, players and venues are NEVER auto-deleted.** This purge is **intentional**
+— it keeps the free-tier DB small by dropping old match data. Defaults are
+**7 days** (matches) and **15 days** (admins). When you scale onto a paid DB and
+want to retain full history, **raise** `COMPLETED_MATCH_RETENTION_DAYS` /
+`ADMIN_RETENTION_DAYS` (env var on Render overrides the code default). Manual
+scripts in `backend/reset_and_seed.sql` give a soft reset that keeps teams/admins.
 
 ---
 

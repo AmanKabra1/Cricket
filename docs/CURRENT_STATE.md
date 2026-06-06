@@ -37,13 +37,14 @@ app with scorecards, charts, AI win-probability, leaderboards and notifications.
 - **Auto-housekeeping** — purges old matches & stale admins (long retention; see
   note below), retires no-show matches, sends reminders.
 
-> ⚠️ **Auto-deletion — what it does and does NOT touch.** A background job
-> deletes **completed/abandoned matches** older than `COMPLETED_MATCH_RETENTION_DAYS`
-> and **MATCH_ADMIN accounts** older than `ADMIN_RETENTION_DAYS` (with their
-> matches). **Teams, players and venues are NEVER auto-deleted.** Defaults are now
-> **365 days** (was 7 / 15 — that short window made history look like it
-> "disappeared"). If your Render service sets these env vars, update them there
-> too. Manual reset tools live in `backend/reset_and_seed.sql`.
+> ⚠️ **Auto-deletion — by design, to keep the free-tier DB small.** A background
+> job deletes **completed/abandoned matches** older than
+> `COMPLETED_MATCH_RETENTION_DAYS` (default **7 days**) and **MATCH_ADMIN
+> accounts** older than `ADMIN_RETENTION_DAYS` (default **15 days**, with their
+> matches). This is intentional so old data doesn't pile up. **Teams, players and
+> venues are NEVER auto-deleted.** To keep history longer, raise these (code
+> default or the env var on Render). Manual reset tools live in
+> `backend/reset_and_seed.sql`.
 
 ---
 
