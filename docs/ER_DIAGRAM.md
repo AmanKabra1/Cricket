@@ -25,6 +25,12 @@ erDiagram
     PLAYERS ||--o{ PLAYER_MATCH_STATS : "performs in"
     PLAYERS ||--o{ BALLS : "striker/bowler"
 
+    USERS ||--o{ MATCHES : "created_by"
+    USERS ||--o{ VENUES : "created_by"
+    USERS ||--o{ PUSH_TOKENS : "owns (nullable)"
+    TEAMS ||--o{ FOLLOWS : "followed"
+    TOURNAMENTS ||--o{ FOLLOWS : "followed"
+
     USERS {
         bigint id PK
         string email UK
@@ -46,6 +52,7 @@ erDiagram
         string city
         string address
         int    capacity
+        bigint created_by_id FK "-> users.id"
     }
 
     TEAMS {
@@ -54,6 +61,8 @@ erDiagram
         string logo_url
         string city
         bigint captain_id FK "-> players.id"
+        bigint vice_captain_id FK "-> players.id"
+        bigint wicket_keeper_id FK "-> players.id"
         string coach
         bigint created_by FK "-> users.id"
         datetime created_at
@@ -65,7 +74,7 @@ erDiagram
         string name
         int    age
         enum   batting_style "RIGHT_HAND|LEFT_HAND"
-        enum   bowling_style "FAST|MEDIUM|OFF_SPIN|LEG_SPIN|..."
+        string bowling_style "flexible (FAST/MEDIUM/OFF_SPIN/… or None)"
         enum   role "BATSMAN|BOWLER|ALL_ROUNDER|WICKET_KEEPER"
         int    jersey_number
         string photo_url
@@ -109,6 +118,9 @@ erDiagram
         enum   toss_decision "BAT|BOWL"
         bigint winner_team_id FK "-> teams.id"
         string result_text
+        bool   approved "auto-true on create"
+        bool   reminder_sent
+        bigint created_by_id FK "-> users.id"
         datetime created_at
     }
 
@@ -126,6 +138,9 @@ erDiagram
         int    extras_bye
         int    extras_leg_bye
         int    target "nullable"
+        bigint current_striker_id FK "at the crease"
+        bigint current_non_striker_id FK "at the crease"
+        bigint current_bowler_id FK "bowling now"
         bool   is_closed
     }
 
@@ -146,6 +161,7 @@ erDiagram
         bigint dismissed_player_id FK
         bigint fielder_id FK
         bool   is_legal_delivery
+        bool   is_free_hit
         string commentary
         datetime created_at
     }
@@ -165,6 +181,26 @@ erDiagram
         int    catches
         bool   is_out
     }
+
+    PUSH_TOKENS {
+        bigint id PK
+        string token UK "Expo push token"
+        bigint user_id FK "nullable (anon spectators)"
+        datetime created_at
+    }
+
+    FOLLOWS {
+        bigint id PK
+        string token "device's Expo push token"
+        bigint team_id FK "nullable"
+        bigint tournament_id FK "nullable"
+        datetime created_at
+    }
+
+    APP_SETTINGS {
+        string key PK
+        string value "JSON (e.g. per-page backgrounds)"
+    }
 ```
 
 ## Notes on the model
@@ -182,4 +218,9 @@ erDiagram
   on team creation is resolved by a follow-up update).
 - **Soft multi-sport:** `matches.sport` defaults to `cricket`; cricket tables
   (innings/balls) only populate for cricket matches.
+- **Notifications & follows:** `PUSH_TOKENS` holds each device's Expo token;
+  `FOLLOWS` ties a device token to a team/tournament so match-live/result pushes
+  target followers. `APP_SETTINGS` is a small key/value store (e.g. per-page
+  background images). `created_by`/`created_by_id` on teams/venues/matches record
+  the authoring admin.
 ```
