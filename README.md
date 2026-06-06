@@ -85,7 +85,7 @@ uvicorn app.main:socket_app --reload --port 8000     # socket_app = REST + Socke
 ```powershell
 # Web — http://localhost:5173
 cd web ; npm install
-"VITE_API_URL=http://localhost:8000/api/v1`nVITE_SOCKET_URL=http://localhost:8000" | Out-File -Encoding utf8 .env.local
+"VITE_API_BASE_URL=http://localhost:8000/api/v1`nVITE_SOCKET_URL=http://localhost:8000" | Out-File -Encoding utf8 .env.local
 npm run dev
 ```
 ```powershell
@@ -122,8 +122,7 @@ docker compose exec backend python -m app.seed
 | [CURRENT_STATE.md](docs/CURRENT_STATE.md) | Features + how to run app/web/backend/AI |
 | [DEPLOYMENT_AND_SCALING.md](docs/DEPLOYMENT_AND_SCALING.md) | Deploy topology + scale-up playbook |
 | [NEXT_STEPS.md](docs/NEXT_STEPS.md) | Phase log & what's next |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) · [ER_DIAGRAM.md](docs/ER_DIAGRAM.md) · [API.md](docs/API.md) | System design, data model, API reference |
-| [AI_MODULE.md](docs/AI_MODULE.md) · [DEPLOY_FREE.md](docs/DEPLOY_FREE.md) · [RUNNING.md](docs/RUNNING.md) | AI service, free-tier deploy, running notes |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) · [ER_DIAGRAM.md](docs/ER_DIAGRAM.md) · [API.md](docs/API.md) · [AI_MODULE.md](docs/AI_MODULE.md) | System design, data model, API reference, AI service |
 
 ## License
 

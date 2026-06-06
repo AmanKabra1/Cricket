@@ -72,7 +72,7 @@ API docs at http://localhost:8000/docs · health at `/health` · readiness `/rea
 cd web
 npm install
 # point the web at your local API:
-"VITE_API_URL=http://localhost:8000/api/v1`nVITE_SOCKET_URL=http://localhost:8000" | Out-File -Encoding utf8 .env.local
+"VITE_API_BASE_URL=http://localhost:8000/api/v1`nVITE_SOCKET_URL=http://localhost:8000" | Out-File -Encoding utf8 .env.local
 npm run dev
 ```
 Open http://localhost:5173. Build = `npm run build`; typecheck happens in build.
@@ -100,6 +100,28 @@ The backend finds it via `AI_SERVICE_URL` (default `http://localhost:8100`). If
 it's down, the app just shows "AI warming up" — nothing else breaks.
 
 ---
+
+## Quick smoke test (curl)
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/api/v1/public/dashboard
+curl -X POST http://localhost:8000/api/v1/auth/login -H "Content-Type: application/json" \
+  -d '{"email":"admin@localscore.dev","password":"adminpass"}'
+```
+
+## Secrets / API keys reference
+**Nothing is required to run locally** — defaults are safe and the app degrades
+gracefully. Keys matter only for production or optional features.
+
+| Key | Service | Required? | Notes |
+|-----|---------|-----------|-------|
+| `SECRET_KEY` | backend | Yes in prod (any value locally) | JWT signing. Generate: `python -c "import secrets;print(secrets.token_urlsafe(48))"`. Auto-generated on Render. |
+| `DATABASE_URL` / `SYNC_DATABASE_URL` | backend | Yes | Local: SQLite. Prod: TiDB Cloud strings (+ `DB_SSL=true`). |
+| `REDIS_URL` | backend | No (in-memory fallback) | Needed in prod for multi-instance cache + Socket.IO fan-out. |
+| `STORAGE_BACKEND` + `S3_*` | backend | No (only image uploads) | `s3` for AWS S3 / Cloudflare R2; else local disk. |
+| `BREVO_API_KEY` / `SMTP_*` / `RESEND_*` | backend | No (email off if unset) | Any one provider enables email. |
+| `SENTRY_DSN` / `VITE_SENTRY_DSN` | backend / web | No | Error tracking; inert until set. |
+| `OPENAI_API_KEY` / `GEMINI_API_KEY` | ai-service | No | LLM commentary; templates used without it. |
 
 ## Tests / quality
 ```powershell

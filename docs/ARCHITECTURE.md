@@ -87,4 +87,4 @@ Cricket-specific logic (overs, innings, ball-by-ball) lives behind a `ScoringEng
 - Metrics (Prometheus) on request latency, Socket.IO connections, DB pool usage.
 - Graceful degradation: if the AI service is down, AI tabs show "unavailable" but live scoring is unaffected.
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for scaling strategy, security hardening, and cost estimates.
+See [DEPLOYMENT_AND_SCALING.md](DEPLOYMENT_AND_SCALING.md) for scaling strategy, security hardening, and cost estimates.
