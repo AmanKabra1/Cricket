@@ -98,9 +98,10 @@ transparent cricket **heuristic** already works today with **zero keys**.
 - **Knockout bracket view** (web + app): round 1 = real fixtures, later rounds
   project the winners advancing.
 
-> Note: the app's `@sentry/react-native` **Expo plugin** was removed (its
-> source-map upload broke the EAS build with no Sentry org/auth). Sentry still
-> initialises at runtime via the JS SDK when `EXPO_PUBLIC_SENTRY_DSN` is set.
+> Note: `@sentry/react-native` was **removed entirely** from the app — it broke
+> EAS Android builds at the Gradle phase even after dropping its Expo plugin.
+> Error tracking stays on **web + backend** (DSN-gated); app crash reporting is
+> off until a setup verified for Expo SDK 54 / RN 0.81 is wired.
 
 ## Later
 
