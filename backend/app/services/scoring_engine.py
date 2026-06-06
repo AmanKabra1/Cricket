@@ -72,7 +72,7 @@ def _auto_commentary(event_runs: int, ball: Ball, striker_name: str, bowler_name
     if ball.extra_type == ExtraType.WIDE:
         return f"{fh}Wide signalled. {ball.extra_runs + 1} extra run(s)."
     if ball.extra_type == ExtraType.NO_BALL:
-        return f"No ball! The next delivery is a free hit."
+        return "No ball! The next delivery is a free hit."
     if ball.runs_batsman == 6:
         return f"{fh}SIX! {striker_name} goes big off {bowler_name}."
     if ball.runs_batsman == 4:

@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.api.deps import (
-    CurrentUser,
     DbSession,
     OptionalUser,
     require_admin,

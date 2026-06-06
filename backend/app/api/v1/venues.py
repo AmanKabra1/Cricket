@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
-from app.api.deps import CurrentUser, DbSession, require_admin
+from app.api.deps import DbSession, require_admin
 from app.models.enums import UserRole
 from app.models.venue import Venue
 from app.schemas.catalog import VenueCreate, VenueOut

@@ -7,7 +7,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 
-from app.api.deps import CurrentUser, DbSession, require_super_admin
+from app.api.deps import DbSession, require_super_admin
+from app.core.config import settings
 from app.core.security import hash_password
 from app.models.enums import UserRole
 from app.models.setting import AppSetting

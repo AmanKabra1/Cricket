@@ -5,7 +5,6 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import select
 
 from app.api.deps import (
-    CurrentUser,
     DbSession,
     authorize_match_admin,
     require_admin,

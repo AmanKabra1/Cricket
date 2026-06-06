@@ -11,12 +11,12 @@ import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from app.api.deps import CurrentUser, DbSession, authorize_match_admin, require_admin
+from app.api.deps import DbSession, authorize_match_admin, require_admin
 from app.core.cache import DASHBOARD_KEY, cache, live_key, scorecard_key
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.models.ball import Ball
-from app.models.enums import ExtraType, MatchStatus
+from app.models.enums import MatchStatus
 from app.models.player import Player
 from app.realtime.socket import emit_commentary, emit_match_status, emit_score_update
 from app.schemas.match import BallEvent, MatchResultUpdate
