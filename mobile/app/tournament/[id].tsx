@@ -5,6 +5,7 @@ import { useStandings, useTournamentMatches } from "@/api/admin";
 import { useTeamMap } from "@/hooks/useTeamMap";
 import MatchCard from "@/components/MatchCard";
 import { FollowButton } from "@/components/FollowButton";
+import { Bracket } from "@/components/Bracket";
 import { Loading } from "@/components/States";
 import { palette, useTheme } from "@/theme";
 import type { Match } from "@/types";
@@ -94,6 +95,15 @@ export default function TournamentDetail() {
           <MiniBoard title="⭐ MVP" unit="pts" rows={lb.mvps} />
           <MiniBoard title="🏏 Most runs" unit="runs" rows={lb.top_run_scorers} />
           <MiniBoard title="🔴 Most wickets" unit="wkts" rows={lb.top_wicket_takers} />
+        </>
+      )}
+
+      {tournament?.format === "KNOCKOUT" && (matches?.length ?? 0) > 0 && (
+        <>
+          <Text style={[styles.h2, { color: t.text, marginTop: 8 }]}>Bracket</Text>
+          <View style={{ marginBottom: 14 }}>
+            <Bracket matches={matches ?? []} teams={teams} />
+          </View>
         </>
       )}
 

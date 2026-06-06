@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { useStandings, useTournamentLeaderboards, useTournamentMatches, useTournaments, type LeaderRow } from "@/api/hooks";
 import { useTeamMap } from "@/hooks/useTeamMap";
 import MatchCard from "@/components/MatchCard";
+import Bracket from "@/components/Bracket";
 import Spinner, { ErrorState } from "@/components/Spinner";
 
 function MiniBoard({ title, unit, rows }: { title: string; unit: string; rows: LeaderRow[] }) {
@@ -90,6 +91,15 @@ export default function TournamentDetail() {
             <MiniBoard title="⭐ MVP" unit="pts" rows={lb.mvps} />
             <MiniBoard title="🏏 Runs" unit="runs" rows={lb.top_run_scorers} />
             <MiniBoard title="🔴 Wickets" unit="wkts" rows={lb.top_wicket_takers} />
+          </div>
+        </>
+      )}
+
+      {tournament?.format === "KNOCKOUT" && (matches?.length ?? 0) > 0 && (
+        <>
+          <h2 className="mb-3 text-lg font-bold">Bracket</h2>
+          <div className="card-surface mb-8 p-5">
+            <Bracket matches={matches ?? []} teams={teams} />
           </div>
         </>
       )}
