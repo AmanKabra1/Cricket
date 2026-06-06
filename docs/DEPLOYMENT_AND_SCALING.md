@@ -46,7 +46,16 @@ balancer. The realtime layer is the scaling-critical piece (see §4).
   `uvicorn app.main:socket_app`).
 - **DB** → **TiDB Cloud** (TLS). Local dev = SQLite.
 - **app** → **EAS builds** (Play Store submission on hold).
-- **CI** → `.github/workflows/ci.yml`.
+
+### Automation (`.github/workflows/`)
+- **ci.yml** — on every push/PR: backend (ruff + pytest + `alembic upgrade head`),
+  ai-service (ruff + pytest), web (`tsc` + Vite build), mobile (`tsc`).
+- **deploy.yml** — optional Render deploy-hook trigger after CI is green (no-op
+  unless the hook secrets are set; Render/Vercel also auto-deploy on push).
+- **keep-alive.yml** — pings the free Render services so they don't sleep.
+- **maintenance.yml** — hourly cron → housekeeping (purge/expire/reminders) as a
+  backup to the in-process scheduler.
+- **train-ai-model.yml** — nightly (02:30 UTC) retrain of the win-probability model.
 
 ### Required env vars (production)
 **Backend (Render):** `SECRET_KEY`, `DATABASE_URL`, `SYNC_DATABASE_URL`,

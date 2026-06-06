@@ -79,8 +79,9 @@ background images, **test-email** diagnostics, run housekeeping on demand, expor
 training data, image uploads (logos / photos).
 
 **Reliability & ops** — `/health` (liveness) + `/ready` (DB-aware); **DSN-gated
-Sentry** on web + backend; **GitHub Actions CI** (ruff + pytest + `alembic upgrade
-head` + web/mobile typecheck); rate limiting; Redis-or-in-memory cache.
+Sentry** on web + backend; **GitHub Actions** CI (ruff + pytest + `alembic upgrade
+head` + web/mobile typecheck) plus scheduled **keep-alive**, **hourly maintenance**
+and **nightly model-retrain** workflows; rate limiting; Redis-or-in-memory cache.
 
 **Automatic housekeeping** — purges **completed matches > 7 days** and **stale
 match-admin accounts > 15 days** (with their matches) to keep the free-tier DB
