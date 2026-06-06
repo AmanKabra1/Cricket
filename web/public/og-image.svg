@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16a34a"/>
+      <stop offset="1" stop-color="#052e16"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- cricket ball -->
+  <circle cx="980" cy="170" r="92" fill="#dc2626" stroke="#ffffff" stroke-width="6"/>
+  <path d="M905 140 q75 30 150 0 M905 200 q75 -30 150 0" stroke="#ffffff" stroke-width="4" fill="none" stroke-dasharray="10 10"/>
+  <text x="90" y="300" font-family="Segoe UI, Arial, sans-serif" font-size="120" font-weight="800" fill="#ffffff">LocalScore</text>
+  <text x="96" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="48" font-weight="600" fill="#bbf7d0">Local Cricket, Live</text>
+  <text x="96" y="470" font-family="Segoe UI, Arial, sans-serif" font-size="34" fill="#ffffff">Real-time ball-by-ball scoring · live scorecards · AI win-probability</text>
+  <text x="96" y="520" font-family="Segoe UI, Arial, sans-serif" font-size="34" fill="#ffffff">tournaments · leaderboards · push alerts — web &amp; app</text>
+</svg>
