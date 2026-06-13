@@ -4,8 +4,27 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/cricket.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="LocalScore — live scores for local cricket tournaments and grounds." />
+    <meta name="description" content="LocalScore — live ball-by-ball cricket scoring for local tournaments and grounds: live scorecards, AI win-probability, tournaments, leaderboards and player stats." />
     <title>LocalScore — Local Cricket, Live</title>
+
+    <!-- SEO: let Google index the site + know the canonical URL -->
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://cricket-one-flax.vercel.app/" />
+    <!-- Google Search Console verification: paste your token from the
+         "HTML tag" method, then redeploy. (Leave until you have it.) -->
+    <!-- <meta name="google-site-verification" content="PASTE_TOKEN_HERE" /> -->
+
+    <!-- Structured data so Google can show a rich brand result -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "LocalScore",
+      "url": "https://cricket-one-flax.vercel.app/",
+      "description": "Real-time ball-by-ball cricket scoring, live scorecards, AI win-probability, tournaments, leaderboards and player stats — web and app.",
+      "inLanguage": "en"
+    }
+    </script>
 
     <!-- Open Graph / link-preview image (LinkedIn, WhatsApp, etc.). Unfurlers
          need a PNG/JPG (NOT svg) at an absolute URL — export og-image.svg to a
