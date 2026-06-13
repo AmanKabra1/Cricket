@@ -122,6 +122,7 @@ docker compose exec backend python -m app.seed
 | [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Code tour: folders + controller→service→model flow |
 | [CURRENT_STATE.md](docs/CURRENT_STATE.md) | Features + how to run app/web/backend/AI |
 | [DEPLOYMENT_AND_SCALING.md](docs/DEPLOYMENT_AND_SCALING.md) | Deploy topology + scale-up playbook |
+| [SEO_AND_DOMAIN.md](docs/SEO_AND_DOMAIN.md) | Social previews (OG image), Google indexing, single-source site URL, free domains |
 | [NEXT_STEPS.md](docs/NEXT_STEPS.md) | Phase log & what's next |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) · [ER_DIAGRAM.md](docs/ER_DIAGRAM.md) · [API.md](docs/API.md) · [AI_MODULE.md](docs/AI_MODULE.md) | System design, data model, API reference, AI service |
 
