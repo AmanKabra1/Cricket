@@ -1,3 +1,17 @@
+---
+title: LocalScore AI
+emoji: 🏏
+colorFrom: green
+colorTo: gray
+sdk: docker
+app_port: 8100
+pinned: false
+---
+
+<!-- The YAML block above configures a Hugging Face Docker Space (free). HF reads
+     it from this README; GitHub just renders it harmlessly. The container listens
+     on 8100 (start.sh default), which app_port routes to. -->
+
 # LocalScore — AI Service
 
 Python FastAPI microservice for predictions, performance indices, commentary,
