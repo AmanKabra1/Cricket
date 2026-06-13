@@ -7,9 +7,10 @@
     <meta name="description" content="LocalScore — live ball-by-ball cricket scoring for local tournaments and grounds: live scorecards, AI win-probability, tournaments, leaderboards and player stats." />
     <title>LocalScore — Local Cricket, Live</title>
 
-    <!-- SEO: let Google index the site + know the canonical URL -->
+    <!-- SEO: let Google index the site + know the canonical URL.
+         __SITE_URL__ is replaced at build time from SITE_URL in vite.config.ts -->
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://cricket-one-flax.vercel.app/" />
+    <link rel="canonical" href="__SITE_URL__/" />
     <!-- Google Search Console verification: paste your token from the
          "HTML tag" method, then redeploy. (Leave until you have it.) -->
     <!-- <meta name="google-site-verification" content="PASTE_TOKEN_HERE" /> -->
@@ -20,7 +21,7 @@
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "LocalScore",
-      "url": "https://cricket-one-flax.vercel.app/",
+      "url": "__SITE_URL__/",
       "description": "Real-time ball-by-ball cricket scoring, live scorecards, AI win-probability, tournaments, leaderboards and player stats — web and app.",
       "inLanguage": "en"
     }
@@ -34,14 +35,14 @@
     <meta property="og:site_name" content="LocalScore" />
     <meta property="og:title" content="LocalScore — Local Cricket, Live" />
     <meta property="og:description" content="Real-time ball-by-ball cricket scoring, live scorecards, AI win-probability, tournaments, leaderboards and push alerts — on web and app." />
-    <meta property="og:url" content="https://cricket-one-flax.vercel.app/" />
-    <meta property="og:image" content="https://cricket-one-flax.vercel.app/og-image.png" />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:image" content="__SITE_URL__/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="LocalScore — Local Cricket, Live" />
     <meta name="twitter:description" content="Real-time ball-by-ball cricket scoring, live scorecards, AI win-probability and more — web and app." />
-    <meta name="twitter:image" content="https://cricket-one-flax.vercel.app/og-image.png" />
+    <meta name="twitter:image" content="__SITE_URL__/og-image.png" />
   </head>
   <body>
     <div id="root"></div>
