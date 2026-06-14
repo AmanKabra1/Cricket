@@ -18,7 +18,7 @@ to extend beyond cricket.
 | **Backend** (REST + realtime + scoring engine) | FastAPI, async SQLAlchemy 2, Pydantic v2, Socket.IO, Alembic | Render |
 | **Web** (spectator + admin) | React + TypeScript + Vite, Redux Toolkit, React Query, Tailwind, recharts | Vercel |
 | **Mobile app** (spectator + scorer) | Expo SDK 54 / React Native, expo-router, React Query | EAS builds |
-| **AI service** (win-probability) | FastAPI (separate microservice) | Render |
+| **AI engine** (win-probability, commentary, insights) | **in-process inside the backend** (`app/ai`) — no separate service | — |
 | Database | TiDB Cloud (MySQL) in prod; SQLite locally | TiDB Cloud |
 
 ---
@@ -58,9 +58,10 @@ Socket.IO with a polling fallback.
 **Analytics** — **Manhattan** (runs per over, tooltip "Over N — R runs · W wkt") and
 a single **worm** comparing **both teams'** cumulative runs as separate lines.
 
-**AI win-probability** — separate service returns win % + projected score + key
-factors; **wickets-in-hand uses real squad size**; cached per score-state (one call
-shared by all viewers); degrades gracefully ("warming up") if asleep.
+**AI win-probability** — computed **in-process** (`app/ai`): win % + projected
+score + key factors + a one-line insight (LLM if `GEMINI_API_KEY` is set, else a
+template); **wickets-in-hand uses real squad size**; cached per score-state. Also
+`/api/v1/ai/*` (best-player, commentary, summary, player insights).
 
 **Player stats & awards** — career **batting / bowling / fielding** aggregates;
 **leaderboards** (most runs, most wickets, **MVP** by all-round impact);

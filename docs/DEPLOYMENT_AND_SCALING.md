@@ -28,22 +28,23 @@ on a fresh DB), ai-service (ruff + pytest), web (`tsc` + Vite build), mobile (`t
 ## 2. Topology
 
 ```
-        Vercel (CDN + React)         Render (Docker containers)             Managed
+        Vercel (CDN + React)         Backend host (Docker)                  Managed
    ┌──────────────────────────┐   ┌───────────────────────────────┐  ┌──────────────┐
    │  web (static, edge-cached)│──▶│  backend ×N (FastAPI ASGI)     │─▶│ TiDB Cloud   │
-   │  app (Expo / EAS)         │──▶│  ai-service ×M                  │  │ (MySQL-compat)│
+   │  app (Expo / EAS)         │──▶│  + AI in-process (app/ai)       │  │ (MySQL-compat)│
    └──────────────────────────┘   │  redis (managed) — cache+pubsub │  └──────────────┘
                                    └───────────────────────────────┘  ┌──────────────┐
                                                                        │ S3 / R2 + CDN│  (media)
                                                                        └──────────────┘
 ```
 The backend is **stateless** → scales horizontally behind the platform load
-balancer. The realtime layer is the scaling-critical piece (see §4).
+balancer. The realtime layer is the scaling-critical piece (see §4). **AI runs
+in-process** (no separate service).
 
 - **web** → **Vercel** (`web/vercel.json`), auto-deploys on push to `main`.
-- **backend** + **ai-service** → **Render** via blueprint `render.yaml` (Docker,
-  auto-deploy). Backend start = migrate then boot (`backend/start.sh`,
-  `uvicorn app.main:socket_app`).
+- **backend** (incl. AI) → **Hugging Face Space** (free) or **Render**
+  (`render.yaml`). Start = migrate then boot (`backend/start.sh`,
+  `uvicorn app.main:socket_app`). See [HUGGINGFACE_DEPLOY.md](HUGGINGFACE_DEPLOY.md).
 - **DB** → **TiDB Cloud** (TLS). Local dev = SQLite.
 - **app** → **EAS builds** (Play Store submission on hold).
 
@@ -58,12 +59,13 @@ balancer. The realtime layer is the scaling-critical piece (see §4).
 - **train-ai-model.yml** — nightly (02:30 UTC) retrain of the win-probability model.
 
 ### Required env vars (production)
-**Backend (Render):** `SECRET_KEY`, `DATABASE_URL`, `SYNC_DATABASE_URL`,
-`DB_SSL=true`, `BACKEND_CORS_ORIGINS`, `FRONTEND_URL`, `AI_SERVICE_URL`,
-`MAINTENANCE_TOKEN`, email (`BREVO_API_KEY` **or** `SMTP_*` / `RESEND_*`), object
-storage (`STORAGE_BACKEND=s3` + `S3_*`), optional `REDIS_URL`, optional
-`SENTRY_DSN`. Retention: `COMPLETED_MATCH_RETENTION_DAYS` (default 7),
-`ADMIN_RETENTION_DAYS` (default 15) — raise to keep more history (§6).
+**Backend (incl. AI):** `SECRET_KEY`, `DATABASE_URL`, `SYNC_DATABASE_URL`,
+`DB_SSL=true`, `BACKEND_CORS_ORIGINS`, `FRONTEND_URL`, `MAINTENANCE_TOKEN`,
+email (`BREVO_API_KEY` **or** `SMTP_*` / `RESEND_*`), object storage
+(`STORAGE_BACKEND=s3` + `S3_*`), optional `REDIS_URL`, optional `SENTRY_DSN`,
+optional `GEMINI_API_KEY` (LLM commentary/insights — AI runs in-process).
+Retention: `COMPLETED_MATCH_RETENTION_DAYS` (default 7), `ADMIN_RETENTION_DAYS`
+(default 15) — raise to keep more history (§6).
 **Web (Vercel):** `VITE_API_BASE_URL`, `VITE_SOCKET_URL`, optional `VITE_SENTRY_DSN`.
 **App (EAS):** `EXPO_PUBLIC_SENTRY_DSN` (only if app Sentry is re-added).
 
@@ -86,12 +88,14 @@ You'll need free accounts: **GitHub, TiDB Cloud, Render, Vercel.**
    - `SYNC_DATABASE_URL` = `mysql+pymysql://USER:PASS@HOST:4000/localscore`
    - `DB_SSL=true` (TiDB requires TLS; handled via system CA — no `?ssl=` params).
 
-**Step 2 — Backend + AI: Render**
-1. render.com → **New → Blueprint** → connect the repo. It reads `render.yaml`
-   and proposes `localscore-backend` + `localscore-ai` (both free).
+**Step 2 — Backend (incl. AI): Render**
+1. render.com → **New → Blueprint** → connect the repo (reads `render.yaml`).
+   Only the **`localscore-backend`** service is needed — AI is in-process now, so
+   the separate `localscore-ai` service is optional/unused.
 2. Set the backend `sync:false` env vars: the DB URLs + `DB_SSL=true`,
-   `BACKEND_CORS_ORIGINS` (blank for now), `AI_SERVICE_URL` (the AI service's
-   internal Render URL, e.g. `http://localscore-ai:10000`), `S3_*` (blank in V1).
+   `BACKEND_CORS_ORIGINS` (blank for now), `S3_*` (blank in V1). `AI_SERVICE_URL`
+   is **not** needed. *(Tip: the free **Hugging Face** one-Space flow in
+   [HUGGINGFACE_DEPLOY.md](HUGGINGFACE_DEPLOY.md) is simpler than Render now.)*
 3. Deploy. The backend runs `alembic upgrade head` on boot → TiDB tables created.
    Wait for `/health` green at `https://localscore-backend-XXXX.onrender.com/health`.
 
@@ -153,9 +157,11 @@ MUST externalize both:
 **Step 3 — Media:** `STORAGE_BACKEND=s3` with **Cloudflare R2** (free egress) —
 `storage.py` already supports it. Serve via the CDN URL, not app-server disk.
 
-**Step 4 — AI service:** stays separate (scales independently). Backend already
-**caches predictions by score state** (one call per unique moment) and degrades
-gracefully if it's down. Real LLM → set the key + `AI_COMMENTARY_ENABLED` (watch cost).
+**Step 4 — AI:** runs **in-process** in the backend (`app/ai`) — it scales with
+the backend pods. Predictions are **cached by score state** (one compute per
+unique moment). Optional LLM (commentary/insights) → set `GEMINI_API_KEY`
+(+ `AI_COMMENTARY_ENABLED` for ball commentary); without it, heuristics/templates
+are used. The heuristic is pure-Python, so no heavy ML deps in the API image.
 
 **Step 5 — Read scaling:** public dashboard/live/scorecard are cached (short TTL)
 in `public.py`; with Redis this shields the DB during a popular match. Add

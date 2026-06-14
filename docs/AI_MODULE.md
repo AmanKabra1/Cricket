@@ -1,26 +1,25 @@
 # AI Module Architecture — LocalScore
 
-The AI capabilities live in a **separate Python microservice** (`ai-service/`),
-not in the core backend. Rationale:
+> **Update:** the AI now runs **in-process inside the backend** at
+> `backend/app/ai/` (no separate service to host — one deploy, AI always
+> available, no cold start). The standalone `ai-service/` folder is kept only for
+> the **model-training pipeline** (`ai-service/train/`) and is no longer deployed.
+> The notes below on the heuristic/LLM design still apply; only the hosting moved.
 
-- **Dependency isolation** — XGBoost, LightGBM, LangChain, and the OpenAI SDK are
-  heavy and release on their own cadence. Keeping them out of the scoring API
-  means a bad ML dependency can never take down live scoring.
-- **Independent scaling** — prediction/LLM calls are bursty and latency-tolerant;
-  they scale on their own signal (queue depth) and can scale to zero when no
-  matches are live.
-- **Graceful degradation** — the backend calls the AI service over HTTP with a
-  short timeout and caches results. If the service is down or slow, AI tabs show
-  "warming up" and the rest of the platform is unaffected (see
-  `backend/app/api/v1/public.py::ai_prediction`).
+The AI is intentionally **dependency-light** (stdlib + httpx + pydantic — already
+in the backend), so the heuristic predictors and template commentary add no heavy
+ML libraries to the scoring API. The optional trained model (joblib) and LLM
+(Gemini over HTTPS / OpenAI) activate only when configured; otherwise transparent
+heuristics/templates are used, so a missing model or key can never break scoring.
 
 ```
- backend  ──HTTP──▶  ai-service (FastAPI :8100)
- (caches)            ├─ /predict/win-probability   model | heuristic
-                     ├─ /predict/best-player        performance index
-                     ├─ /commentary                 LLM | template
-                     ├─ /summary                    LLM | template
-                     └─ /insights/player            form + strengths/weaknesses
+ backend (app/ai, in-process)
+   /public/matches/{id}/prediction  → win-probability (cached per score state)
+   /api/v1/ai/win-probability        model | heuristic
+   /api/v1/ai/best-player            performance index
+   /api/v1/ai/commentary             LLM | template
+   /api/v1/ai/summary                LLM | template
+   /api/v1/ai/insights/player        form + strengths/weaknesses
                             │
                             ├─ app/features.py     state → features (stdlib only)
                             ├─ app/models/*        predictors (heuristic + joblib)
