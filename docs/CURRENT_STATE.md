@@ -89,15 +89,13 @@ dev client. Push notifications need a **development/production build** (not Expo
 
 Useful: `npm run typecheck` (mobile & web) before committing.
 
-### 4) AI service (optional locally) — port 8100
-```powershell
-cd ai-service
-python -m venv .venv ; .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8100
-```
-The backend finds it via `AI_SERVICE_URL` (default `http://localhost:8100`). If
-it's down, the app just shows "AI warming up" — nothing else breaks.
+### 4) AI — no separate service
+The AI runs **in-process** inside the backend (`backend/app/ai`), so there's
+nothing extra to start. Predictions: `GET /api/v1/public/matches/{id}/prediction`;
+raw tools: `GET /api/v1/ai/health`, `POST /api/v1/ai/win-probability`, etc.
+Set `GEMINI_API_KEY` to enable LLM commentary/insights (templates without it).
+To (optionally) train the model: `pip install -r requirements-ml.txt` then
+`python -m app.ai.train.train_win_probability` from `backend/`.
 
 ---
 
@@ -121,7 +119,7 @@ gracefully. Keys matter only for production or optional features.
 | `STORAGE_BACKEND` + `S3_*` | backend | No (only image uploads) | `s3` for AWS S3 / Cloudflare R2; else local disk. |
 | `BREVO_API_KEY` / `SMTP_*` / `RESEND_*` | backend | No (email off if unset) | Any one provider enables email. |
 | `SENTRY_DSN` / `VITE_SENTRY_DSN` | backend / web | No | Error tracking; inert until set. |
-| `OPENAI_API_KEY` / `GEMINI_API_KEY` | ai-service | No | LLM commentary; templates used without it. |
+| `GEMINI_API_KEY` / `OPENAI_API_KEY` | backend (app/ai) | No | LLM commentary/insights; templates used without it. |
 
 ## Tests / quality
 ```powershell

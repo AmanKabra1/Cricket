@@ -8,10 +8,9 @@ each in its own top-level folder:
 
 | Folder | What it is | Tech | Runs on |
 |--------|-----------|------|---------|
-| `backend/` | REST + realtime API (the brain) | FastAPI, SQLAlchemy (async), Socket.IO | Render |
+| `backend/` | REST + realtime API + **AI** (the brain) | FastAPI, SQLAlchemy (async), Socket.IO; AI in `app/ai` | Hugging Face / Render |
 | `web/` | Spectator + admin website | React + Vite + Redux + React Query + Tailwind | Vercel |
 | `mobile/` | The app (spectator + scorer) | Expo / React Native, expo-router | EAS builds |
-| `ai-service/` | Win-probability + commentary | FastAPI (separate small service) | Render |
 | `docs/` | These guides | Markdown | — |
 
 The database is **TiDB Cloud** (MySQL-compatible). Locally you can use **SQLite**.
@@ -152,11 +151,12 @@ src/api/    src/components/    src/hooks/    src/lib/ (api, pushToken)   theme.t
 Same data layer idea as web (React Query). `src/lib/api.ts` is the axios client
 + token store. The app talks to the SAME backend as the web.
 
-## 4. AI service (`ai-service/`)
-A tiny separate FastAPI app. `app/features.py` turns a live score into model
-features; it returns a win probability + key factors. The backend calls it from
-`api/v1/public.py` (`/prediction`) and caches the result. It degrades gracefully
-if the AI service is asleep/unavailable.
+## 4. AI engine (`backend/app/ai/`) — in-process
+No separate service. `features.py` turns a live score into features;
+`win_probability.py` returns win prob + projected score + insight (heuristic by
+default; optional trained model / Gemini LLM). Also `best_player`, `commentary`,
+`summary`, `insights`. Exposed via `api/v1/public.py` (`/prediction`, cached) and
+`api/v1/ai.py` (`/api/v1/ai/*`). Training pipeline: `app/ai/train/`.
 
 ---
 

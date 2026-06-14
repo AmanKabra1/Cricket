@@ -78,9 +78,9 @@ JSON-LD and the `google-site-verification` meta are live.
 | **Backend + AI (one Space)** | Hugging Face |
 | DB | TiDB Cloud |
 
-Render is no longer required (keep `render.yaml` as an optional fallback). The
-old standalone `ai-service/` folder stays only for the model-training pipeline;
-it is **not deployed** anymore.
+Render is no longer required (keep `render.yaml` as an optional fallback). The AI
+is in the backend (`backend/app/ai`); the old standalone `ai-service/` folder has
+been removed (the training pipeline lives in `backend/app/ai/train/`).
 
 ## Order of operations
 1. Revoke token → new write token → add `HF_TOKEN` GitHub secret.

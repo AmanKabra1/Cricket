@@ -1,15 +1,20 @@
-"""Training pipeline for the win-probability model.
+"""Training pipeline for the win-probability model (in-backend AI).
 
-This is the path that upgrades the live heuristic to a learned model. In
-production you'd pull historical ball-by-ball data from the platform DB and
-label each in-progress state with the eventual match result. Until that data
-exists, this script SYNTHESISES a labelled dataset from the same heuristic so
-the end-to-end pipeline (train → persist → serve) is runnable and verifiable.
+Upgrades the live heuristic to a learned model. In production you'd pull
+historical ball-by-ball data from the platform DB and label each in-progress
+state with the eventual result. Until that data exists, this SYNTHESISES a
+labelled dataset from the same heuristic so the pipeline (train → persist →
+serve) is runnable end-to-end.
 
-Run (synthetic):  python -m train.train_win_probability
-Run (real data):  TRAINING_DATA_FILE=data.json python -m train.train_win_probability
-  where data.json is the backend export GET /api/v1/admin/ai/training-data.
-Output:  models/win_probability.joblib  (auto-detected by app.models.win_probability)
+Run (from backend/, needs ML deps — `pip install -r requirements-ml.txt`):
+  Synthetic:   python -m app.ai.train.train_win_probability
+  Real export: TRAINING_DATA_FILE=data.json python -m app.ai.train.train_win_probability
+    where data.json is the backend export GET /api/v1/admin/ai/training-data.
+
+Output:  app/ai/models/win_probability.joblib  (set USE_TRAINED_MODEL=true and
+MODEL_DIR=app/ai/models so app.ai.win_probability picks it up). NOTE: a raw
+.joblib can't be pushed to a Hugging Face Space without Xet/LFS — train+use it
+on a host that allows binaries, or wire Xet.
 """
 from __future__ import annotations
 
@@ -21,6 +26,8 @@ FEATURES = [
     "is_chase", "runs", "wickets", "balls_bowled", "balls_left",
     "wickets_in_hand", "current_run_rate", "required_run_rate", "runs_needed",
 ]
+
+OUTPUT_DIR = os.path.join("app", "ai", "models")
 
 
 def _load_real(path: str):
@@ -54,7 +61,6 @@ def _synthesise(n: int = 20000):
         runs_needed = target - runs
         rrr = runs_needed / max(1, balls_left) * 6
 
-        # Ground-truth-ish label: chase succeeds more often with cushion+wickets.
         prob = 1 / (1 + np.exp(-(1.2 * (crr - rrr) + 0.4 * (wih - 5) + rng.normal(0, 0.6))))
         won = 1 if rng.random() < prob else 0
 
@@ -73,8 +79,6 @@ def main() -> None:
     if data_file and os.path.exists(data_file):
         Xr, yr = _load_real(data_file)
         print(f"Loaded {len(yr)} real labelled rows from {data_file}.")
-        # Real local-cricket data is often sparse — augment with synthetic so the
-        # model still generalises across game states.
         if len(yr) < 2000:
             Xs, ys = _synthesise()
             X = np.vstack([Xr, Xs]) if len(yr) else Xs
@@ -88,7 +92,6 @@ def main() -> None:
 
     X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=1)
 
-    # Prefer XGBoost; fall back to LightGBM, then sklearn.
     model = None
     try:
         from xgboost import XGBClassifier
@@ -117,11 +120,11 @@ def main() -> None:
     proba = model.predict_proba(X_te)[:, 1]
     print(f"Accuracy: {accuracy_score(y_te, preds):.3f}  AUC: {roc_auc_score(y_te, proba):.3f}")
 
-    os.makedirs("models", exist_ok=True)
-    out = os.path.join("models", "win_probability.joblib")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    out = os.path.join(OUTPUT_DIR, "win_probability.joblib")
     joblib.dump(model, out)
     print(f"Saved → {out}  (feature order: {FEATURES})")
-    print("Restart the AI service; predictions will now use this model.")
+    print("Set USE_TRAINED_MODEL=true + MODEL_DIR=app/ai/models, then restart the backend.")
 
 
 if __name__ == "__main__":

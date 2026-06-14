@@ -44,28 +44,6 @@ jobs:
           rm -f ci.db
           ALEMBIC_DATABASE_URL=sqlite:///./ci.db alembic upgrade head
 
-  ai-service:
-    name: AI service (tests)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ai-service
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: ai-service/requirements.txt
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt ruff
-      - name: Lint (errors only)
-        run: ruff check --select E9,F63,F7,F82 app train
-      - name: Run tests
-        run: pytest -q
-
   web:
     name: Web (typecheck + build)
     runs-on: ubuntu-latest

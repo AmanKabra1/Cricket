@@ -15,9 +15,9 @@ Live on **Vercel** (web) + **Render** (backend + AI) + **TiDB Cloud**; app via
 
 1. **Shareable match cards** — generate an image / OG card per match for social
    sharing (growth lever).
-2. **AI LLM commentary & summaries** — wire **Gemini** (free, ~1,500 req/day) in
-   `ai-service`; auto ball-by-ball commentary + innings/match summaries, cached.
-   Needs `GEMINI_API_KEY` + `AI_COMMENTARY_ENABLED`; keep the template fallback.
+2. **AI LLM commentary & summaries** — the in-process AI (`backend/app/ai`)
+   already supports **Gemini** (free, ~1,500 req/day); just set `GEMINI_API_KEY`
+   (+ `AI_COMMENTARY_ENABLED` for ball commentary). Templates without it.
 3. **Trained win-probability model** — XGBoost/LightGBM on our own `balls` data
    to replace the heuristic (`training_data.py` already scaffolds the export);
    nightly retrain via GitHub Actions. No API change (the loader swaps it in).

@@ -8,9 +8,10 @@ name: Deploy Backend to Hugging Face
 #     Public → name it EXACTLY  localscore-backend
 #  2. In that Space → Settings → "Variables and secrets" → add SECRETS:
 #       SECRET_KEY, DATABASE_URL, SYNC_DATABASE_URL, DB_SSL=true,
-#       BACKEND_CORS_ORIGINS (your Vercel URL), FRONTEND_URL,
-#       AI_SERVICE_URL (your HF AI URL), MAINTENANCE_TOKEN  (+ email/S3 if used)
-#  3. Repo already has the HF_TOKEN secret (from the AI deploy). Confirm
+#       BACKEND_CORS_ORIGINS (your Vercel URL), FRONTEND_URL, MAINTENANCE_TOKEN
+#       (+ optional GEMINI_API_KEY for LLM, email/S3 if used). AI is in-process —
+#       no AI_SERVICE_URL needed.
+#  3. Repo already has the HF_TOKEN secret. Confirm
 #     HF_USERNAME below, then run: Actions → this workflow → "Run workflow".
 #  4. After it's Running, point the web at it (Vercel env):
 #       VITE_API_BASE_URL = https://<hf-backend-url>/api/v1
@@ -38,6 +39,9 @@ jobs:
             exit 1
           fi
           cd backend
+          # HF Spaces reject raw binaries (need Xet/LFS). The AI uses the
+          # heuristic when no model file is present, so never ship a .joblib.
+          find . -name '*.joblib' -delete
           git init -q
           git checkout -q -b main
           git config user.email "ci@localscore.app"

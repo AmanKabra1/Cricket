@@ -18,7 +18,7 @@ Hand this to any engineer or agent.
 | 12 | Engagement: match push notifications + tap-to-open, **follow team/tournament**, **HTML emails**, **knockout bracket view**. |
 
 Quality bar: **GitHub Actions CI** — backend (ruff + pytest + `alembic upgrade head`
-on a fresh DB), ai-service (ruff + pytest), web (`tsc` + Vite build), mobile (`tsc`).
+on a fresh DB), web (`tsc` + Vite build), mobile (`tsc`).
 
 > The app's `@sentry/react-native` was removed (it broke EAS Android builds);
 > error tracking remains on web + backend.
@@ -50,14 +50,14 @@ in-process** (no separate service).
 
 ### Automation (`.github/workflows/`)
 - **ci.yml** — on every push/PR: backend (ruff + pytest + `alembic upgrade head`),
-  ai-service (ruff + pytest), web (`tsc` + Vite build), mobile (`tsc`).
+  web (`tsc` + Vite build), mobile (`tsc`).
 - **deploy-hf-backend.yml** — manual: pushes the backend (incl. AI) to its HF Space.
 
 Housekeeping (purge old matches, expire stale admins, reminders) runs **in-process**
 in the backend (`MAINTENANCE_AUTO`), so no external cron is needed. The old
 Render-deploy / keep-alive / external-maintenance / nightly-retrain workflows were
 removed when the app moved to one HF Space with in-process AI. To retrain the
-win-probability model, run `ai-service/train/` manually and commit the artifact.
+win-probability model, run `app/ai/train/` (from backend) manually and commit the artifact.
 
 ### Required env vars (production)
 **Backend (incl. AI):** `SECRET_KEY`, `DATABASE_URL`, `SYNC_DATABASE_URL`,
@@ -134,7 +134,7 @@ key) → verify a sender. Set on Render: `SMTP_HOST=smtp-relay.brevo.com`,
 Target: ~100k registered users, ~10k concurrent live-score viewers. Do these in
 order; stop when you meet your load goal.
 
-**Step 0 — Off free tier:** Render `localscore-backend` + `localscore-ai` →
+**Step 0 — Off free tier:** Render `localscore-backend` →
 `starter`/`standard` (no sleep, no cold starts).
 
 **Step 1 — Database:** TiDB Serverless → **Dedicated** as reads grow. Ensure

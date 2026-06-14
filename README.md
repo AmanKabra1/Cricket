@@ -40,7 +40,7 @@ Socket.IO · `/health` + `/ready`, DSN-gated **Sentry** (web + backend), CI.
 ```
 Cricket/
 ├── backend/        FastAPI — REST + Socket.IO, scoring engine, auth/RBAC, Alembic
-├── ai-service/     FastAPI microservice — win-probability + commentary
+│                   (AI is in-process: backend/app/ai — win-probability + commentary)
 ├── web/            React + TypeScript + Vite — spectator & admin web app
 ├── mobile/         Expo / React Native app (expo-router)
 ├── docs/           Developer, deployment, architecture & API docs

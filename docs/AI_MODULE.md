@@ -2,8 +2,9 @@
 
 > **Update:** the AI now runs **in-process inside the backend** at
 > `backend/app/ai/` (no separate service to host — one deploy, AI always
-> available, no cold start). The standalone `ai-service/` folder is kept only for
-> the **model-training pipeline** (`ai-service/train/`) and is no longer deployed.
+> available, no cold start). The old standalone `ai-service/` folder has been
+> **removed** — its code now lives in `backend/app/ai/` (the **training pipeline**
+> moved to `backend/app/ai/train/`).
 > The notes below on the heuristic/LLM design still apply; only the hosting moved.
 
 The AI is intentionally **dependency-light** (stdlib + httpx + pydantic — already

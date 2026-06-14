@@ -1,8 +1,8 @@
-"""Heuristic-path tests — no ML libs or API key required."""
+"""In-process AI engine tests (heuristic path — no ML libs or API key)."""
 from __future__ import annotations
 
-from app.models import best_player, win_probability
-from app.schemas import (
+from app.ai import best_player, commentary, insights, win_probability
+from app.ai.schemas import (
     BestPlayerRequest,
     CommentaryRequest,
     InningsState,
@@ -10,7 +10,6 @@ from app.schemas import (
     PlayerInsightRequest,
     PlayerStatLine,
 )
-from app.services import commentary, insights
 
 
 def _state(**inn) -> LiveScoreState:
@@ -23,7 +22,6 @@ def _state(**inn) -> LiveScoreState:
 
 
 def test_chase_cruising_favours_batting():
-    # Needs 20 off 60 with 8 wickets — batting side should be heavy favourite.
     s = _state(runs=160, wickets=2, overs="10.0", run_rate=16.0,
                target=180, required_run_rate=2.0)
     wp = win_probability.predict(s)
@@ -33,7 +31,6 @@ def test_chase_cruising_favours_batting():
 
 
 def test_chase_impossible_favours_bowling():
-    # Needs 90 off 6 balls with 1 wicket — bowling side dominant.
     s = _state(runs=110, wickets=9, overs="19.0", run_rate=5.8,
                target=200, required_run_rate=90.0)
     wp = win_probability.predict(s)
@@ -61,7 +58,7 @@ def test_best_player_ranks_allrounder_top():
     ])
     resp = best_player.rank(req)
     assert resp.best is not None
-    assert resp.best.name == "Bowl"  # 4 wickets outweighs 60 runs in the index
+    assert resp.best.name == "Bowl"
 
 
 def test_commentary_template_fallback():

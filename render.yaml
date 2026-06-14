@@ -38,8 +38,9 @@ services:
       # scale to multiple instances (set REDIS_URL to a managed Redis URL).
       - key: REDIS_URL
         value: ""
-      - key: AI_SERVICE_URL
-        sync: false # internal URL of the AI service, e.g. http://localscore-ai:10000
+      # AI runs IN-PROCESS now (app/ai) — no separate service. Optional LLM:
+      - key: GEMINI_API_KEY
+        sync: false # optional; commentary/insights use templates when empty
       # Object storage (AWS S3 in prod).
       - key: S3_ENDPOINT_URL
         sync: false
@@ -72,21 +73,6 @@ services:
       - key: SMTP_FROM
         sync: false # LocalScore <your-verified-sender@domain>
 
-  # ---------------- AI microservice ----------------
-  - type: web
-    name: localscore-ai
-    runtime: docker
-    rootDir: ai-service
-    dockerfilePath: ./Dockerfile
-    plan: free # V1 on free tier (sleeps after ~15min idle); bump to "starter" for always-on
-    healthCheckPath: /health
-    autoDeploy: true
-    # Start command lives in the image (ai-service/start.sh): boot on $PORT.
-    envVars:
-      - key: OPENAI_API_KEY
-        sync: false # optional; templates used when empty
-      - key: MODEL_DIR
-        value: models
-
+# AI is in-process in the backend (app/ai) — there is no separate AI service.
 # Redis intentionally omitted for the free tier (1-instance, in-memory). To add
 # it later: create a managed Redis and set REDIS_URL on localscore-backend.
