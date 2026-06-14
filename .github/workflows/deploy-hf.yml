@@ -38,6 +38,10 @@ jobs:
             exit 1
           fi
           cd ai-service
+          # HF Spaces reject raw binaries (they want Xet/LFS). The AI service
+          # auto-falls back to its built-in heuristic when no model file is
+          # present, so we simply don't ship the .joblib — predictions still work.
+          find . -name '*.joblib' -delete
           git init -q
           git checkout -q -b main
           git config user.email "ci@localscore.app"
