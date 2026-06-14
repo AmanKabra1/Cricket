@@ -1,0 +1,48 @@
+name: Deploy Backend to Hugging Face
+
+# MANUAL ONLY (Render is the backend's primary host). Use this as a free fallback
+# when Render is suspended/asleep. Pushes the backend/ folder to a HF Docker Space.
+#
+# ONE-TIME SETUP:
+#  1. Create the Space: huggingface.co/new-space → SDK: Docker → CPU free →
+#     Public → name it EXACTLY  localscore-backend
+#  2. In that Space → Settings → "Variables and secrets" → add SECRETS:
+#       SECRET_KEY, DATABASE_URL, SYNC_DATABASE_URL, DB_SSL=true,
+#       BACKEND_CORS_ORIGINS (your Vercel URL), FRONTEND_URL,
+#       AI_SERVICE_URL (your HF AI URL), MAINTENANCE_TOKEN  (+ email/S3 if used)
+#  3. Repo already has the HF_TOKEN secret (from the AI deploy). Confirm
+#     HF_USERNAME below, then run: Actions → this workflow → "Run workflow".
+#  4. After it's Running, point the web at it (Vercel env):
+#       VITE_API_BASE_URL = https://<hf-backend-url>/api/v1
+#       VITE_SOCKET_URL   = https://<hf-backend-url>
+
+on:
+  workflow_dispatch: {}
+
+env:
+  HF_USERNAME: AK1B12B1          # ← your Hugging Face username (change if different)
+  HF_SPACE: localscore-backend   # ← the Space name you created
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push backend to the HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::Add a repo secret named HF_TOKEN (your HF write token)."
+            exit 1
+          fi
+          cd backend
+          git init -q
+          git checkout -q -b main
+          git config user.email "ci@localscore.app"
+          git config user.name "LocalScore CI"
+          git add .
+          git commit -q -m "Sync from GitHub @ ${GITHUB_SHA::7}"
+          git push -f "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE}" main
+          echo "✅ Synced. Space: https://huggingface.co/spaces/${HF_USERNAME}/${HF_SPACE}"
