@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 
-import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 
@@ -61,13 +60,17 @@ async def _enrich_commentary(match_id: int, ball_id: int) -> None:
                 "striker": striker.name if striker else "the batter",
                 "bowler": bowler.name if bowler else "the bowler",
             }
-            async with httpx.AsyncClient(timeout=12.0) as client:
-                resp = await client.post(f"{settings.AI_SERVICE_URL}/commentary", json=payload)
-                resp.raise_for_status()
-                data = resp.json()
-            # Only overwrite when the AI service actually used the LLM.
-            if data.get("source") == "llm" and data.get("text"):
-                ball.commentary = data["text"]
+            # In-process AI (app/ai); run off the event loop since the LLM call
+            # is blocking. Falls back to template (source != "llm") with no key.
+            from starlette.concurrency import run_in_threadpool
+
+            from app.ai import commentary as ai_commentary
+            from app.ai.schemas import CommentaryRequest
+
+            result = await run_in_threadpool(ai_commentary.generate, CommentaryRequest(**payload))
+            # Only overwrite when the LLM actually produced a line.
+            if result.source == "llm" and result.text:
+                ball.commentary = result.text
                 await db.commit()
                 await emit_commentary(
                     match_id,

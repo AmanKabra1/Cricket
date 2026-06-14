@@ -60,31 +60,12 @@ async def _maintenance_loop() -> None:
         await asyncio.sleep(max(60, settings.MAINTENANCE_INTERVAL_MINUTES * 60))
 
 
-async def _ai_warmup_loop() -> None:
-    """Keep the AI service awake by pinging it every few minutes — the same way
-    the backend itself is kept warm. While this backend is up (which the external
-    keep-alive ping ensures), the AI never sleeps, so predictions don't
-    cold-start with the 'warming up' fallback. Skipped for the localhost default."""
-    import httpx
-
-    if "localhost" in settings.AI_SERVICE_URL or "127.0.0.1" in settings.AI_SERVICE_URL:
-        return
-    await asyncio.sleep(30)
-    while True:
-        try:
-            async with httpx.AsyncClient(timeout=40.0) as client:
-                await client.get(f"{settings.AI_SERVICE_URL}/health")
-        except Exception as exc:  # noqa: BLE001 — never kill the loop
-            logger.info("ai warmup ping failed: %s", exc)
-        await asyncio.sleep(10 * 60)  # every 10 minutes
-
-
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    # AI runs in-process now (app/ai) — no external service to keep warm.
     tasks: list[asyncio.Task] = []
     if settings.MAINTENANCE_AUTO:
         tasks.append(asyncio.create_task(_maintenance_loop()))
-    tasks.append(asyncio.create_task(_ai_warmup_loop()))
     yield
     for task in tasks:
         task.cancel()

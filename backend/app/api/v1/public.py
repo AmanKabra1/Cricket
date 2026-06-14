@@ -4,13 +4,11 @@ from __future__ import annotations
 import json
 from datetime import datetime
 
-import httpx
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
 from app.api.deps import DbSession
 from app.core.cache import DASHBOARD_KEY, cache, live_key, scorecard_key
-from app.core.config import settings
 from app.models.ball import Ball
 from app.models.enums import MatchStatus
 from app.models.match import Match
@@ -191,12 +189,11 @@ async def analytics(match_id: int, db: DbSession) -> dict:
 
 @router.get("/matches/{match_id}/prediction")
 async def ai_prediction(match_id: int, db: DbSession) -> dict:
-    """Proxy to the AI service; degrades gracefully if it's unavailable.
+    """Win-probability + projected score, computed IN-PROCESS (app/ai).
 
     Cached by the current score state, so every spectator viewing the same moment
-    shares one AI call — this shields the (free-tier) AI service and keeps any LLM
-    usage well within free quotas. The key changes as soon as the score does, so
-    the prediction still updates ball-by-ball.
+    shares one computation (and at most one LLM call for the insight line). The
+    key changes as soon as the score does, so the prediction updates ball-by-ball.
     """
     match = await db.get(Match, match_id)
     if not match:
@@ -213,22 +210,18 @@ async def ai_prediction(match_id: int, db: DbSession) -> dict:
         return cached
 
     try:
-        # The AI service is on a free tier and may cold-start (sleep ~30s), so the
-        # first call needs a generous timeout; the result is then cached.
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.post(
-                f"{settings.AI_SERVICE_URL}/predict/win-probability",
-                json={"match_id": match_id, "live_score": live},
-            )
-            resp.raise_for_status()
-            result = resp.json()
+        # AI runs in-process now — no external service, no cold start.
+        from app.ai import win_probability
+        from app.ai.schemas import LiveScoreState
+
+        result = win_probability.predict(LiveScoreState.model_validate(live)).model_dump()
         await cache.set_json(key, result, ttl=30)  # short TTL; key already score-scoped
         return result
-    except (httpx.HTTPError, Exception):  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — never let a prediction error break the page
         return {
             "match_id": match_id,
             "available": False,
-            "message": "AI prediction service is warming up. Check back shortly.",
+            "message": "Prediction unavailable.",
         }
 
 

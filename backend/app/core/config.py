@@ -63,12 +63,22 @@ class Settings(BaseSettings):
     S3_BUCKET: str = "localscore-media"
     S3_REGION: str = "us-east-1"
 
-    # AI service
-    AI_SERVICE_URL: str = "http://localhost:8100"
+    # AI — now runs IN-PROCESS (app/ai). AI_SERVICE_URL is kept only for an
+    # optional external service and is no longer required.
+    AI_SERVICE_URL: str = ""
+    # LLM (optional). Without a key, commentary/summary use templates and the
+    # win-probability insight uses a deterministic line. Gemini is preferred
+    # (free tier, no card, called over HTTPS — no extra packages).
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash"
     OPENAI_API_KEY: str = ""
-    # When true, each scored ball is enriched with an AI commentary line (one
-    # call to the AI service per ball, in the background). Turn on once the AI
-    # service has an LLM key (GEMINI_API_KEY) so it isn't called for templates.
+    LLM_MODEL: str = "gpt-4o-mini"
+    # Trained win-probability model (heuristic by default). Point MODEL_DIR at a
+    # folder with win_probability.joblib and flip USE_TRAINED_MODEL to use it.
+    MODEL_DIR: str = "models"
+    USE_TRAINED_MODEL: bool = False
+    # When true, each scored ball is enriched with an AI commentary line (in the
+    # background). Only meaningful when an LLM key is set.
     AI_COMMENTARY_ENABLED: bool = False
 
     # Public site URL (used in emails so admins get a working link)
