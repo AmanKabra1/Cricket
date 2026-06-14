@@ -7,7 +7,7 @@ import path from "node:path";
 // To switch domains later: change THIS line (or set VITE_SITE_URL in the env).
 // Everything below — index.html OG/canonical tags, robots.txt, sitemap.xml —
 // is derived from it automatically. No other file needs editing.
-const SITE_URL = (process.env.VITE_SITE_URL || "https://cricket-one-flax.vercel.app").replace(/\/+$/, "");
+const SITE_URL = (process.env.VITE_SITE_URL || "https://cricket-inky-zeta.vercel.app").replace(/\/+$/, "");
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PUBLIC_ROUTES = ["/", "/teams", "/tournaments", "/leaderboards"];
