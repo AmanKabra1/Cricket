@@ -51,12 +51,13 @@ in-process** (no separate service).
 ### Automation (`.github/workflows/`)
 - **ci.yml** — on every push/PR: backend (ruff + pytest + `alembic upgrade head`),
   ai-service (ruff + pytest), web (`tsc` + Vite build), mobile (`tsc`).
-- **deploy.yml** — optional Render deploy-hook trigger after CI is green (no-op
-  unless the hook secrets are set; Render/Vercel also auto-deploy on push).
-- **keep-alive.yml** — pings the free Render services so they don't sleep.
-- **maintenance.yml** — hourly cron → housekeeping (purge/expire/reminders) as a
-  backup to the in-process scheduler.
-- **train-ai-model.yml** — nightly (02:30 UTC) retrain of the win-probability model.
+- **deploy-hf-backend.yml** — manual: pushes the backend (incl. AI) to its HF Space.
+
+Housekeeping (purge old matches, expire stale admins, reminders) runs **in-process**
+in the backend (`MAINTENANCE_AUTO`), so no external cron is needed. The old
+Render-deploy / keep-alive / external-maintenance / nightly-retrain workflows were
+removed when the app moved to one HF Space with in-process AI. To retrain the
+win-probability model, run `ai-service/train/` manually and commit the artifact.
 
 ### Required env vars (production)
 **Backend (incl. AI):** `SECRET_KEY`, `DATABASE_URL`, `SYNC_DATABASE_URL`,
